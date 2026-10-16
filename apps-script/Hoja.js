@@ -33,6 +33,34 @@ function reescribirTabla_(nombre, objetos) {
   anadirFilas_(nombre, objetos);
 }
 
+// Cambia, en las filas de la pestaña que cumplan `coincide`, los valores de `cambios`. Devuelve cuántas cambió.
+// Busca sobre las filas reales de la hoja, así no le afectan las filas vacías que haya en medio.
+function actualizarFilas_(nombre, coincide, cambios) {
+  const hoja = hoja_(nombre);
+  const valores = hoja.getDataRange().getValues();
+  const cabeceras = valores[0];
+  let cambiadas = 0;
+  valores.slice(1).forEach((fila, i) => {
+    const obj = {};
+    cabeceras.forEach((cab, j) => { obj[cab] = normalizarCelda_(fila[j]); });
+    if (!coincide(obj)) return;
+    hoja.getRange(i + 2, 1, 1, cabeceras.length).setValues([objetoAFila_(Object.assign(obj, cambios), cabeceras)]);
+    cambiadas++;
+  });
+  return cambiadas;
+}
+
+// Ejecuta `fn` con el bloqueo del script, para que dos peticiones no escriban a la vez.
+function conBloqueo_(fn) {
+  const bloqueo = LockService.getScriptLock();
+  bloqueo.waitLock(30000);
+  try {
+    return fn();
+  } finally {
+    bloqueo.releaseLock();
+  }
+}
+
 // Todas las recetas (activas o no) con los ingredientes ya convertidos: {id: receta}.
 function leerRecetasPorId_() {
   const porId = {};

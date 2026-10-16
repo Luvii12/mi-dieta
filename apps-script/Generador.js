@@ -205,9 +205,31 @@ function intentarPlan_(inicio, porComida, reglas, objetivoDia, tolDia, azar) {
   return dias;
 }
 
+// ---------- Cambiar plato ----------
+
+// Alternativas para una comida de un día ya planificado: las recetas de esa comida que se pueden usar
+// (sin la actual), ajustadas a su objetivo, con lo que sumaría el día y si seguiría cumpliendo la tolerancia.
+// dia: {comidas: [{comida, receta_id, macros}]}; datos: como en prepararCandidatas_.
+// Primero las que cuadran el día, de mejor a peor.
+function alternativasComida_(dia, comida, recetas, datos, objetivoDia, tolDia) {
+  const actual = dia.comidas.find(c => c.comida === comida);
+  if (!actual) throw new Error('Ese día no tiene ' + String(comida).toLowerCase() + '.');
+  const otras = dia.comidas.filter(c => c.comida !== comida).map(c => c.macros);
+  const { porComida } = prepararCandidatas_(recetas.filter(r => r.comida === comida), datos);
+  return porComida[comida]
+    .filter(c => c.id !== actual.receta_id)
+    .map(c => {
+      const macrosDia = sumarMacros_(otras.concat([c.macros]));
+      const evaluacion = evaluarDia_(macrosDia, objetivoDia, tolDia);
+      return { receta_id: c.id, nombre: c.nombre, macros: c.macros, macrosDia: macrosDia, diaOk: evaluacion.ok,
+        puntuacion: puntuacionDia_(evaluacion, tolDia) };
+    })
+    .sort((a, b) => Number(b.diaOk) - Number(a.diaOk) || a.puntuacion - b.puntuacion);
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     COMIDAS, DIAS_PLAN, sumarDias_, diaSemana_, fechaInicioPlan_, azarConSemilla_, ultimasValoraciones_,
-    prepararCandidatas_, reglasRepeticion_, generarPlan_,
+    prepararCandidatas_, reglasRepeticion_, generarPlan_, alimentosProhibidos_, alternativasComida_,
   };
 }

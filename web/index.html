@@ -4,75 +4,130 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Mi dieta</title>
-  <meta name="theme-color" content="#2f6b45">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#fdf8f6" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#181716" media="(prefers-color-scheme: dark)">
   <link rel="manifest" href="manifest.json">
   <link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="iconos/icono-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <!-- Solo los iconos que usa la app (en orden alfabético, como pide Google Fonts). -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400..700,0..1,0&icon_names=arrow_back,bakery_dining,calendar_month,calendar_today,celebration,check,check_circle,chevron_right,close,cloud_done,cloud_off,error,key,kitchen,link,lunch_dining,monitoring,nutrition,outdoor_grill,pie_chart,restaurant,sensors,settings,skillet,soup_kitchen,sync,task_alt,tune,visibility,visibility_off&display=block">
   <link rel="stylesheet" href="estilos.css">
   <script type="module" src="app.js"></script>
 </head>
-<body>
-  <header class="cabecera">
-    <h1 id="titulo">Hoy</h1>
-    <span id="estado-red" class="aviso" hidden>Sin conexión</span>
+<body data-vista="hoy">
+  <header class="barra-superior">
+    <div class="marca">
+      <span class="marca-nombre">Mi Dieta</span>
+      <span class="marca-sub">Plan personal <span class="punto-sep" aria-hidden="true"></span> <span id="marca-sub-kcal"></span></span>
+    </div>
+    <span id="estado-red" class="aviso-red" hidden>Sin conexión</span>
+    <a href="#plan" class="boton-icono" aria-label="Ver el plan de 14 días">
+      <span class="icono" aria-hidden="true">calendar_today</span>
+    </a>
   </header>
 
   <main>
-    <section id="vista-hoy" class="vista">
-      <p id="hoy-fecha" class="secundario"></p>
-      <div id="hoy-contenido"></div>
-    </section>
-
-    <section id="vista-plan" class="vista" hidden>
-      <div id="plan-contenido"></div>
-    </section>
-
-    <section id="vista-recetas" class="vista" hidden>
-      <p class="secundario">Gramos calculados para cuadrar el objetivo de cada comida. Toca una receta para ver el detalle.</p>
-      <div id="recetas-contenido"></div>
-    </section>
+    <section id="vista-hoy" class="vista"></section>
+    <section id="vista-plan" class="vista" hidden></section>
+    <section id="vista-receta" class="vista" hidden></section>
 
     <section id="vista-progreso" class="vista" hidden>
-      <div class="vacio">
-        <p><strong>Progreso</strong></p>
-        <p class="secundario">Peso, media de 7 días y adherencia llegarán en la fase 4.</p>
+      <div class="cabecera-vista"><h1 class="titulo-pantalla">Progreso</h1></div>
+      <div class="tarjeta vacio">
+        <span class="icono vacio-icono" aria-hidden="true">monitoring</span>
+        <p>Peso, media de 7 días y adherencia llegarán en la Fase 4.</p>
       </div>
     </section>
 
     <section id="vista-ajustes" class="vista" hidden>
-      <form id="form-conexion" class="tarjeta">
-        <h2>Conexión</h2>
-        <label>URL de Apps Script
-          <input id="campo-url" type="url" inputmode="url" autocomplete="off"
-                 placeholder="https://script.google.com/macros/s/…/exec" required>
-        </label>
-        <label>Token
-          <input id="campo-token" type="password" autocomplete="off" required>
-        </label>
-        <button type="submit">Guardar y probar</button>
-        <p id="resultado-conexion" class="resultado" role="status"></p>
-      </form>
-
-      <div class="tarjeta">
-        <h2>Prueba de escritura</h2>
-        <p class="secundario">Guarda la hora actual en la pestaña <code>config</code> y la vuelve a leer.</p>
-        <button id="boton-escribir" type="button" class="secundario-boton">Escribir fila de prueba</button>
-        <p id="resultado-escritura" class="resultado" role="status"></p>
+      <div class="cabecera-vista">
+        <div>
+          <h1 class="titulo-pantalla">Ajustes</h1>
+          <p class="subtitulo">Tus objetivos por comida y la conexión con tu hoja de Google.</p>
+        </div>
       </div>
 
-      <div class="tarjeta">
-        <h2>Objetivos por comida</h2>
-        <div id="tabla-objetivos"><p class="secundario">Conéctate para verlos.</p></div>
-      </div>
+      <section class="ajustes-seccion" aria-labelledby="titulo-objetivos">
+        <div class="seccion-cabecera">
+          <div class="seccion-titulo seccion-titulo-sm">
+            <span class="icono texto-primario" aria-hidden="true">lunch_dining</span>
+            <h2 id="titulo-objetivos">Objetivos por comida</h2>
+          </div>
+          <span id="objetivos-total" class="insignia insignia-primaria-borde" hidden></span>
+        </div>
+        <ul id="lista-objetivos" class="tarjeta lista-objetivos">
+          <li class="objetivo objetivo-vacio">Conéctate para verlos.</li>
+        </ul>
+      </section>
+
+      <section class="ajustes-seccion" aria-labelledby="titulo-conexion">
+        <div class="seccion-cabecera">
+          <div class="seccion-titulo seccion-titulo-sm">
+            <span class="icono texto-primario" aria-hidden="true">sync</span>
+            <h2 id="titulo-conexion">Conexión</h2>
+          </div>
+          <span class="grupo-nota">Google Sheets</span>
+        </div>
+        <form id="form-conexion" class="tarjeta conexion">
+          <label class="campo">
+            <span class="campo-etiqueta">Apps Script URL</span>
+            <span class="campo-caja">
+              <span class="icono campo-icono" aria-hidden="true">link</span>
+              <input id="campo-url" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+                     placeholder="https://script.google.com/macros/s/…/exec" required>
+            </span>
+          </label>
+          <label class="campo">
+            <span class="campo-etiqueta">Token / Clave de acceso</span>
+            <span class="campo-caja">
+              <span class="icono campo-icono" aria-hidden="true">key</span>
+              <input id="campo-token" type="password" autocomplete="off" spellcheck="false" required>
+              <button id="boton-ver-token" type="button" class="campo-boton" aria-label="Mostrar token">
+                <span class="icono" aria-hidden="true">visibility</span>
+              </button>
+            </span>
+          </label>
+          <div id="estado-conexion" class="estado-conexion" role="status">
+            <span class="estado-texto">
+              <span class="estado-punto" aria-hidden="true"></span>
+              <span>
+                <span id="estado-titulo" class="estado-titulo">Sin conectar</span>
+                <span id="estado-detalle" class="estado-detalle"></span>
+              </span>
+            </span>
+            <span id="estado-icono" class="icono estado-icono" aria-hidden="true">cloud_off</span>
+          </div>
+          <button id="boton-probar" type="submit" class="boton boton-contorno">
+            <span class="icono texto-primario" aria-hidden="true">sensors</span>
+            <span id="boton-probar-texto">Probar conexión</span>
+          </button>
+        </form>
+      </section>
     </section>
   </main>
 
-  <nav class="pestanas">
-    <a href="#hoy" data-vista="hoy">Hoy</a>
-    <a href="#plan" data-vista="plan">Plan</a>
-    <a href="#recetas" data-vista="recetas">Recetas</a>
-    <a href="#progreso" data-vista="progreso">Progreso</a>
-    <a href="#ajustes" data-vista="ajustes">Ajustes</a>
+  <nav class="navegacion" aria-label="Secciones">
+    <a href="#hoy" data-vista="hoy"><span class="icono" aria-hidden="true">restaurant</span><span>Hoy</span></a>
+    <a href="#plan" data-vista="plan"><span class="icono" aria-hidden="true">calendar_month</span><span>Plan</span></a>
+    <a href="#progreso" data-vista="progreso"><span class="icono" aria-hidden="true">monitoring</span><span>Progreso</span></a>
+    <a href="#ajustes" data-vista="ajustes"><span class="icono" aria-hidden="true">settings</span><span>Ajustes</span></a>
   </nav>
+
+  <dialog id="panel-cambiar" class="hoja-inferior" aria-labelledby="panel-titulo">
+    <div class="hoja-cabecera">
+      <h2 id="panel-titulo">Cambiar plato</h2>
+      <button id="panel-cerrar" type="button" class="boton-icono" aria-label="Cerrar">
+        <span class="icono" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <p id="panel-estado" class="subtitulo" role="status"></p>
+    <ul id="panel-lista" class="lista-alternativas"></ul>
+  </dialog>
+
+  <div id="aviso" class="aviso-flotante" role="alert" hidden></div>
 </body>
 </html>

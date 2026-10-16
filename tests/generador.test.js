@@ -172,3 +172,25 @@ test('reglas: con recetas de sobra, almuerzos y cenas no se repiten', () => {
   assert.deepEqual(G.reglasRepeticion_('Desayuno', 4, { max_rep_desayuno: 4 }), { max: 4, consecutivos: true });
   assert.deepEqual(G.reglasRepeticion_('Merienda', 2, { max_rep_merienda: 4 }), { max: 7, consecutivos: true });
 });
+
+// ---------- Cambiar plato ----------
+
+test('alternativasComida_: suma el día con la nueva receta y ordena las que cuadran primero', () => {
+  const p = plan(3);
+  const dia = p.dias[0];
+  const tol = TOLERANCIAS.dia;
+  const alt = G.alternativasComida_(dia, 'Merienda', SEMILLA.recetas, { objetivos: SEMILLA.objetivos, alimentos }, p.objetivoDia, tol);
+  const actual = dia.comidas.find(c => c.comida === 'Merienda');
+  assert.ok(alt.length > 0);
+  assert.ok(alt.every(a => a.receta_id !== actual.receta_id));
+  const otras = sumarMacros_(dia.comidas.filter(c => c.comida !== 'Merienda').map(c => c.macros));
+  alt.forEach(a => {
+    assert.ok(Math.abs(a.macrosDia.kcal - (otras.kcal + a.macros.kcal)) < 1e-9);
+    assert.equal(a.diaOk, evaluarDia_(a.macrosDia, p.objetivoDia, tol).ok);
+  });
+  for (let i = 1; i < alt.length; i++) {
+    assert.ok(Number(alt[i - 1].diaOk) > Number(alt[i].diaOk) ||
+      (alt[i - 1].diaOk === alt[i].diaOk && alt[i - 1].puntuacion <= alt[i].puntuacion));
+  }
+  assert.throws(() => G.alternativasComida_({ comidas: [] }, 'Cena', SEMILLA.recetas, { objetivos: SEMILLA.objetivos, alimentos }, p.objetivoDia, tol), /no tiene cena/);
+});

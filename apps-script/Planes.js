@@ -31,20 +31,26 @@ function filasDesdePlan_(generado, planId, objetivos, tolerancias, creado) {
   return { plan: plan, comidas: comidas };
 }
 
-// Ingredientes de una comida guardada, con nombre, crudo/cocinado, si es escalable y piezas.
+// Ingredientes de una comida guardada, con nombre, crudo/cocinado, grupo, si es escalable y piezas.
 function ingredientesDeComida_(gramos, receta, alimentos) {
   const escalables = {};
   ((receta && receta.ingredientes_escalables) || []).forEach(e => { escalables[e.alimento] = e; });
   return Object.keys(gramos).map(id => {
-    const a = alimentos[id] || { nombre: id, estado: '' };
-    const ing = { alimento: id, nombre: a.nombre, estado: a.estado, gramos: gramos[id], escalable: Boolean(escalables[id]) };
+    const a = alimentos[id] || { nombre: id, estado: '', grupo: '' };
+    const ing = { alimento: id, nombre: a.nombre, estado: a.estado, grupo: a.grupo, gramos: gramos[id], escalable: Boolean(escalables[id]) };
     if (escalables[id] && escalables[id].unidad && a.gramos_unidad) ing.piezas = Math.round(gramos[id] / a.gramos_unidad);
     return ing;
   }).sort((x, y) => Number(y.escalable) - Number(x.escalable));
 }
 
+// Receta que se come en una fila de `plan_comidas`: la cambiada si se cambió el plato; si no, la original.
+function recetaDeComida_(fila) {
+  return fila.cambiada_por || fila.receta_id;
+}
+
 // Fila de `planes` + sus filas de `plan_comidas` → plan por días para la PWA, con totales y evaluación.
-function vistaPlan_(filaPlan, filasComidas, recetasPorId, alimentos) {
+// valoraciones: {receta_id: valor} con la última valoración de cada receta (opcional).
+function vistaPlan_(filaPlan, filasComidas, recetasPorId, alimentos, valoraciones) {
   const objetivos = parsearValor_(filaPlan.objetivos) || {};
   const objComidas = objetivos.comidas || {};
   const tolDia = (objetivos.tolerancias || {}).dia;
@@ -52,16 +58,19 @@ function vistaPlan_(filaPlan, filasComidas, recetasPorId, alimentos) {
 
   const porFecha = {};
   filasComidas.forEach(f => {
-    const receta = recetasPorId[f.receta_id];
+    const recetaId = recetaDeComida_(f);
+    const receta = recetasPorId[recetaId];
     (porFecha[f.fecha] = porFecha[f.fecha] || []).push({
       comida: f.comida,
-      receta_id: f.receta_id,
-      nombre: receta ? receta.nombre : f.receta_id,
+      receta_id: recetaId,
+      cambiada: recetaId !== f.receta_id,
+      nombre: receta ? receta.nombre : recetaId,
       preparacion: receta ? receta.preparacion : '',
       ingredientes: ingredientesDeComida_(parsearValor_(f.gramos) || {}, receta, alimentos),
       macros: { kcal: Number(f.kcal), P: Number(f.P), C: Number(f.C), G: Number(f.G) },
       objetivo: objComidas[f.comida] || null,
       hecha: f.hecha || 'no',
+      valoracion: (valoraciones || {})[recetaId] || null,
     });
   });
 
@@ -92,5 +101,5 @@ function planDeReferencia_(planes) {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { filasDesdePlan_, ingredientesDeComida_, vistaPlan_, planDeReferencia_ };
+  module.exports = { recetaDeComida_, filasDesdePlan_, ingredientesDeComida_, vistaPlan_, planDeReferencia_ };
 }

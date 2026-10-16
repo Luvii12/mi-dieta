@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mi Dieta - Ajustes</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "primary": "#a93119",
+            "tertiary": "#825100",
+            "surface-container-low": "#f7f3f0",
+            "inverse-on-surface": "#f4f0ee",
+            "tertiary-fixed": "#ffddb8",
+            "surface-bright": "#fdf8f6",
+            "background": "#fdf8f6",
+            "surface-container-highest": "#e6e2df",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface-container-high": "#ece7e5",
+            "on-surface-variant": "#59413c",
+            "primary-fixed": "#ffdad3",
+            "on-primary-fixed": "#3e0500",
+            "on-primary-fixed-variant": "#8b1b05",
+            "secondary-fixed": "#c5eeae",
+            "surface-tint": "#ac331b",
+            "tertiary-container": "#a36700",
+            "error-container": "#ffdad6",
+            "surface-dim": "#ddd9d7",
+            "outline": "#8c716b",
+            "primary-fixed-dim": "#ffb4a4",
+            "secondary": "#446735",
+            "surface-container-lowest": "#ffffff",
+            "outline-variant": "#e0bfb8",
+            "secondary-container": "#c2ecac",
+            "inverse-surface": "#31302f",
+            "surface": "#fdf8f6",
+            "surface-container": "#f1edeb",
+            "tertiary-fixed-dim": "#ffb95f",
+            "on-tertiary-container": "#fffbff",
+            "on-secondary-fixed": "#052100",
+            "surface-variant": "#e6e2df",
+            "on-primary-container": "#fffbff",
+            "on-primary": "#ffffff",
+            "on-error": "#ffffff",
+            "on-background": "#1c1b1a",
+            "on-secondary-container": "#486c38",
+            "on-tertiary": "#ffffff",
+            "on-secondary": "#ffffff",
+            "on-surface": "#1c1b1a",
+            "on-tertiary-fixed": "#2a1700",
+            "on-secondary-fixed-variant": "#2d4f1f",
+            "secondary-fixed-dim": "#a9d294",
+            "primary-container": "#cb492f",
+            "inverse-primary": "#ffb4a4",
+            "on-error-container": "#93000a"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "space-lg": "1.5rem",
+            "space-sm": "0.5rem",
+            "gutter-sm": "0.75rem",
+            "margin-tablet": "2rem",
+            "space-xl": "2rem",
+            "space-md": "1rem",
+            "margin": "1rem",
+            "gutter": "1rem"
+          },
+          "fontFamily": {
+            "body-md": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "metric-md": ["Plus Jakarta Sans"],
+            "display": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "display-mobile": ["Plus Jakarta Sans"],
+            "metric-lg": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "label-md": ["Plus Jakarta Sans"],
+            "headline-md": ["Plus Jakarta Sans"],
+            "label-lg": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }],
+            "metric-md": ["20px", { "lineHeight": "24px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "display-mobile": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "metric-lg": ["32px", { "lineHeight": "36px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }]
+          },
+          "boxShadow": {
+            "warm-sm": "0px 2px 8px -1px rgba(66, 48, 32, 0.04), 0px 1px 3px 0px rgba(66, 48, 32, 0.02)",
+            "warm-card": "0px 4px 16px -2px rgba(66, 48, 32, 0.05), 0px 1px 3px 0px rgba(66, 48, 32, 0.03)",
+            "warm-elevated": "0px 12px 28px -4px rgba(66, 48, 32, 0.12), 0px 4px 8px -2px rgba(66, 48, 32, 0.04)"
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      background-color: #fdf8f6;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-filled {
+      font-variation-settings: 'FILL' 1, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-surface antialiased min-h-screen flex flex-col justify-between selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Mobile Viewport Container: 390px layout bounded -->
+<div class="w-full max-w-md mx-auto min-h-screen flex flex-col relative pb-24 bg-background">
+<!-- Top App Bar (Shared Components JSON execution) -->
+<header class="sticky top-0 z-40 bg-surface/90 backdrop-blur-md">
+<div class="flex justify-between items-center w-full px-4 h-14 max-w-md mx-auto">
+<!-- Leading: Profile photo of user -->
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-full overflow-hidden ring-2 ring-outline-variant/40 shadow-sm flex-shrink-0 bg-surface-container">
+<img class="w-full h-full object-cover" data-alt="Close up warm portrait of a Mediterranean person in their early thirties smiling gently, illuminated by natural late-afternoon sunlight in a rustic kitchen setting. The image uses a soft organic color palette with warm linen, earthy terracotta, and fresh sage green tones, reflecting a relaxed lifestyle." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDoVVnwc51wy7S40Lexf3HrAVuPxyFqt8Eb90C7krHhq-Hh1F3Lf6ILLF7Q4gA6huUKNXJFLA0Tvbrwpg454Zh9c2B_KYJ9-skW5yvezTg0XTj3QW7KnuA5DeDoat0ZhA6rn0iYxraWx9T3PfWiU4cFGKyd6GiLFrGiPmz_vRVlKPjZXhU_wzx2Idz1n-5srD8mdmI_5Q31pLMCwAGGyO03p877YNC0YQ1L-UveeiwPEl5VNdSimy7IsA"/>
+</div>
+<div class="flex flex-col">
+<h1 class="text-headline-md font-headline-md font-bold text-primary tracking-tight leading-tight">Mi Dieta</h1>
+<span class="text-label-sm font-label-sm text-on-surface-variant flex items-center gap-1">
+<span>Plan personal</span>
+<span class="w-1 h-1 rounded-full bg-outline"></span>
+<span class="font-medium text-secondary">1.655 kcal/día</span>
+</span>
+</div>
+</div>
+<!-- Trailing: calendar_today icon -->
+<button aria-label="Calendario" class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors duration-150 active:scale-95" type="button">
+<span class="material-symbols-outlined text-[22px]">calendar_today</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="px-4 pt-3 space-y-6 flex-1">
+<!-- Screen Section Header -->
+<div class="flex items-center justify-between pt-1">
+<div>
+<h2 class="text-headline-lg font-headline-lg text-on-surface tracking-tight">Ajustes</h2>
+<p class="text-body-sm font-body-sm text-on-surface-variant mt-0.5">Configura el reparto calórico, restricciones y sincronización.</p>
+</div>
+<span class="px-2.5 py-1 rounded-full bg-secondary-container/60 text-secondary text-label-sm font-label-sm flex items-center gap-1">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary"></span> Activo
+        </span>
+</div>
+<!-- 1. Section: Objetivos por comida -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">lunch_dining</span>
+<h3 class="text-label-lg font-label-lg text-on-surface font-bold">Objetivos por comida</h3>
+</div>
+<span class="px-2.5 py-0.5 rounded-full bg-primary-fixed/40 text-primary text-label-sm font-label-sm font-bold border border-outline-variant/30">
+            Total: 1.655 kcal
+          </span>
+</div>
+<!-- Grouped Card with 4 tappable rows -->
+<div class="bg-surface-container-lowest rounded-2xl border border-outline-variant/40 shadow-warm-card overflow-hidden divide-y divide-surface-container/80">
+<!-- Row 1: Desayuno -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-container-low transition-colors duration-150 active:scale-[0.99] cursor-pointer group" role="button" tabindex="0">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-primary group-hover:bg-primary-fixed/30 transition-colors">
+<span class="material-symbols-outlined text-[20px]">bakery_dining</span>
+</div>
+<div>
+<p class="text-body-md font-body-md font-bold text-on-surface">Desayuno</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Frutas, cereales y café</p>
+</div>
+</div>
+<div class="flex items-center space-x-2.5">
+<div class="text-right">
+<span class="text-metric-md font-metric-md text-on-surface">405</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant ml-0.5">kcal</span>
+<span class="inline-block ml-1.5 px-1.5 py-0.5 rounded bg-surface-container text-label-sm font-label-sm text-on-surface-variant font-medium">~25%</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[20px] group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+</div>
+<!-- Row 2: Almuerzo -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-container-low transition-colors duration-150 active:scale-[0.99] cursor-pointer group" role="button" tabindex="0">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-secondary group-hover:bg-secondary-container/40 transition-colors">
+<span class="material-symbols-outlined text-[20px]">skillet</span>
+</div>
+<div>
+<p class="text-body-md font-body-md font-bold text-on-surface">Almuerzo</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Plato principal y legumbres</p>
+</div>
+</div>
+<div class="flex items-center space-x-2.5">
+<div class="text-right">
+<span class="text-metric-md font-metric-md text-on-surface">542</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant ml-0.5">kcal</span>
+<span class="inline-block ml-1.5 px-1.5 py-0.5 rounded bg-surface-container text-label-sm font-label-sm text-secondary font-bold">~33%</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[20px] group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+</div>
+<!-- Row 3: Merienda -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-container-low transition-colors duration-150 active:scale-[0.99] cursor-pointer group" role="button" tabindex="0">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-tertiary group-hover:bg-tertiary-fixed/40 transition-colors">
+<span class="material-symbols-outlined text-[20px]">nutrition</span>
+</div>
+<div>
+<p class="text-body-md font-body-md font-bold text-on-surface">Merienda</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Frutos secos o yogur</p>
+</div>
+</div>
+<div class="flex items-center space-x-2.5">
+<div class="text-right">
+<span class="text-metric-md font-metric-md text-on-surface">335</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant ml-0.5">kcal</span>
+<span class="inline-block ml-1.5 px-1.5 py-0.5 rounded bg-surface-container text-label-sm font-label-sm text-on-surface-variant font-medium">~20%</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[20px] group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+</div>
+<!-- Row 4: Cena -->
+<div class="flex items-center justify-between p-3.5 hover:bg-surface-container-low transition-colors duration-150 active:scale-[0.99] cursor-pointer group" role="button" tabindex="0">
+<div class="flex items-center space-x-3">
+<div class="w-9 h-9 rounded-xl bg-surface-container flex items-center justify-center text-primary-container group-hover:bg-primary-fixed/30 transition-colors">
+<span class="material-symbols-outlined text-[20px]">soup_kitchen</span>
+</div>
+<div>
+<p class="text-body-md font-body-md font-bold text-on-surface">Cena</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant">Cena ligera y verduras</p>
+</div>
+</div>
+<div class="flex items-center space-x-2.5">
+<div class="text-right">
+<span class="text-metric-md font-metric-md text-on-surface">373</span>
+<span class="text-body-sm font-body-sm text-on-surface-variant ml-0.5">kcal</span>
+<span class="inline-block ml-1.5 px-1.5 py-0.5 rounded bg-surface-container text-label-sm font-label-sm text-on-surface-variant font-medium">~22%</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[20px] group-hover:translate-x-0.5 transition-transform">chevron_right</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. Section: Alimentos que no como (Exclusiones) -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">block</span>
+<h3 class="text-label-lg font-label-lg text-on-surface font-bold">Alimentos que no como</h3>
+</div>
+<span class="text-label-sm font-label-sm text-outline font-semibold">4 excluidos</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/40 shadow-warm-card space-y-3.5">
+<p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+            Los platos del plan nunca incluirán estos ingredientes ni derivados en sus recetas.
+          </p>
+<!-- Chip Cloud with remove buttons -->
+<div class="flex flex-wrap gap-2 pt-1" id="exclusion-chips">
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface border border-outline-variant/50 text-body-sm font-body-sm transition-all hover:bg-surface-container-highest">
+<span>Marisco fresco</span>
+<button aria-label="Eliminar Marisco fresco" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-outline-variant/50 text-on-surface-variant hover:text-error transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">close</span>
+</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface border border-outline-variant/50 text-body-sm font-body-sm transition-all hover:bg-surface-container-highest">
+<span>Cilantro</span>
+<button aria-label="Eliminar Cilantro" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-outline-variant/50 text-on-surface-variant hover:text-error transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">close</span>
+</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface border border-outline-variant/50 text-body-sm font-body-sm transition-all hover:bg-surface-container-highest">
+<span>Pimiento crudo</span>
+<button aria-label="Eliminar Pimiento crudo" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-outline-variant/50 text-on-surface-variant hover:text-error transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">close</span>
+</button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface border border-outline-variant/50 text-body-sm font-body-sm transition-all hover:bg-surface-container-highest">
+<span>Lácteos enteros</span>
+<button aria-label="Eliminar Lácteos enteros" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-outline-variant/50 text-on-surface-variant hover:text-error transition-colors" type="button">
+<span class="material-symbols-outlined text-[15px]">close</span>
+</button>
+</span>
+</div>
+<!-- Add Button (Dashed Mediterranean Accent) -->
+<button class="w-full py-2.5 px-3 rounded-xl border border-dashed border-primary/50 text-primary bg-primary-fixed/15 hover:bg-primary-fixed/30 text-label-md font-label-md flex items-center justify-center gap-1.5 transition-colors duration-150 active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[18px]">add</span>
+<span>+ Añadir alimento</span>
+</button>
+</div>
+</section>
+<!-- 3. Section: Favoritos -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">favorite</span>
+<h3 class="text-label-lg font-label-lg text-on-surface font-bold">Favoritos</h3>
+</div>
+<span class="text-label-sm font-label-sm text-secondary font-bold">Prioritarios</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/40 shadow-warm-card space-y-3.5">
+<p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+            Se incluirán con mayor frecuencia en tus ciclos de planificación de 14 días.
+          </p>
+<!-- Warm Culinary Chips with Heart/Check icons -->
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface border border-outline-variant/30 text-body-sm font-body-sm font-medium hover:border-primary/40 transition-colors">
+<span class="material-symbols-outlined text-primary text-[16px] material-symbols-filled">favorite</span>
+<span>Pollo al curry</span>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface border border-outline-variant/30 text-body-sm font-body-sm font-medium hover:border-primary/40 transition-colors">
+<span class="material-symbols-outlined text-primary text-[16px] material-symbols-filled">favorite</span>
+<span>Salmón al horno</span>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface border border-outline-variant/30 text-body-sm font-body-sm font-medium hover:border-secondary/40 transition-colors">
+<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span>
+<span>Huevos revueltos</span>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface border border-outline-variant/30 text-body-sm font-body-sm font-medium hover:border-primary/40 transition-colors">
+<span class="material-symbols-outlined text-primary text-[16px] material-symbols-filled">favorite</span>
+<span>Lentejas estofadas</span>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface border border-outline-variant/30 text-body-sm font-body-sm font-medium hover:border-secondary/40 transition-colors">
+<span class="material-symbols-outlined text-secondary text-[16px]">check_circle</span>
+<span>Bowl de skyr</span>
+</span>
+</div>
+<div class="pt-1">
+<button class="w-full py-2.5 px-4 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-label-md font-label-md flex items-center justify-center gap-2 transition-colors duration-150 active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary">menu_book</span>
+<span>+ Explorar recetas</span>
+</button>
+</div>
+</div>
+</section>
+<!-- 4. Section: Preferencias y flexibilidad -->
+<section class="space-y-2.5">
+<div class="flex items-center gap-2 px-1">
+<span class="material-symbols-outlined text-primary text-[20px]">tune</span>
+<h3 class="text-label-lg font-label-lg text-on-surface font-bold">Preferencias y flexibilidad</h3>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/40 shadow-warm-card">
+<div class="flex items-start justify-between gap-3">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="text-body-md font-body-md font-bold text-on-surface">Comida libre semanal</span>
+<span class="px-1.5 py-0.2 rounded bg-secondary-fixed/50 text-secondary text-label-sm font-label-sm font-bold">Recomendado</span>
+</div>
+<p class="text-body-sm font-body-sm text-on-surface-variant leading-relaxed">
+                Permite 1 comida flexible por semana sin desajustar el cómputo calórico medio ni alertar el algoritmo.
+              </p>
+</div>
+<!-- Toggle Switch (Active Terracotta/Olive) -->
+<label class="relative inline-flex items-center cursor-pointer flex-shrink-0 mt-1">
+<input checked="" class="sr-only peer" id="toggle-free-meal" type="checkbox"/>
+<div class="w-12 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-6 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-surface-dim after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</section>
+<!-- 5. Section: Conexión y sincronización -->
+<section class="space-y-2.5">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">sync</span>
+<h3 class="text-label-lg font-label-lg text-on-surface font-bold">Conexión</h3>
+</div>
+<span class="text-label-sm font-label-sm text-outline font-medium">Google Sheets</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/40 shadow-warm-card space-y-4">
+<!-- Field 1: Apps Script URL -->
+<div class="space-y-1.5">
+<label class="text-label-sm font-label-sm text-on-surface-variant font-bold uppercase tracking-wider block">
+              Apps Script URL
+            </label>
+<div class="relative flex items-center">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[18px]">link</span>
+</div>
+<input class="w-full pl-9 pr-10 py-2.5 bg-surface-container-low text-on-surface text-body-sm font-body-sm rounded-xl border border-outline-variant/50 focus:border-primary focus:ring-0 select-all cursor-text font-mono truncate" readonly="" type="text" value="https://script.google.com/macros/s/AKfycbx98Jkl201A9eF3.../exec"/>
+<button aria-label="Copiar URL" class="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-primary transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">content_copy</span>
+</button>
+</div>
+</div>
+<!-- Field 2: Token / Clave de acceso -->
+<div class="space-y-1.5">
+<label class="text-label-sm font-label-sm text-on-surface-variant font-bold uppercase tracking-wider block">
+              Token / Clave de acceso
+            </label>
+<div class="relative flex items-center">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-outline">
+<span class="material-symbols-outlined text-[18px]">key</span>
+</div>
+<input class="w-full pl-9 pr-10 py-2.5 bg-surface-container-low text-on-surface text-body-sm font-body-sm rounded-xl border border-outline-variant/50 focus:border-primary focus:ring-0 font-mono" id="api-token" readonly="" type="password" value="sec_med_dieta_live_9941a87bca8820"/>
+<button aria-label="Mostrar u ocultar token" class="absolute inset-y-0 right-0 pr-3 flex items-center text-outline hover:text-primary transition-colors" id="toggle-token-btn" type="button">
+<span class="material-symbols-outlined text-[18px]" id="eye-icon">visibility</span>
+</button>
+</div>
+</div>
+<!-- Status Indicator Pill -->
+<div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between">
+<div class="flex items-center space-x-2.5">
+<span class="relative flex h-2.5 w-2.5">
+<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-secondary opacity-75"></span>
+<span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-secondary"></span>
+</span>
+<div>
+<p class="text-label-sm font-label-sm text-on-surface font-bold">Sincronizado con Google Sheets</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant text-[11px]">Última sync: Hoy, 09:15</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-secondary text-[20px]">cloud_done</span>
+</div>
+<!-- Action Button: Probar conexión -->
+<button class="w-full py-2.5 px-4 rounded-xl border border-outline-variant text-on-surface bg-surface-container-low hover:bg-surface-container hover:border-outline font-label-lg text-label-lg flex items-center justify-center gap-2 transition-all duration-150 active:scale-[0.98]" id="btn-test-connection" type="button">
+<span class="material-symbols-outlined text-[18px] text-primary">sensors</span>
+<span>Probar conexión</span>
+</button>
+</div>
+</section>
+<!-- App version & footer note -->
+<div class="text-center py-4 space-y-1">
+<p class="text-label-sm font-label-sm text-outline uppercase tracking-wider">Mi Dieta · Versión 2.4.0</p>
+<p class="text-body-sm font-body-sm text-on-surface-variant/70">Diseñado con calma y estilo mediterráneo</p>
+</div>
+</main>
+<!-- Bottom Navigation Bar (Shared Components JSON execution) -->
+<!-- 4 tabs: "Hoy", "Plan", "Progreso", "Ajustes" -->
+<!-- Mandatory Logic: Active tab is "Ajustes", styled per style_active_navigation, others per style_inactive_navigation -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 border-t border-outline-variant/30 max-w-md mx-auto right-0 bg-surface shadow-md">
+<!-- Tab 1: Hoy (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:text-primary transition-colors duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-[24px]">restaurant</span>
+<span class="text-label-sm font-label-sm mt-0.5">Hoy</span>
+</a>
+<!-- Tab 2: Plan (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:text-primary transition-colors duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-[24px]">calendar_month</span>
+<span class="text-label-sm font-label-sm mt-0.5">Plan</span>
+</a>
+<!-- Tab 3: Progreso (Inactive) -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-3 py-1 hover:text-primary transition-colors duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-[24px]">monitoring</span>
+<span class="text-label-sm font-label-sm mt-0.5">Progreso</span>
+</a>
+<!-- Tab 4: Ajustes (ACTIVE - Exact mapping from JSON & Style Guidance) -->
+<a class="flex flex-col items-center justify-center text-primary font-bold px-3 py-1 hover:text-primary transition-colors duration-150 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined text-[24px] material-symbols-filled">settings</span>
+<span class="text-label-sm font-label-sm mt-0.5">Ajustes</span>
+</a>
+</nav>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Toggle token visibility
+      const toggleTokenBtn = document.getElementById('toggle-token-btn');
+      const tokenInput = document.getElementById('api-token');
+      const eyeIcon = document.getElementById('eye-icon');
+
+      if (toggleTokenBtn && tokenInput && eyeIcon) {
+        toggleTokenBtn.addEventListener('click', () => {
+          if (tokenInput.type === 'password') {
+            tokenInput.type = 'text';
+            eyeIcon.textContent = 'visibility_off';
+          } else {
+            tokenInput.type = 'password';
+            eyeIcon.textContent = 'visibility';
+          }
+        });
+      }
+
+      // Test connection button feedback
+      const testBtn = document.getElementById('btn-test-connection');
+      if (testBtn) {
+        testBtn.addEventListener('click', () => {
+          const originalContent = testBtn.innerHTML;
+          testBtn.innerHTML = `
+            <span class="material-symbols-outlined text-[18px] animate-spin text-primary">progress_activity</span>
+            <span>Verificando...</span>
+          `;
+          testBtn.disabled = true;
+
+          setTimeout(() => {
+            testBtn.innerHTML = `
+              <span class="material-symbols-outlined text-[18px] text-secondary">check_circle</span>
+              <span class="text-secondary font-bold">¡Conexión verificada!</span>
+            `;
+            setTimeout(() => {
+              testBtn.innerHTML = originalContent;
+              testBtn.disabled = false;
+            }, 2000);
+          }, 800);
+        });
+      }
+    });
+  </script>
+</body></html>

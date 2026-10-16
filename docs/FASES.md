@@ -26,6 +26,7 @@ Cada fase termina con algo usable en el móvil. Parar al final de cada una.
 - Registro de peso, gráfica con media de 7 días, adherencia.
 - Regla de ajuste de `NUTRICION.md`, propuesta aceptable/rechazable, historial.
 - Activador automático 2 días antes del fin del plan.
+- Edición en Ajustes: objetivos por comida, alimentos excluidos y nombres de alimentos.
 - **Hecho cuando**: al acabar un bloque se genera solo el borrador siguiente con la propuesta de ajuste.
 
 ## Fase 5 · Recetas con IA

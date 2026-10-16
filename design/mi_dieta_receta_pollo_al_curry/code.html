@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="es"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Receta - Mi Dieta</title>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Plus Jakarta Sans Font -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "on-primary-container": "#fffbff",
+            "surface": "#fdf8f6",
+            "on-primary-fixed-variant": "#8b1b05",
+            "on-secondary-fixed-variant": "#2d4f1f",
+            "primary-fixed": "#ffdad3",
+            "outline": "#8c716b",
+            "secondary-fixed": "#c5eeae",
+            "on-surface": "#1c1b1a",
+            "surface-container-lowest": "#ffffff",
+            "surface-dim": "#ddd9d7",
+            "tertiary-fixed-dim": "#ffb95f",
+            "primary-fixed-dim": "#ffb4a4",
+            "surface-container-low": "#f7f3f0",
+            "surface-container-highest": "#e6e2df",
+            "secondary-fixed-dim": "#a9d294",
+            "on-tertiary": "#ffffff",
+            "on-background": "#1c1b1a",
+            "inverse-surface": "#31302f",
+            "error-container": "#ffdad6",
+            "surface-bright": "#fdf8f6",
+            "secondary-container": "#c2ecac",
+            "tertiary-fixed": "#ffddb8",
+            "on-error-container": "#93000a",
+            "inverse-primary": "#ffb4a4",
+            "on-tertiary-fixed": "#2a1700",
+            "outline-variant": "#e0bfb8",
+            "on-tertiary-container": "#fffbff",
+            "surface-container": "#f1edeb",
+            "secondary": "#446735",
+            "primary-container": "#cb492f",
+            "on-primary-fixed": "#3e0500",
+            "on-secondary-fixed": "#052100",
+            "error": "#ba1a1a",
+            "inverse-on-surface": "#f4f0ee",
+            "background": "#fdf8f6",
+            "tertiary": "#825100",
+            "surface-tint": "#ac331b",
+            "primary": "#a93119",
+            "surface-container-high": "#ece7e5",
+            "on-secondary-container": "#486c38",
+            "on-secondary": "#ffffff",
+            "on-error": "#ffffff",
+            "tertiary-container": "#a36700",
+            "on-primary": "#ffffff",
+            "on-surface-variant": "#59413c",
+            "on-tertiary-fixed-variant": "#653e00",
+            "surface-variant": "#e6e2df"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "2xl": "1rem",
+            "3xl": "1.5rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "space-xs": "0.25rem",
+            "gutter-sm": "0.75rem",
+            "space-lg": "1.5rem",
+            "space-xl": "2rem",
+            "margin": "1rem",
+            "margin-tablet": "2rem",
+            "space-md": "1rem",
+            "gutter": "1rem",
+            "space-sm": "0.5rem"
+          },
+          "fontFamily": {
+            "headline-md": ["Plus Jakarta Sans"],
+            "metric-lg": ["Plus Jakarta Sans"],
+            "body-sm": ["Plus Jakarta Sans"],
+            "label-md": ["Plus Jakarta Sans"],
+            "label-sm": ["Plus Jakarta Sans"],
+            "label-lg": ["Plus Jakarta Sans"],
+            "headline-lg": ["Plus Jakarta Sans"],
+            "metric-md": ["Plus Jakarta Sans"],
+            "body-lg": ["Plus Jakarta Sans"],
+            "body-md": ["Plus Jakarta Sans"],
+            "display": ["Plus Jakarta Sans"],
+            "headline-sm": ["Plus Jakarta Sans"],
+            "display-mobile": ["Plus Jakarta Sans"]
+          },
+          "fontSize": {
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+            "metric-lg": ["32px", { "lineHeight": "36px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+            "body-sm": ["12px", { "lineHeight": "16px", "fontWeight": "400" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "600" }],
+            "label-sm": ["10px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "700" }],
+            "label-lg": ["14px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "600" }],
+            "headline-lg": ["28px", { "lineHeight": "34px", "letterSpacing": "-0.015em", "fontWeight": "700" }],
+            "metric-md": ["20px", { "lineHeight": "24px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "display": ["40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+            "headline-sm": ["18px", { "lineHeight": "24px", "fontWeight": "600" }],
+            "display-mobile": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+          }
+        }
+      }
+    }
+  </script>
+<style>
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: #f7f3f0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .material-symbols-outlined.fill-icon {
+      font-variation-settings: 'FILL' 1, 'wght' 500;
+    }
+    .warm-ambient-shadow {
+      box-shadow: 0px 4px 16px -2px rgba(66, 48, 32, 0.05), 0px 1px 3px 0px rgba(66, 48, 32, 0.03);
+    }
+    .floating-bar-shadow {
+      box-shadow: 0px 12px 28px -4px rgba(66, 48, 32, 0.12), 0px 4px 8px -2px rgba(66, 48, 32, 0.04);
+    }
+    /* Hide scrollbar for clean mobile experience */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="bg-surface-container-low text-on-surface antialiased min-h-screen flex justify-center selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- Mobile Container (Max 390px / Android form factor) -->
+<div class="w-full max-w-[390px] min-h-screen bg-background relative flex flex-col shadow-2xl pb-28">
+<!-- 1. Floating Top Navigation Bar (Overlaying Hero Image) -->
+<header class="fixed top-0 left-0 right-0 max-w-[390px] mx-auto z-40 px-4 pt-3 pb-2 flex items-center justify-between pointer-events-none">
+<!-- Back Button -->
+<button aria-label="Volver" class="pointer-events-auto w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface flex items-center justify-center warm-ambient-shadow active:scale-95 transition-transform duration-150 border border-outline-variant/30" type="button">
+<span class="material-symbols-outlined text-[20px]">arrow_back</span>
+</button>
+<!-- Screen Title / Badge Pill -->
+<div class="pointer-events-auto px-3.5 py-1.5 rounded-full bg-surface-container-lowest/85 backdrop-blur-md warm-ambient-shadow border border-outline-variant/30 flex items-center gap-1.5">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="font-label-md text-label-md text-on-surface font-semibold tracking-tight">Receta</span>
+</div>
+<!-- Actions (Favorite & Share) -->
+<div class="pointer-events-auto flex items-center gap-2">
+<button aria-label="Guardar como favorito" class="w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface-variant hover:text-primary flex items-center justify-center warm-ambient-shadow active:scale-95 transition-all duration-150 border border-outline-variant/30" id="btn-favorite" type="button">
+<span class="material-symbols-outlined text-[20px]" id="fav-icon">favorite_border</span>
+</button>
+<button aria-label="Compartir receta" class="w-10 h-10 rounded-full bg-surface-container-lowest/90 backdrop-blur-md text-on-surface-variant hover:text-on-surface flex items-center justify-center warm-ambient-shadow active:scale-95 transition-transform duration-150 border border-outline-variant/30" type="button">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+</div>
+</header>
+<!-- 2. Large Prominent Dish Photo Hero -->
+<div class="relative w-full h-[300px] bg-surface-container overflow-hidden">
+<img alt="Pollo al curry con yogur y arroz basmati" class="w-full h-full object-cover object-center transform scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPVUJFyiOM3cQSLT7c9REYT6EDYJvu2MWS79HH3GwRU6MOBEmJGOCmgODN66KCXLeTNkbZQ2kU5x7U_87dzy5BwBqplvfQi1GDzI4ULb89kRvszZwJL1Jn0NXFlMzi7l2aQ4W_cBo3oXIAhNP428esORb23SRkHaFO2Pd7xZ-BmOn9K_cH6Rle0ZM8JN-NU-iHAVe6L1OSUbxQrOYN0hjMEG4sAZr4NgemPcAe4Ad2rYLVJIsbydUIkg"/>
+<!-- Gradient transition into background -->
+<div class="absolute inset-0 bg-gradient-to-b from-black/25 via-transparent to-background/95"></div>
+<!-- Subtle dietary badge top corner context -->
+<div class="absolute bottom-4 left-4 flex items-center gap-1.5 bg-surface-container-lowest/90 backdrop-blur-md px-3 py-1 rounded-full border border-outline-variant/30 warm-ambient-shadow">
+<span class="material-symbols-outlined text-secondary text-[16px]">eco</span>
+<span class="font-label-sm text-label-sm text-secondary font-bold uppercase tracking-wider">Mediterráneo Saludable</span>
+</div>
+</div>
+<!-- Main Content Container with Overlap -->
+<main class="relative -mt-3 z-10 px-4 space-y-5">
+<!-- 3. Dish Header & Macro Summary Row -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 warm-ambient-shadow border border-outline-variant/25">
+<div class="flex items-center gap-2 text-on-surface-variant font-label-md text-label-md mb-1.5">
+<span class="text-primary font-bold">Almuerzo</span>
+<span class="text-outline-variant">•</span>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[15px]">schedule</span>
+<span>25 min</span>
+</div>
+<span class="text-outline-variant">•</span>
+<span class="text-secondary font-medium">Dificultad fácil</span>
+</div>
+<h1 class="font-headline-md text-headline-md text-on-surface font-bold tracking-tight leading-snug">
+          Pollo al curry con yogur y arroz basmati
+        </h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+          Cremoso, aromático y equilibrado con el toque fresco del yogur y las espinacas tiernas.
+        </p>
+<!-- Nutritional macro summary cards -->
+<div class="mt-4 pt-3.5 border-t border-surface-container flex items-center justify-between gap-1.5">
+<!-- Calories Pill -->
+<div class="flex-1 bg-surface-container-low rounded-xl px-2.5 py-2 text-center border border-surface-container">
+<span class="block font-label-sm text-label-sm text-on-surface-variant font-semibold">Calorías</span>
+<span class="block font-metric-md text-metric-md text-primary font-bold mt-0.5">547 <span class="font-label-sm text-label-sm font-normal text-on-surface-variant">kcal</span></span>
+</div>
+<!-- Protein Badge -->
+<div class="flex-1 bg-blue-500/10 rounded-xl px-2 py-2 text-center border border-blue-500/15">
+<span class="block font-label-sm text-label-sm text-[#2563EB] font-bold">Proteína</span>
+<span class="block font-headline-sm text-headline-sm text-[#2563EB] font-bold mt-0.5">41 <span class="font-label-sm text-label-sm font-medium">g</span></span>
+</div>
+<!-- Carbs Badge -->
+<div class="flex-1 bg-amber-500/10 rounded-xl px-2 py-2 text-center border border-amber-500/15">
+<span class="block font-label-sm text-label-sm text-[#D97706] font-bold">Carbos</span>
+<span class="block font-headline-sm text-headline-sm text-[#D97706] font-bold mt-0.5">51 <span class="font-label-sm text-label-sm font-medium">g</span></span>
+</div>
+<!-- Fats Badge -->
+<div class="flex-1 bg-pink-500/10 rounded-xl px-2 py-2 text-center border border-pink-500/15">
+<span class="block font-label-sm text-label-sm text-[#DB2777] font-bold">Grasas</span>
+<span class="block font-headline-sm text-headline-sm text-[#DB2777] font-bold mt-0.5">18 <span class="font-label-sm text-label-sm font-medium">g</span></span>
+</div>
+</div>
+</section>
+<!-- 4. Section: Ingredientes -->
+<section class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">kitchen</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Ingredientes</h2>
+</div>
+<span class="font-label-sm text-label-sm bg-surface-container text-on-surface-variant px-2.5 py-1 rounded-full font-medium">
+            1 ración calculada
+          </span>
+</div>
+<!-- Group 1: Priority / Macro-adjusted Card -->
+<div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/40 warm-ambient-shadow relative overflow-hidden">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-primary text-[18px]">tune</span>
+<span class="font-label-md text-label-md text-primary font-bold">Pesados para tus macros</span>
+</div>
+<span class="font-label-sm text-label-sm bg-primary/10 text-primary px-2 py-0.5 rounded-full font-bold">
+              Exactos
+            </span>
+</div>
+<div class="space-y-2.5">
+<!-- Item 1 -->
+<div class="flex items-center justify-between bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/20">
+<div class="flex items-center gap-2.5">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-body-md text-body-md text-on-surface">Pechuga de pollo</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tabular-nums">130 <span class="font-label-sm text-label-sm font-normal text-on-surface-variant">g</span></span>
+</div>
+<!-- Item 2 -->
+<div class="flex items-center justify-between bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/20">
+<div class="flex items-center gap-2.5">
+<span class="w-2 h-2 rounded-full bg-[#D97706]"></span>
+<div>
+<span class="font-body-md text-body-md text-on-surface block">Arroz basmati</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">en crudo</span>
+</div>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tabular-nums">50 <span class="font-label-sm text-label-sm font-normal text-on-surface-variant">g</span></span>
+</div>
+<!-- Item 3 -->
+<div class="flex items-center justify-between bg-surface-container-lowest p-2.5 rounded-xl border border-outline-variant/20">
+<div class="flex items-center gap-2.5">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<div>
+<span class="font-body-md text-body-md text-on-surface block">Aceite de oliva virgen</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant block">AOVE extracción en frío</span>
+</div>
+</div>
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold tabular-nums">15 <span class="font-label-sm text-label-sm font-normal text-on-surface-variant">ml</span></span>
+</div>
+</div>
+</div>
+<!-- Group 2: Secondary Ingredients ("Para el sabor") -->
+<div class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/25 warm-ambient-shadow">
+<div class="flex items-center justify-between mb-2.5 pb-2 border-b border-surface-container">
+<span class="font-label-md text-label-md text-on-surface-variant font-bold flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[17px] text-tertiary">soup_kitchen</span>
+              Para el sabor y la base
+            </span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sin peso crítico</span>
+</div>
+<ul class="divide-y divide-surface-container">
+<li class="py-2 flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface">Yogur griego light</span>
+<span class="font-label-lg text-label-lg font-bold text-on-surface-variant">60 g</span>
+</li>
+<li class="py-2 flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface">Cebolla picada</span>
+<span class="font-label-lg text-label-lg font-bold text-on-surface-variant">60 g</span>
+</li>
+<li class="py-2 flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface">Tomate triturado natural</span>
+<span class="font-label-lg text-label-lg font-bold text-on-surface-variant">80 g</span>
+</li>
+<li class="py-2 flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface">Espinacas frescas</span>
+<span class="font-label-lg text-label-lg font-bold text-on-surface-variant">50 g</span>
+</li>
+<li class="py-2 flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface">Curry en polvo suave</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">Al gusto</span>
+</li>
+<li class="py-2 flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface">Diente de ajo picado</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">1 unidad</span>
+</li>
+<li class="py-2 flex items-center justify-between">
+<span class="font-body-md text-body-md text-on-surface">Jengibre fresco rallado</span>
+<span class="font-label-sm text-label-sm text-secondary font-semibold">1 pizca</span>
+</li>
+</ul>
+</div>
+</section>
+<!-- 5. Section: Preparación -->
+<section class="space-y-3">
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">outdoor_grill</span>
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">Preparación</h2>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">3 pasos sencillos</span>
+</div>
+<div class="space-y-3">
+<!-- Step 1 -->
+<div class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/25 warm-ambient-shadow flex gap-3.5 items-start">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-sm">
+              1
+            </div>
+<div class="flex-1 pt-0.5">
+<span class="font-label-md text-label-md text-on-surface-variant block font-bold mb-1">Cocer el cereal</span>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+                Cocer el arroz basmati en agua con sal durante 10-12 minutos. Escurrir y reservar caliente.
+              </p>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/25 warm-ambient-shadow flex gap-3.5 items-start">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-sm">
+              2
+            </div>
+<div class="flex-1 pt-0.5">
+<span class="font-label-md text-label-md text-on-surface-variant block font-bold mb-1">Sofrito y proteína</span>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+                Dorar en la sartén la pechuga de pollo cortada en dados con el aceite de oliva. Añadir la cebolla picada, ajo, jengibre y tomate triturado con el curry.
+              </p>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/25 warm-ambient-shadow flex gap-3.5 items-start">
+<div class="flex-shrink-0 w-8 h-8 rounded-full bg-primary-fixed text-on-primary-fixed flex items-center justify-center font-headline-sm text-headline-sm font-bold shadow-sm">
+              3
+            </div>
+<div class="flex-1 pt-0.5">
+<span class="font-label-md text-label-md text-on-surface-variant block font-bold mb-1">Ligar la salsa y emplatar</span>
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+                Bajar el fuego, incorporar las espinacas frescas y ligar con el yogur griego sin dejar que hierva. Servir junto al arroz basmati.
+              </p>
+</div>
+</div>
+</div>
+</section>
+<!-- 6. Section: Valoración -->
+<section class="bg-surface-container-lowest rounded-2xl p-4 border border-outline-variant/25 warm-ambient-shadow space-y-3">
+<div class="text-center">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">¿Qué te ha parecido el plato?</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Nos ayuda a sugerirte mejores recetas en tu plan semanal.</p>
+</div>
+<div class="grid grid-cols-3 gap-2 pt-1" id="rating-group">
+<!-- Option 1: Me encanta -->
+<button class="rating-chip group relative flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant/40 bg-surface-container-low hover:border-primary active:scale-95 transition-all text-center" type="button">
+<span class="text-2xl mb-1 group-[.active]:scale-110 transition-transform">😍</span>
+<span class="font-label-md text-label-md text-on-surface font-bold group-[.active]:text-primary">Me encanta</span>
+</button>
+<!-- Option 2: Normal -->
+<button class="rating-chip group relative flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant/40 bg-surface-container-low hover:border-primary active:scale-95 transition-all text-center" type="button">
+<span class="text-2xl mb-1 group-[.active]:scale-110 transition-transform">👌</span>
+<span class="font-label-md text-label-md text-on-surface font-bold group-[.active]:text-primary">Normal</span>
+</button>
+<!-- Option 3: No lo repetiría -->
+<button class="rating-chip group relative flex flex-col items-center justify-center p-3 rounded-xl border border-outline-variant/40 bg-surface-container-low hover:border-primary active:scale-95 transition-all text-center" type="button">
+<span class="text-2xl mb-1 group-[.active]:scale-110 transition-transform">🤔</span>
+<span class="font-label-md text-label-md text-on-surface font-bold group-[.active]:text-primary">No repetiría</span>
+</button>
+</div>
+</section>
+<!-- Mediterranean Health Tip Note -->
+<div class="p-3.5 rounded-xl bg-secondary-container/40 border border-secondary/20 flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-[24px]">verified</span>
+<p class="font-body-sm text-body-sm text-on-surface">
+<strong class="font-semibold text-secondary">Consejo de saciedad:</strong> El jengibre y las especias estimulan la digestión lenta y alargan el tiempo de saciedad postprandial.
+        </p>
+</div>
+</main>
+<!-- 7. Bottom Docked Action Area -->
+<div class="fixed bottom-0 left-0 right-0 max-w-[390px] mx-auto z-40 p-4 bg-surface-container-lowest/95 backdrop-blur-md border-t border-outline-variant/30 floating-bar-shadow">
+<button class="w-full bg-primary-container hover:bg-primary active:scale-[0.98] transition-all duration-150 text-on-primary-container h-13 py-3.5 px-6 rounded-xl flex items-center justify-center gap-2.5 font-label-lg text-label-lg font-bold shadow-md shadow-primary/25 cursor-pointer" id="btn-complete" type="button">
+<span class="material-symbols-outlined text-[22px] transition-transform" id="check-icon">check_circle</span>
+<span id="complete-text">Marcar como hecha</span>
+</button>
+</div>
+</div>
+<!-- Micro-interactions Script -->
+<script>
+    // Rating Chips selector
+    const chips = document.querySelectorAll('.rating-chip');
+    chips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        chips.forEach(c => {
+          c.classList.remove('active', 'border-primary', 'bg-primary-fixed/20');
+          c.classList.add('bg-surface-container-low', 'border-outline-variant/40');
+        });
+        chip.classList.add('active', 'border-primary', 'bg-primary-fixed/20');
+        chip.classList.remove('bg-surface-container-low', 'border-outline-variant/40');
+      });
+    });
+
+    // Favorite button toggle
+    const favBtn = document.getElementById('btn-favorite');
+    const favIcon = document.getElementById('fav-icon');
+    let isFav = false;
+    favBtn.addEventListener('click', () => {
+      isFav = !isFav;
+      if (isFav) {
+        favIcon.innerText = 'favorite';
+        favIcon.classList.add('fill-icon', 'text-primary');
+        favBtn.classList.add('text-primary');
+      } else {
+        favIcon.innerText = 'favorite_border';
+        favIcon.classList.remove('fill-icon', 'text-primary');
+        favBtn.classList.remove('text-primary');
+      }
+    });
+
+    // Mark as completed toggle
+    const btnComplete = document.getElementById('btn-complete');
+    const checkIcon = document.getElementById('check-icon');
+    const completeText = document.getElementById('complete-text');
+    let isDone = false;
+
+    btnComplete.addEventListener('click', () => {
+      isDone = !isDone;
+      if (isDone) {
+        btnComplete.classList.remove('bg-primary-container', 'hover:bg-primary', 'shadow-primary/25');
+        btnComplete.classList.add('bg-secondary', 'hover:bg-secondary/90', 'shadow-secondary/25');
+        completeText.innerText = '¡Registrada en tu día!';
+        checkIcon.innerText = 'task_alt';
+      } else {
+        btnComplete.classList.add('bg-primary-container', 'hover:bg-primary', 'shadow-primary/25');
+        btnComplete.classList.remove('bg-secondary', 'hover:bg-secondary/90', 'shadow-secondary/25');
+        completeText.innerText = 'Marcar como hecha';
+        checkIcon.innerText = 'check_circle';
+      }
+    });
+  </script>
+</body></html>

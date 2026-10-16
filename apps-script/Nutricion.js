@@ -5,7 +5,7 @@
 const NUTRIENTES = ['kcal', 'P', 'C', 'G'];
 const PASO_G = 5; // redondeo a 5 g (y 5 ml de aceite)
 
-// Filas de la pestaña `alimentos` → {id: {kcal, P, C, G, gramos_unidad, estado, nombre}} (por 100 g).
+// Filas de la pestaña `alimentos` → {id: {kcal, P, C, G, gramos_unidad, estado, grupo, nombre}} (por 100 g).
 function indexarAlimentos_(filas) {
   const indice = {};
   filas.forEach(f => {
@@ -16,6 +16,7 @@ function indexarAlimentos_(filas) {
       G: Number(f.grasa_100),
       gramos_unidad: f.gramos_por_unidad === '' || f.gramos_por_unidad == null ? null : Number(f.gramos_por_unidad),
       estado: f.estado,
+      grupo: f.grupo,
       nombre: f.nombre || f.id,
     };
   });
