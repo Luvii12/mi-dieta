@@ -129,7 +129,7 @@ tfoot th, tfoot td { font-weight: 700; border-bottom: 0; }
   right: 0;
   bottom: 0;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   background: var(--superficie);
   border-top: 1px solid var(--borde);
   padding-bottom: env(safe-area-inset-bottom);
@@ -145,3 +145,54 @@ tfoot th, tfoot td { font-weight: 700; border-bottom: 0; }
 }
 
 .pestanas a[aria-current] { color: var(--acento); box-shadow: inset 0 3px 0 var(--acento); }
+
+/* ---------- Recetas ---------- */
+
+.grupo-comida { margin: 24px 0 8px; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--texto-suave); }
+
+.receta {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  margin-bottom: 10px;
+}
+
+.receta summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 14px 16px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.receta summary::-webkit-details-marker { display: none; }
+.receta-nombre { font-weight: 600; line-height: 1.3; }
+.receta-macros { font-size: 0.85rem; color: var(--texto-suave); font-variant-numeric: tabular-nums; }
+
+.etiqueta {
+  align-self: flex-start;
+  margin-top: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+}
+
+.aviso-etiqueta { color: var(--aviso); }
+.etiqueta.error { color: var(--error); }
+
+.receta-cuerpo { padding: 0 16px 16px; border-top: 1px solid var(--borde); }
+.receta-cuerpo h3 { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-suave); margin: 16px 0 6px; }
+
+.ingredientes ul { list-style: none; margin: 0; padding: 0; }
+.ingredientes li { display: flex; align-items: baseline; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--borde); }
+.ingredientes li:last-child { border-bottom: 0; }
+.ingredientes .estado { font-size: 0.7rem; color: var(--texto-suave); }
+.ingredientes .cantidad { margin-left: auto; white-space: nowrap; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+table.macros { margin-top: 16px; }
+table.macros tr.fuera td { color: var(--aviso); font-weight: 600; }
+
+.preparacion { margin: 0; }

@@ -100,9 +100,25 @@ function configAObjeto_(filas) {
   return config;
 }
 
+// Fila de la pestaña `recetas` → receta con los ingredientes ya como listas.
+function filaAReceta_(fila) {
+  const leer = (texto, campo) => {
+    if (Array.isArray(texto)) return texto;
+    try {
+      return JSON.parse(texto || '[]');
+    } catch (err) {
+      throw new Error('Receta ' + fila.id + ': la columna ' + campo + ' no es JSON válido.');
+    }
+  };
+  return Object.assign({}, fila, {
+    ingredientes_fijos: leer(fila.ingredientes_fijos, 'ingredientes_fijos'),
+    ingredientes_escalables: leer(fila.ingredientes_escalables, 'ingredientes_escalables'),
+  });
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     PESTANAS, COLUMNAS_FECHA, tokenValido_, manejar_, fechaIso_, normalizarCelda_, filasAObjetos_,
-    objetoAFila_, parsearValor_, serializarValor_, configAObjeto_,
+    objetoAFila_, parsearValor_, serializarValor_, configAObjeto_, filaAReceta_,
   };
 }

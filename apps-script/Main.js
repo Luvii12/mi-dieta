@@ -10,6 +10,27 @@ const ACCIONES = {
     return leerConfig_();
   },
 
+  // Todas las recetas activas con los gramos ajustados al objetivo de su comida.
+  // Si una receta no se puede calcular (p. ej. alimento desconocido) lleva `error` en vez de `ajuste`.
+  recetas: function () {
+    const config = leerConfig_();
+    const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
+    const tolComida = (config.tolerancias || {}).comida;
+    return leerTabla_('recetas')
+      .filter(fila => fila.activa === 'si')
+      .map(fila => {
+        const resultado = { id: fila.id, comida: fila.comida, nombre: fila.nombre, preparacion: fila.preparacion, origen: fila.origen };
+        try {
+          const objetivo = config['objetivo_' + String(fila.comida).toLowerCase()];
+          if (!objetivo) throw new Error('No hay objetivo para «' + fila.comida + '» en config.');
+          resultado.ajuste = ajustarReceta_(filaAReceta_(fila), objetivo, alimentos, tolComida);
+        } catch (err) {
+          resultado.error = err.message;
+        }
+        return resultado;
+      });
+  },
+
   // Fase 0: aún no hay planes. Devuelve el día vacío.
   hoy: function () {
     return { fecha: fechaIso_(new Date()), plan_id: null, comidas: [], mensaje: 'Todavía no hay un plan activo.' };

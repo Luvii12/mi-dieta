@@ -67,6 +67,13 @@ test('config: ida y vuelta de valores', () => {
   assert.deepEqual(U.configAObjeto_([{ clave: 'a', valor: '1' }, { clave: 'b', valor: 'texto' }]), { a: 1, b: 'texto' });
 });
 
+test('filaAReceta_: convierte los JSON de ingredientes y avisa si están mal', () => {
+  const r = U.filaAReceta_({ id: 'A1', ingredientes_fijos: '[{"alimento":"tomate","gramos":60}]', ingredientes_escalables: '' });
+  assert.deepEqual(r.ingredientes_fijos, [{ alimento: 'tomate', gramos: 60 }]);
+  assert.deepEqual(r.ingredientes_escalables, []);
+  assert.throws(() => U.filaAReceta_({ id: 'X', ingredientes_fijos: '[roto', ingredientes_escalables: '[]' }), /X.*ingredientes_fijos/);
+});
+
 test('cada pestaña tiene cabeceras únicas', () => {
   Object.entries(U.PESTANAS).forEach(([nombre, cabs]) => {
     assert.equal(new Set(cabs).size, cabs.length, nombre);

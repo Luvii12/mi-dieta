@@ -1,8 +1,9 @@
 import { llamar, leerConexion, guardarConexion, leerLocal, guardarLocal } from './api.js';
 
-const TITULOS = { hoy: 'Hoy', plan: 'Plan', progreso: 'Progreso', ajustes: 'Ajustes' };
+const TITULOS = { hoy: 'Hoy', plan: 'Plan', recetas: 'Recetas', progreso: 'Progreso', ajustes: 'Ajustes' };
 const COMIDAS = ['desayuno', 'almuerzo', 'merienda', 'cena'];
 const CACHE_HOY = 'dieta.ultimoHoy';
+const CACHE_RECETAS = 'dieta.recetas';
 
 const $ = id => document.getElementById(id);
 
@@ -16,6 +17,7 @@ function mostrarVista() {
   });
   $('titulo').textContent = TITULOS[vista];
   if (vista === 'hoy') cargarHoy();
+  if (vista === 'recetas') cargarRecetas();
   if (vista === 'ajustes') cargarAjustes();
 }
 
@@ -71,6 +73,125 @@ async function cargarHoy() {
     pintarHoy(hoy);
   } catch (err) {
     if (!guardado) pintarAviso($('hoy-contenido'), err.message, false);
+  }
+}
+
+// ---------- Recetas ----------
+
+const NOMBRES_NUTRIENTE = { kcal: 'Energía', P: 'Proteína', C: 'Carbohidratos', G: 'Grasa' };
+
+// Crea un elemento con clase y texto (el texto nunca se interpreta como HTML).
+function el(etiqueta, clase, texto) {
+  const e = document.createElement(etiqueta);
+  if (clase) e.className = clase;
+  if (texto != null) e.textContent = texto;
+  return e;
+}
+
+function cantidad(ing) {
+  const unidad = ing.alimento.endsWith('_ml') ? ' ml' : ' g';
+  const texto = numero(ing.gramos, 0) + unidad;
+  return ing.piezas ? `${ing.piezas} ud. (${texto})` : texto;
+}
+
+function listaIngredientes(titulo, ingredientes, destacar) {
+  const bloque = el('div', 'ingredientes');
+  bloque.append(el('h3', null, titulo));
+  const lista = el('ul');
+  ingredientes.forEach(ing => {
+    const li = el('li');
+    const nombre = el(destacar ? 'strong' : 'span', null, ing.nombre);
+    li.append(nombre, el('span', 'estado', ing.estado), el('span', 'cantidad', cantidad(ing)));
+    lista.append(li);
+  });
+  bloque.append(lista);
+  return bloque;
+}
+
+function tablaMacros(ajuste) {
+  const tabla = el('table', 'macros');
+  tabla.innerHTML = '<thead><tr><th></th><th>Receta</th><th>Objetivo</th><th>Desvío</th></tr></thead>';
+  const cuerpo = el('tbody');
+  ['kcal', 'P', 'C', 'G'].forEach(n => {
+    const d = ajuste.evaluacion ? ajuste.evaluacion.detalle[n] : null;
+    const fila = el('tr', d && !d.ok ? 'fuera' : '');
+    const decimales = n === 'kcal' ? 0 : 1;
+    const unidad = n === 'kcal' ? '' : ' g';
+    fila.append(
+      el('th', null, NOMBRES_NUTRIENTE[n]),
+      el('td', null, numero(ajuste.macros[n], decimales) + unidad),
+      el('td', null, numero(ajuste.objetivo[n], decimales) + unidad),
+      el('td', null, d ? (d.desvio_pct >= 0 ? '+' : '') + numero(d.desvio_pct, 0) + ' %' : '—'),
+    );
+    cuerpo.append(fila);
+  });
+  tabla.append(cuerpo);
+  return tabla;
+}
+
+function tarjetaReceta(receta) {
+  const tarjeta = el('details', 'receta');
+  tarjeta.dataset.id = receta.id;
+  const resumen = el('summary');
+  resumen.append(el('span', 'receta-nombre', receta.nombre));
+  if (receta.error) {
+    resumen.append(el('span', 'etiqueta error', 'No se puede calcular'));
+    tarjeta.append(resumen, el('p', 'resultado error', receta.error));
+    return tarjeta;
+  }
+  const a = receta.ajuste;
+  resumen.append(el('span', 'receta-macros',
+    `${numero(a.macros.kcal, 0)} kcal · P ${numero(a.macros.P, 0)} · C ${numero(a.macros.C, 0)} · G ${numero(a.macros.G, 0)}`));
+  if (a.evaluacion && !a.evaluacion.ok) {
+    const fuera = ['kcal', 'P', 'C', 'G'].filter(n => !a.evaluacion.detalle[n].ok).map(n => NOMBRES_NUTRIENTE[n].toLowerCase());
+    resumen.append(el('span', 'etiqueta aviso-etiqueta', 'Fuera de margen: ' + fuera.join(', ')));
+  }
+  tarjeta.append(resumen);
+
+  const cuerpo = el('div', 'receta-cuerpo');
+  cuerpo.append(listaIngredientes('Ajustados a tu objetivo', a.ingredientes.filter(i => i.escalable), true));
+  const fijos = a.ingredientes.filter(i => !i.escalable);
+  if (fijos.length) cuerpo.append(listaIngredientes('Fijos', fijos, false));
+  cuerpo.append(tablaMacros(a));
+  if (receta.preparacion) {
+    cuerpo.append(el('h3', null, 'Preparación'), el('p', 'preparacion', receta.preparacion));
+  }
+  tarjeta.append(cuerpo);
+  return tarjeta;
+}
+
+function pintarRecetas(recetas) {
+  const contenido = $('recetas-contenido');
+  // Al refrescar con datos nuevos, las recetas abiertas siguen abiertas.
+  const abiertas = new Set([...contenido.querySelectorAll('details[open]')].map(d => d.dataset.id));
+  contenido.innerHTML = '';
+  ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'].forEach(comida => {
+    const deComida = recetas.filter(r => r.comida === comida);
+    if (!deComida.length) return;
+    contenido.append(el('h2', 'grupo-comida', `${comida} · ${deComida.length}`));
+    deComida.forEach(r => {
+      const tarjeta = tarjetaReceta(r);
+      tarjeta.open = abiertas.has(r.id);
+      contenido.append(tarjeta);
+    });
+  });
+}
+
+async function cargarRecetas() {
+  const { url, token } = leerConexion();
+  if (!url || !token) {
+    pintarAviso($('recetas-contenido'), 'Conecta la app con tu hoja de Google para ver las recetas.', true);
+    return;
+  }
+  const guardadas = leerLocal(CACHE_RECETAS);
+  if (guardadas) pintarRecetas(guardadas);
+  else pintarAviso($('recetas-contenido'), 'Calculando recetas…', false);
+  try {
+    const recetas = await llamar('recetas');
+    guardarLocal(CACHE_RECETAS, recetas);
+    pintarRecetas(recetas);
+  } catch (err) {
+    if (!guardadas) pintarAviso($('recetas-contenido'), err.message, false);
   }
 }
 
