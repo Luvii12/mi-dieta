@@ -3,9 +3,9 @@
 > Memoria entre sesiones. Claude Code lo lee al empezar y lo actualiza al terminar cada tarea o antes de `/clear`. Mantenerlo por debajo de ~80 líneas: resumir lo antiguo.
 
 ## Estado actual
-- **Fase:** 5 · Recetas con IA — código hecho el 2026-10-16, **sin desplegar** (PWA `dieta-v8`). 107 tests. Fase 4 desplegada (web app versión 7).
+- **Fase:** 5 · Recetas con IA — desplegada el 2026-10-16 (web app versión 8, misma URL; PWA `dieta-v8`). 107 tests. Fase 4 desplegada (web app versión 7).
 - **URLs:** PWA https://luvii12.github.io/dieta_app/ · repo https://github.com/Luvii12/dieta_app · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
-- **Siguiente paso:** desplegar la Fase 5 (`clasp push` + `clasp deploy`, y luego push de la PWA). El usuario crea `.conexion.local.json` con `{"url": "<URL /exec>", "token": "<APP_TOKEN>"}` para `scripts/recetas_ia.js`. Después, primera tanda real de recetas (proceso en `CLAUDE.md`).
+- **Siguiente paso:** comprobar en el móvil que la app sigue respondiendo tras el despliegue. El usuario crea `.conexion.local.json` con `{"url": "<URL /exec>", "token": "<APP_TOKEN>"}` para `scripts/recetas_ia.js`. Después, primera tanda real de recetas (proceso en `CLAUDE.md`).
 - **Desplegar:** `clasp push --force` y `clasp deploy -i <id del despliegue AKfycbwVOiJ…> -d "…"` (mantiene la URL); la PWA se publica sola al hacer push a `main`. Desplegar el servidor **antes** que la PWA.
 
 ## Decisiones tomadas
