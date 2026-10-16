@@ -3,10 +3,11 @@
 > Memoria entre sesiones. Claude Code lo lee al empezar y lo actualiza al terminar cada tarea o antes de `/clear`. Mantenerlo por debajo de ~80 líneas: resumir lo antiguo.
 
 ## Estado actual
-- **Fase:** 3 · Pantallas de uso diario — código hecho y probado en local (navegador + API simulada con el Apps Script real); **sin commit ni despliegue** (falta `clasp push` + nueva versión del web app y push a GitHub Pages). Luego, que el usuario siga un día completo desde el móvil.
+- **Fase:** 3 · Pantallas de uso diario — hecha y desplegada el 2026-10-16 (web app versión 5 «Fase 3: uso diario», misma URL; Pages con service worker `dieta-v4`). Falta que el usuario siga un día completo desde el móvil.
 - **URLs:** PWA https://luvii12.github.io/dieta_app/ · repo https://github.com/Luvii12/dieta_app · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
 - **Hecho en la nube:** hoja «Dieta» y script vinculado creados con clasp (IDs en `.clasp.json`); código subido con `clasp push --force` (autorizado por el usuario, para sobrescribir el manifiesto con zona Europe/Madrid).
-- **Siguiente paso:** desplegar la Fase 3 y probarla en el móvil; después, Fase 4 (Progreso y Nuevo plan).
+- **Siguiente paso:** el usuario prueba la Fase 3 en el móvil; después, Fase 4 (Progreso, Nuevo plan y edición en Ajustes).
+- **Desplegar:** `clasp push --force` y `clasp deploy -i <id del despliegue AKfycbwVOiJ…> -d "…"` (mantiene la URL); la PWA se publica sola al hacer push a `main`.
 
 ## Decisiones tomadas
 | Fecha | Decisión |
