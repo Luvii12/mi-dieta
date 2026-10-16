@@ -4,7 +4,7 @@
 
 ## Estado actual
 - **Fase:** 5 · Recetas con IA — desplegada el 2026-10-16 (web app versión 8, misma URL; PWA `dieta-v8`). 107 tests. Fase 4 desplegada (web app versión 7).
-- **URLs:** PWA https://luvii12.github.io/dieta_app/ · repo https://github.com/Luvii12/dieta_app · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
+- **URLs:** PWA https://luvii12.github.io/mi-dieta/ · repo https://github.com/Luvii12/mi-dieta · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
 - **Siguiente paso:** comprobar en el móvil que la app sigue respondiendo tras el despliegue. El usuario crea `.conexion.local.json` con `{"url": "<URL /exec>", "token": "<APP_TOKEN>"}` para `scripts/recetas_ia.js`. Después, primera tanda real de recetas (proceso en `CLAUDE.md`).
 - **Desplegar:** `clasp push --force` y `clasp deploy -i <id del despliegue AKfycbwVOiJ…> -d "…"` (mantiene la URL); la PWA se publica sola al hacer push a `main`. Desplegar el servidor **antes** que la PWA.
 
@@ -27,6 +27,7 @@
 | 2026-10-16 | Activar un borrador con el plan activo aún en curso lo deja como «siguiente» (no se pierden los últimos días). «Nuevo plan» es la vista del borrador dentro de la pestaña Plan. Elegir un ajuste recalcula los gramos del borrador con los mismos platos |
 | 2026-10-16 | Comida libre semanal apagada: «Cambiar plato» no ofrece comida libre y todas las libres cuentan como no hechas en la adherencia |
 | 2026-10-16 | Fase 5 (decidido por el usuario): **las recetas las escribe Claude Code con la suscripción, sin API de pago** (`scripts/recetas_ia.js`: pedido → probar → enviar). El usuario revisa cada propuesta en Recetas y la añade o descarta; si falta un alimento, **el usuario mete sus macros** (etiqueta/BEDCA), la IA nunca da valores. La versión con API (`claude-sonnet-5-5`) se quitó antes de desplegar: `UrlFetchApp` obligaba a dar un permiso nuevo y, sin darlo, la web app entera dejaría de responder. Está en el commit `3fb63e7` |
+| 2026-10-16 | Repo renombrado `dieta_app` → **`mi-dieta`** (PWA en `/mi-dieta/`): Android tenía registrada una instalación rota de `/dieta_app/` (no salía en `chrome://webapks`) y no dejaba instalarla. Manifest con `id: "./"`. No borrar datos del sitio `luvii12.github.io`: la app de gym guarda ahí sus entrenos (IndexedDB) |
 | 2026-10-16 | Recetas IA: ids `IA1, IA2…`; `activa` = propuesta/descartada; las descartadas no se borran (para que la IA no las repita). Un reintento con los motivos si se descarta alguna; descarta nombres repetidos |
 
 ## Preguntas abiertas
