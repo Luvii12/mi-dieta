@@ -27,25 +27,34 @@ function conexion() {
   return c;
 }
 
-// Igual que la PWA: POST text/plain con el token en el cuerpo. Apps Script responde con una redirección
-// que fetch sigue sola. Las cabeceras Sec-Fetch-* las pone el navegador; sin ellas Google no entrega la
-// respuesta (la redirección vuelve a /exec y acaba en una página HTML).
+// Las cabeceras Sec-Fetch-* las pone el navegador; sin ellas Google no entrega la respuesta.
+const CABECERAS = { 'Content-Type': 'text/plain;charset=utf-8', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Dest': 'empty' };
+const esperar = ms => new Promise(r => setTimeout(r, ms));
+let reintentos = 0;
+
+// Igual que la PWA: POST text/plain con el token en el cuerpo. A veces Google ejecuta la acción pero devuelve
+// una página de error en lugar del resultado; entonces se repite la llamada. Es seguro: pedir y probar no
+// cambian nada, y al enviar el servidor descarta las recetas cuyo nombre ya existe (no se duplican).
 async function llamar(accion, extra) {
   const { url, token } = conexion();
-  const respuesta = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Dest': 'empty' },
-    body: JSON.stringify(Object.assign({}, extra, { accion, token })),
-  });
-  const texto = await respuesta.text();
-  let cuerpo;
-  try {
-    cuerpo = JSON.parse(texto);
-  } catch (err) {
-    salir('Respuesta inesperada del servidor (¿URL /exec correcta?):\n' + texto.slice(0, 300));
+  for (let intento = 1; intento <= 3; intento++) {
+    if (intento > 1) {
+      reintentos++;
+      await esperar(2000);
+    }
+    const respuesta = await fetch(url, { method: 'POST', headers: CABECERAS, body: JSON.stringify(Object.assign({}, extra, { accion, token })) });
+    const texto = await respuesta.text();
+    let cuerpo;
+    try {
+      cuerpo = JSON.parse(texto);
+    } catch (err) {
+      continue;
+    }
+    if (!cuerpo.ok) salir('Error del servidor: ' + cuerpo.error);
+    return cuerpo.datos;
   }
-  if (!cuerpo.ok) salir('Error del servidor: ' + cuerpo.error);
-  return cuerpo.datos;
+  salir(`Google no ha devuelto el resultado de «${accion}» tras 3 intentos.` +
+    (accion === 'importarPropuestas' ? ' Mira en la app si las recetas ya están en Propuestas antes de repetir.' : ''));
 }
 
 function leerRecetas(archivo) {
@@ -69,7 +78,8 @@ function informe(r) {
       console.log(`… ${v.nombre}\n    falta alimento: ${v.faltan.map(f => `${f.nombre} (${f.id})`).join(', ')}`);
     }
   });
-  (r.descartadas || []).forEach(d => console.log(`✘ ${d.nombre}\n    ${d.motivo}`));
+  (r.descartadas || []).forEach(d => console.log(`✘ ${d.nombre}\n    ${d.motivo}` +
+    (reintentos && /Ya hay una receta/.test(d.motivo) ? ' (seguramente se guardó en el intento anterior: míralo en la app)' : '')));
 }
 
 async function main() {
