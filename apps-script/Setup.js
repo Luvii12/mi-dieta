@@ -1,0 +1,76 @@
+// Funciones para ejecutar a mano desde el editor de Apps Script (menú «Ejecutar»).
+// No son accesibles desde la PWA.
+
+// Tolerancias en % (docs/NUTRICION.md). P_margen_g: el día nunca puede quedar más de 10 g de
+// proteína por debajo del objetivo.
+const TOLERANCIAS_INICIALES = {
+  dia: { kcal: 5, P: 5, C: 10, G: 10, P_margen_g: 10 },
+  comida: { kcal: 12, P: 15, C: 15, G: 20 },
+};
+
+// 1) Crea las pestañas que falten con sus cabeceras y carga los datos iniciales si están vacías.
+//    Se puede ejecutar varias veces: nunca borra ni duplica datos.
+function configurarHoja() {
+  const libro = libro_();
+  Object.keys(PESTANAS).forEach(nombre => {
+    let hoja = libro.getSheetByName(nombre);
+    if (!hoja) hoja = libro.insertSheet(nombre);
+    const cabeceras = PESTANAS[nombre];
+    hoja.getRange(1, 1, 1, cabeceras.length).setValues([cabeceras]).setFontWeight('bold');
+    hoja.setFrozenRows(1);
+    // Fechas y config como texto, para que Sheets no cambie '2026-10-16' ni los JSON.
+    cabeceras.forEach((cab, i) => {
+      if (COLUMNAS_FECHA.indexOf(cab) >= 0 || nombre === 'config') {
+        hoja.getRange(1, i + 1, hoja.getMaxRows(), 1).setNumberFormat('@');
+      }
+    });
+  });
+  borrarHojaInicial_(libro);
+
+  cargarSiVacia_('alimentos', SEMILLA.alimentos);
+  cargarSiVacia_('recetas', SEMILLA.recetas);
+  if (hoja_('config').getLastRow() <= 1) {
+    ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'].forEach(comida => {
+      guardarConfig_('objetivo_' + comida.toLowerCase(), SEMILLA.objetivos[comida]);
+    });
+    guardarConfig_('tolerancias', TOLERANCIAS_INICIALES);
+    guardarConfig_('max_rep_desayuno', 4);
+    guardarConfig_('max_rep_merienda', 4);
+    guardarConfig_('dias_flexibles', 0);
+    guardarConfig_('kcal_minimas', 1400);
+  }
+  Logger.log('Hoja lista: %s alimentos, %s recetas.',
+    hoja_('alimentos').getLastRow() - 1, hoja_('recetas').getLastRow() - 1);
+}
+
+// 2) Crea el token de acceso si no existe y lo muestra en el registro de ejecución.
+//    Cópialo en la pantalla Ajustes de la app.
+function crearToken() {
+  const propiedades = PropertiesService.getScriptProperties();
+  let token = propiedades.getProperty('APP_TOKEN');
+  if (!token) {
+    token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '');
+    propiedades.setProperty('APP_TOKEN', token);
+    Logger.log('Token nuevo creado.');
+  }
+  Logger.log('APP_TOKEN: %s', token);
+}
+
+// Si crees que el token se ha filtrado: crea uno nuevo (el anterior deja de funcionar).
+function cambiarToken() {
+  PropertiesService.getScriptProperties().deleteProperty('APP_TOKEN');
+  crearToken();
+}
+
+function cargarSiVacia_(nombre, objetos) {
+  if (hoja_(nombre).getLastRow() <= 1) anadirFilas_(nombre, objetos);
+}
+
+// Una hoja nueva trae «Hoja 1» vacía: se elimina si no la usamos.
+function borrarHojaInicial_(libro) {
+  libro.getSheets().forEach(hoja => {
+    if (!PESTANAS[hoja.getName()] && hoja.getLastRow() === 0 && libro.getSheets().length > 1) {
+      libro.deleteSheet(hoja);
+    }
+  });
+}

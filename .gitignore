@@ -1,0 +1,6 @@
+node_modules/
+__pycache__/
+*.pyc
+.DS_Store
+# clasp guarda aquí las credenciales si se usa login local al proyecto
+.clasprc.json

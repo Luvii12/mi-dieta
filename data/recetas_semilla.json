@@ -1,0 +1,1190 @@
+{
+ "objetivo_por_comida": {
+  "Desayuno": {
+   "kcal": 405,
+   "P": 24.9,
+   "C": 48.3,
+   "G": 11.6
+  },
+  "Almuerzo": {
+   "kcal": 542,
+   "P": 41.1,
+   "C": 48.0,
+   "G": 20.0
+  },
+  "Merienda": {
+   "kcal": 335,
+   "P": 30.9,
+   "C": 33.8,
+   "G": 8.7
+  },
+  "Cena": {
+   "kcal": 373,
+   "P": 34.9,
+   "C": 29.1,
+   "G": 12.3
+  }
+ },
+ "recetas": [
+  {
+   "id": "D1",
+   "comida": "Desayuno",
+   "nombre": "Huevos revueltos cremosos con aguacate y pimentón sobre pan de masa madre",
+   "preparacion": "Revuelve a fuego bajo huevos y claras con sal; sirve sobre el pan tostado con aguacate machacado, pimentón de la Vera y lima.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "tomate",
+     "gramos": 60
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "pan_masa_madre",
+     "min_g": 50,
+     "max_g": 110,
+     "unidad": false
+    },
+    {
+     "alimento": "huevo",
+     "min_g": 53,
+     "max_g": 106,
+     "unidad": true
+    },
+    {
+     "alimento": "claras",
+     "min_g": 0,
+     "max_g": 200,
+     "unidad": false
+    },
+    {
+     "alimento": "aguacate",
+     "min_g": 15,
+     "max_g": 50,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "tomate": 60,
+    "pan_masa_madre": 90,
+    "huevo": 53,
+    "claras": 80,
+    "aguacate": 30
+   },
+   "macros_prueba": {
+    "kcal": 398,
+    "P": 24.7,
+    "C": 47.6,
+    "G": 11.4
+   }
+  },
+  {
+   "id": "D2",
+   "comida": "Desayuno",
+   "nombre": "Tortitas de avena y plátano con yogur, frutos rojos y un hilo de miel",
+   "preparacion": "Bate harina de avena, claras, plátano y canela; haz tortitas en sartén antiadherente y corona con yogur, frutos rojos y miel.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "platano",
+     "gramos": 50
+    },
+    {
+     "alimento": "frutos_rojos",
+     "gramos": 80
+    },
+    {
+     "alimento": "miel",
+     "gramos": 5
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "harina_avena",
+     "min_g": 35,
+     "max_g": 70,
+     "unidad": false
+    },
+    {
+     "alimento": "claras",
+     "min_g": 80,
+     "max_g": 220,
+     "unidad": false
+    },
+    {
+     "alimento": "yogur_proteina",
+     "min_g": 60,
+     "max_g": 150,
+     "unidad": false
+    },
+    {
+     "alimento": "crema_cacahuete",
+     "min_g": 0,
+     "max_g": 10,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "platano": 50,
+    "frutos_rojos": 80,
+    "miel": 5,
+    "harina_avena": 45,
+    "claras": 85,
+    "yogur_proteina": 60,
+    "crema_cacahuete": 10
+   },
+   "macros_prueba": {
+    "kcal": 398,
+    "P": 25.2,
+    "C": 53.0,
+    "G": 8.9
+   }
+  },
+  {
+   "id": "D3",
+   "comida": "Desayuno",
+   "nombre": "Overnight oats de cacao, plátano y crema de cacahuete",
+   "preparacion": "La noche antes mezcla avena, proteína, cacao y bebida de almendras en un tarro; por la mañana añade plátano y crema de cacahuete.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "leche_almendras_cero",
+     "gramos": 150
+    },
+    {
+     "alimento": "cacao_desgrasado",
+     "gramos": 8
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "avena",
+     "min_g": 40,
+     "max_g": 75,
+     "unidad": false
+    },
+    {
+     "alimento": "proteina_whey",
+     "min_g": 10,
+     "max_g": 30,
+     "unidad": false
+    },
+    {
+     "alimento": "platano",
+     "min_g": 40,
+     "max_g": 100,
+     "unidad": false
+    },
+    {
+     "alimento": "crema_cacahuete",
+     "min_g": 5,
+     "max_g": 15,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "leche_almendras_cero": 150,
+    "cacao_desgrasado": 8,
+    "avena": 40,
+    "proteina_whey": 20,
+    "platano": 100,
+    "crema_cacahuete": 10
+   },
+   "macros_prueba": {
+    "kcal": 418,
+    "P": 26.5,
+    "C": 48.8,
+    "G": 11.9
+   }
+  },
+  {
+   "id": "D4",
+   "comida": "Desayuno",
+   "nombre": "Tosta de salmón ahumado con queso batido, eneldo y limón",
+   "preparacion": "Unta el pan tostado con queso batido, eneldo y ralladura de limón; coloca el salmón y termina con pimienta y alcaparras.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "pepino",
+     "gramos": 40
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "pan_masa_madre",
+     "min_g": 60,
+     "max_g": 110,
+     "unidad": false
+    },
+    {
+     "alimento": "queso_fresco_batido",
+     "min_g": 50,
+     "max_g": 150,
+     "unidad": false
+    },
+    {
+     "alimento": "salmon_ahumado",
+     "min_g": 30,
+     "max_g": 80,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "pepino": 40,
+    "pan_masa_madre": 90,
+    "queso_fresco_batido": 50,
+    "salmon_ahumado": 75
+   },
+   "macros_prueba": {
+    "kcal": 388,
+    "P": 29.6,
+    "C": 46.6,
+    "G": 8.9
+   }
+  },
+  {
+   "id": "M1",
+   "comida": "Merienda",
+   "nombre": "Bowl de skyr con granola casera crujiente, frutos rojos y cacahuete",
+   "preparacion": "Tuesta la avena 5 min en sartén con canela y una pizca de miel; sirve sobre el yogur con frutos rojos y crema de cacahuete.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "frutos_rojos",
+     "gramos": 100
+    },
+    {
+     "alimento": "miel",
+     "gramos": 5
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "yogur_proteina",
+     "min_g": 150,
+     "max_g": 300,
+     "unidad": false
+    },
+    {
+     "alimento": "avena",
+     "min_g": 15,
+     "max_g": 40,
+     "unidad": false
+    },
+    {
+     "alimento": "crema_cacahuete",
+     "min_g": 5,
+     "max_g": 15,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "frutos_rojos": 100,
+    "miel": 5,
+    "yogur_proteina": 245,
+    "avena": 15,
+    "crema_cacahuete": 15
+   },
+   "macros_prueba": {
+    "kcal": 348,
+    "P": 31.4,
+    "C": 33.7,
+    "G": 9.4
+   }
+  },
+  {
+   "id": "M2",
+   "comida": "Merienda",
+   "nombre": "Sándwich mixto tostado de pavo, queso y mostaza",
+   "preparacion": "Monta el sándwich con pavo, queso, tomate y mostaza de Dijon; tuéstalo en sandwichera o sartén hasta que el queso funda.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "tomate",
+     "gramos": 40
+    },
+    {
+     "alimento": "mostaza",
+     "gramos": 5
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "pan_molde_integral",
+     "min_g": 54,
+     "max_g": 81,
+     "unidad": true
+    },
+    {
+     "alimento": "pechuga_fiambre_90",
+     "min_g": 40,
+     "max_g": 110,
+     "unidad": false
+    },
+    {
+     "alimento": "queso_light_loncha",
+     "min_g": 20,
+     "max_g": 40,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "tomate": 40,
+    "mostaza": 5,
+    "pan_molde_integral": 81,
+    "pechuga_fiambre_90": 75,
+    "queso_light_loncha": 25
+   },
+   "macros_prueba": {
+    "kcal": 352,
+    "P": 30.0,
+    "C": 36.2,
+    "G": 8.4
+   }
+  },
+  {
+   "id": "M3",
+   "comida": "Merienda",
+   "nombre": "Frappé de café, cacao y plátano con proteína",
+   "preparacion": "Tritura café frío, bebida de almendras, proteína, plátano, cacao, avena y hielo hasta que quede espumoso.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "leche_almendras_cero",
+     "gramos": 250
+    },
+    {
+     "alimento": "cacao_desgrasado",
+     "gramos": 5
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "proteina_whey",
+     "min_g": 20,
+     "max_g": 40,
+     "unidad": false
+    },
+    {
+     "alimento": "platano",
+     "min_g": 60,
+     "max_g": 120,
+     "unidad": false
+    },
+    {
+     "alimento": "avena",
+     "min_g": 0,
+     "max_g": 30,
+     "unidad": false
+    },
+    {
+     "alimento": "crema_cacahuete",
+     "min_g": 0,
+     "max_g": 10,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "leche_almendras_cero": 250,
+    "cacao_desgrasado": 5,
+    "proteina_whey": 35,
+    "platano": 120,
+    "avena": 10,
+    "crema_cacahuete": 5
+   },
+   "macros_prueba": {
+    "kcal": 356,
+    "P": 32.6,
+    "C": 35.2,
+    "G": 9.0
+   }
+  },
+  {
+   "id": "M4",
+   "comida": "Merienda",
+   "nombre": "Tortitas de arroz con hummus, pavo y tomate",
+   "preparacion": "Unta las tortitas con hummus, añade pavo, rodajas de tomate, comino y un toque de pimentón.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "tomate",
+     "gramos": 60
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "tortita_arroz",
+     "min_g": 15,
+     "max_g": 45,
+     "unidad": true
+    },
+    {
+     "alimento": "hummus",
+     "min_g": 15,
+     "max_g": 40,
+     "unidad": false
+    },
+    {
+     "alimento": "pechuga_fiambre_90",
+     "min_g": 50,
+     "max_g": 130,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "tomate": 60,
+    "tortita_arroz": 30,
+    "hummus": 30,
+    "pechuga_fiambre_90": 130
+   },
+   "macros_prueba": {
+    "kcal": 332,
+    "P": 29.7,
+    "C": 31.6,
+    "G": 8.6
+   }
+  },
+  {
+   "id": "A1",
+   "comida": "Almuerzo",
+   "nombre": "Pollo al curry con yogur y arroz basmati",
+   "preparacion": "Marca el pollo en dados, sofríe cebolla, ajo y jengibre con curry; añade tomate y espinacas, y al final el yogur fuera del fuego.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "yogur_griego_light",
+     "gramos": 60
+    },
+    {
+     "alimento": "cebolla",
+     "gramos": 60
+    },
+    {
+     "alimento": "tomate_triturado",
+     "gramos": 80
+    },
+    {
+     "alimento": "espinacas",
+     "gramos": 50
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "pechuga_pollo",
+     "min_g": 120,
+     "max_g": 200,
+     "unidad": false
+    },
+    {
+     "alimento": "arroz_basmati",
+     "min_g": 50,
+     "max_g": 90,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 3,
+     "max_g": 15,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "yogur_griego_light": 60,
+    "cebolla": 60,
+    "tomate_triturado": 80,
+    "espinacas": 50,
+    "pechuga_pollo": 130,
+    "arroz_basmati": 50,
+    "aceite_ml": 15
+   },
+   "macros_prueba": {
+    "kcal": 547,
+    "P": 41.2,
+    "C": 50.6,
+    "G": 18.4
+   }
+  },
+  {
+   "id": "A2",
+   "comida": "Almuerzo",
+   "nombre": "Espaguetis a la boloñesa con parmesano",
+   "preparacion": "Sofrito de cebolla y pimiento, dora la carne, añade tomate, orégano y laurel 20 min; sirve con la pasta y parmesano rallado.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "tomate_triturado",
+     "gramos": 150
+    },
+    {
+     "alimento": "pimiento_cebolla",
+     "gramos": 80
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "pasta",
+     "min_g": 50,
+     "max_g": 90,
+     "unidad": false
+    },
+    {
+     "alimento": "ternera_picada_5",
+     "min_g": 100,
+     "max_g": 180,
+     "unidad": false
+    },
+    {
+     "alimento": "parmesano",
+     "min_g": 5,
+     "max_g": 15,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 0,
+     "max_g": 8,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "tomate_triturado": 150,
+    "pimiento_cebolla": 80,
+    "pasta": 50,
+    "ternera_picada_5": 130,
+    "parmesano": 15,
+    "aceite_ml": 8
+   },
+   "macros_prueba": {
+    "kcal": 548,
+    "P": 41.0,
+    "C": 46.6,
+    "G": 20.1
+   }
+  },
+  {
+   "id": "A3",
+   "comida": "Almuerzo",
+   "nombre": "Poke de salmón con arroz, edamame, mango y sésamo",
+   "preparacion": "Arroz templado, salmón en dados marinado en soja y lima, edamame, mango, pepino, cebolleta y sésamo tostado.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "mango",
+     "gramos": 60
+    },
+    {
+     "alimento": "pepino",
+     "gramos": 60
+    },
+    {
+     "alimento": "salsa_soja",
+     "gramos": 15
+    },
+    {
+     "alimento": "sesamo",
+     "gramos": 5
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "salmon",
+     "min_g": 80,
+     "max_g": 150,
+     "unidad": false
+    },
+    {
+     "alimento": "arroz",
+     "min_g": 50,
+     "max_g": 90,
+     "unidad": false
+    },
+    {
+     "alimento": "edamame",
+     "min_g": 50,
+     "max_g": 80,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "mango": 60,
+    "pepino": 60,
+    "salsa_soja": 15,
+    "sesamo": 5,
+    "salmon": 120,
+    "arroz": 50,
+    "edamame": 50
+   },
+   "macros_prueba": {
+    "kcal": 555,
+    "P": 35.9,
+    "C": 53.5,
+    "G": 21.2
+   }
+  },
+  {
+   "id": "A4",
+   "comida": "Almuerzo",
+   "nombre": "Fajitas de pollo al pimentón con pico de gallo y guacamole",
+   "preparacion": "Saltea tiras de pollo con pimientos, cebolla, pimentón ahumado y comino; rellena las tortillas con pico de gallo y guacamole.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "pimiento_cebolla",
+     "gramos": 120
+    },
+    {
+     "alimento": "tomate",
+     "gramos": 60
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "fajita_trigo",
+     "min_g": 40,
+     "max_g": 120,
+     "unidad": true
+    },
+    {
+     "alimento": "pechuga_pollo",
+     "min_g": 120,
+     "max_g": 200,
+     "unidad": false
+    },
+    {
+     "alimento": "guacamole",
+     "min_g": 15,
+     "max_g": 40,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 0,
+     "max_g": 5,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "pimiento_cebolla": 120,
+    "tomate": 60,
+    "fajita_trigo": 80,
+    "pechuga_pollo": 140,
+    "guacamole": 40,
+    "aceite_ml": 5
+   },
+   "macros_prueba": {
+    "kcal": 555,
+    "P": 41.4,
+    "C": 51.3,
+    "G": 18.9
+   }
+  },
+  {
+   "id": "A5",
+   "comida": "Almuerzo",
+   "nombre": "Garbanzos salteados con langostinos, espinacas y pimentón",
+   "preparacion": "Saltea ajo y langostinos en aceite, añade garbanzos, espinacas, pimentón de la Vera, comino y un chorrito de limón.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "espinacas",
+     "gramos": 100
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "garbanzos_cocidos",
+     "min_g": 150,
+     "max_g": 330,
+     "unidad": false
+    },
+    {
+     "alimento": "langostinos",
+     "min_g": 100,
+     "max_g": 200,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 5,
+     "max_g": 15,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "espinacas": 100,
+    "garbanzos_cocidos": 295,
+    "langostinos": 100,
+    "aceite_ml": 10
+   },
+   "macros_prueba": {
+    "kcal": 550,
+    "P": 42.5,
+    "C": 45.6,
+    "G": 18.5
+   }
+  },
+  {
+   "id": "A6",
+   "comida": "Almuerzo",
+   "nombre": "Hamburguesa casera de ternera con queso y patatas en freidora de aire",
+   "preparacion": "Forma la burger con la carne, sal y pimienta; plancha y funde el queso. Patatas en gajos con pimentón en la freidora 20 min.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "lechuga",
+     "gramos": 30
+    },
+    {
+     "alimento": "tomate",
+     "gramos": 50
+    },
+    {
+     "alimento": "cebolla",
+     "gramos": 20
+    },
+    {
+     "alimento": "queso_light_loncha",
+     "gramos": 20
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "pan_brioche_burger",
+     "min_g": 60,
+     "max_g": 60,
+     "unidad": true
+    },
+    {
+     "alimento": "ternera_picada_5",
+     "min_g": 120,
+     "max_g": 180,
+     "unidad": false
+    },
+    {
+     "alimento": "patata",
+     "min_g": 100,
+     "max_g": 250,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 3,
+     "max_g": 8,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "lechuga": 30,
+    "tomate": 50,
+    "cebolla": 20,
+    "queso_light_loncha": 20,
+    "pan_brioche_burger": 60,
+    "ternera_picada_5": 130,
+    "patata": 100,
+    "aceite_ml": 5
+   },
+   "macros_prueba": {
+    "kcal": 549,
+    "P": 41.4,
+    "C": 51.0,
+    "G": 19.2
+   }
+  },
+  {
+   "id": "A7",
+   "comida": "Almuerzo",
+   "nombre": "Arroz de pollo y verduras al estilo paella",
+   "preparacion": "Dora el pollo, sofríe pimiento, judía verde y tomate, añade pimentón, azafrán, el arroz y caldo; 18 min sin remover.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "verduras",
+     "gramos": 150
+    },
+    {
+     "alimento": "tomate",
+     "gramos": 50
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "arroz",
+     "min_g": 60,
+     "max_g": 90,
+     "unidad": false
+    },
+    {
+     "alimento": "pechuga_pollo",
+     "min_g": 100,
+     "max_g": 180,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 5,
+     "max_g": 15,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "verduras": 150,
+    "tomate": 50,
+    "arroz": 60,
+    "pechuga_pollo": 150,
+    "aceite_ml": 15
+   },
+   "macros_prueba": {
+    "kcal": 547,
+    "P": 41.4,
+    "C": 54.5,
+    "G": 16.8
+   }
+  },
+  {
+   "id": "C1",
+   "comida": "Cena",
+   "nombre": "Salmón al horno con costra de mostaza y miel, patatas asadas y salsa de eneldo",
+   "preparacion": "Pinta el salmón con mostaza antigua y miel; hornea a 200 °C 12 min junto a patatas en rodajas finas y judías verdes. Salsa: queso batido, eneldo, limón y una pizca de mostaza.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "mostaza",
+     "gramos": 10
+    },
+    {
+     "alimento": "miel",
+     "gramos": 5
+    },
+    {
+     "alimento": "verduras",
+     "gramos": 100
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "salmon",
+     "min_g": 90,
+     "max_g": 160,
+     "unidad": false
+    },
+    {
+     "alimento": "patata",
+     "min_g": 80,
+     "max_g": 250,
+     "unidad": false
+    },
+    {
+     "alimento": "queso_fresco_batido",
+     "min_g": 0,
+     "max_g": 80,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "mostaza": 10,
+    "miel": 5,
+    "verduras": 100,
+    "salmon": 95,
+    "patata": 110,
+    "queso_fresco_batido": 80
+   },
+   "macros_prueba": {
+    "kcal": 363,
+    "P": 29.6,
+    "C": 30.0,
+    "G": 13.1
+   }
+  },
+  {
+   "id": "C2",
+   "comida": "Cena",
+   "nombre": "Tacos de merluza cajún con col morada, aguacate y salsa de yogur y lima",
+   "preparacion": "Marca la merluza en tacos con especias cajún (pimentón, ajo, comino, cayena); tortillas tostadas con col morada, aguacate, cilantro y salsa de yogur con lima.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "col_lombarda",
+     "gramos": 80
+    },
+    {
+     "alimento": "yogur_griego_light",
+     "gramos": 40
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "fajita_pequena",
+     "min_g": 50,
+     "max_g": 75,
+     "unidad": true
+    },
+    {
+     "alimento": "merluza",
+     "min_g": 120,
+     "max_g": 250,
+     "unidad": false
+    },
+    {
+     "alimento": "aguacate",
+     "min_g": 0,
+     "max_g": 40,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "col_lombarda": 80,
+    "yogur_griego_light": 40,
+    "fajita_pequena": 50,
+    "merluza": 150,
+    "aguacate": 35
+   },
+   "macros_prueba": {
+    "kcal": 385,
+    "P": 34.4,
+    "C": 32.2,
+    "G": 12.2
+   }
+  },
+  {
+   "id": "C3",
+   "comida": "Cena",
+   "nombre": "Pizza casera de base fina con pavo, champiñones y mozzarella",
+   "preparacion": "Base fina con tomate y orégano, mozzarella, pavo, champiñones y cebolla roja; horno fuerte 10 min y rúcula al salir.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "tomate_triturado",
+     "gramos": 60
+    },
+    {
+     "alimento": "champinon",
+     "gramos": 80
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "masa_pizza_fina",
+     "min_g": 50,
+     "max_g": 90,
+     "unidad": false
+    },
+    {
+     "alimento": "pechuga_fiambre_90",
+     "min_g": 60,
+     "max_g": 130,
+     "unidad": false
+    },
+    {
+     "alimento": "mozzarella_light",
+     "min_g": 30,
+     "max_g": 70,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "tomate_triturado": 60,
+    "champinon": 80,
+    "masa_pizza_fina": 50,
+    "pechuga_fiambre_90": 85,
+    "mozzarella_light": 70
+   },
+   "macros_prueba": {
+    "kcal": 376,
+    "P": 36.6,
+    "C": 32.4,
+    "G": 9.4
+   }
+  },
+  {
+   "id": "C4",
+   "comida": "Cena",
+   "nombre": "Tortilla de patatas jugosa con ensalada de tomate",
+   "preparacion": "Patata y cebolla confitadas en freidora de aire con poco aceite; cuaja con huevos y claras, jugosa por dentro.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "cebolla",
+     "gramos": 50
+    },
+    {
+     "alimento": "tomate",
+     "gramos": 150
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "patata",
+     "min_g": 100,
+     "max_g": 220,
+     "unidad": false
+    },
+    {
+     "alimento": "huevo",
+     "min_g": 106,
+     "max_g": 159,
+     "unidad": true
+    },
+    {
+     "alimento": "claras",
+     "min_g": 0,
+     "max_g": 200,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 3,
+     "max_g": 10,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "cebolla": 50,
+    "tomate": 150,
+    "patata": 105,
+    "huevo": 106,
+    "claras": 155,
+    "aceite_ml": 5
+   },
+   "macros_prueba": {
+    "kcal": 398,
+    "P": 34.3,
+    "C": 28.7,
+    "G": 16.0
+   }
+  },
+  {
+   "id": "C5",
+   "comida": "Cena",
+   "nombre": "Pinchos morunos de lomo con pan de pita y salsa de yogur y pepino",
+   "preparacion": "Marina el lomo con comino, pimentón, cúrcuma y ajo; plancha y sirve en pita con tzatziki ligero, tomate y cebolla.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "yogur_griego_light",
+     "gramos": 60
+    },
+    {
+     "alimento": "pepino",
+     "gramos": 60
+    },
+    {
+     "alimento": "tomate",
+     "gramos": 60
+    },
+    {
+     "alimento": "cebolla",
+     "gramos": 20
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "lomo_cerdo",
+     "min_g": 110,
+     "max_g": 200,
+     "unidad": false
+    },
+    {
+     "alimento": "pan_pita",
+     "min_g": 30,
+     "max_g": 60,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "yogur_griego_light": 60,
+    "pepino": 60,
+    "tomate": 60,
+    "cebolla": 20,
+    "lomo_cerdo": 140,
+    "pan_pita": 40
+   },
+   "macros_prueba": {
+    "kcal": 378,
+    "P": 39.0,
+    "C": 29.9,
+    "G": 10.9
+   }
+  },
+  {
+   "id": "C6",
+   "comida": "Cena",
+   "nombre": "Ensalada César con pollo crujiente y salsa de yogur",
+   "preparacion": "Pollo empanado en corn flakes en freidora; lechuga romana, picatostes, parmesano y salsa de yogur, mostaza, limón y ajo.",
+   "ingredientes_fijos": [
+    {
+     "alimento": "lechuga",
+     "gramos": 150
+    },
+    {
+     "alimento": "yogur_griego_light",
+     "gramos": 40
+    }
+   ],
+   "ingredientes_escalables": [
+    {
+     "alimento": "pechuga_pollo",
+     "min_g": 120,
+     "max_g": 200,
+     "unidad": false
+    },
+    {
+     "alimento": "corn_flakes",
+     "min_g": 10,
+     "max_g": 30,
+     "unidad": false
+    },
+    {
+     "alimento": "pan_masa_madre",
+     "min_g": 10,
+     "max_g": 40,
+     "unidad": false
+    },
+    {
+     "alimento": "parmesano",
+     "min_g": 5,
+     "max_g": 15,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 0,
+     "max_g": 5,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "lechuga": 150,
+    "yogur_griego_light": 40,
+    "pechuga_pollo": 120,
+    "corn_flakes": 25,
+    "pan_masa_madre": 10,
+    "parmesano": 10,
+    "aceite_ml": 5
+   },
+   "macros_prueba": {
+    "kcal": 386,
+    "P": 38.3,
+    "C": 30.1,
+    "G": 11.2
+   }
+  },
+  {
+   "id": "C7",
+   "comida": "Cena",
+   "nombre": "Pulpo a la gallega con cachelos",
+   "preparacion": "Pulpo cocido sobre patata cocida en rodajas, sal gruesa, pimentón dulce y picante y un buen hilo de aceite de oliva virgen.",
+   "ingredientes_fijos": [],
+   "ingredientes_escalables": [
+    {
+     "alimento": "pulpo_cocido",
+     "min_g": 150,
+     "max_g": 260,
+     "unidad": false
+    },
+    {
+     "alimento": "patata",
+     "min_g": 100,
+     "max_g": 250,
+     "unidad": false
+    },
+    {
+     "alimento": "aceite_ml",
+     "min_g": 5,
+     "max_g": 12,
+     "unidad": false
+    }
+   ],
+   "gramos_resueltos_prueba": {
+    "pulpo_cocido": 180,
+    "patata": 150,
+    "aceite_ml": 10
+   },
+   "macros_prueba": {
+    "kcal": 356,
+    "P": 35.4,
+    "C": 29.1,
+    "G": 11.1
+   }
+  }
+ ]
+}

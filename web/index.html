@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Mi dieta</title>
+  <meta name="theme-color" content="#2f6b45">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="iconos/icono.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="iconos/icono-192.png">
+  <link rel="stylesheet" href="estilos.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <header class="cabecera">
+    <h1 id="titulo">Hoy</h1>
+    <span id="estado-red" class="aviso" hidden>Sin conexión</span>
+  </header>
+
+  <main>
+    <section id="vista-hoy" class="vista">
+      <p id="hoy-fecha" class="secundario"></p>
+      <div id="hoy-contenido"></div>
+    </section>
+
+    <section id="vista-plan" class="vista" hidden>
+      <div class="vacio">
+        <p><strong>Plan de 14 días</strong></p>
+        <p class="secundario">Llegará en la fase 2, cuando la app sepa generar planes.</p>
+      </div>
+    </section>
+
+    <section id="vista-progreso" class="vista" hidden>
+      <div class="vacio">
+        <p><strong>Progreso</strong></p>
+        <p class="secundario">Peso, media de 7 días y adherencia llegarán en la fase 4.</p>
+      </div>
+    </section>
+
+    <section id="vista-ajustes" class="vista" hidden>
+      <form id="form-conexion" class="tarjeta">
+        <h2>Conexión</h2>
+        <label>URL de Apps Script
+          <input id="campo-url" type="url" inputmode="url" autocomplete="off"
+                 placeholder="https://script.google.com/macros/s/…/exec" required>
+        </label>
+        <label>Token
+          <input id="campo-token" type="password" autocomplete="off" required>
+        </label>
+        <button type="submit">Guardar y probar</button>
+        <p id="resultado-conexion" class="resultado" role="status"></p>
+      </form>
+
+      <div class="tarjeta">
+        <h2>Prueba de escritura</h2>
+        <p class="secundario">Guarda la hora actual en la pestaña <code>config</code> y la vuelve a leer.</p>
+        <button id="boton-escribir" type="button" class="secundario-boton">Escribir fila de prueba</button>
+        <p id="resultado-escritura" class="resultado" role="status"></p>
+      </div>
+
+      <div class="tarjeta">
+        <h2>Objetivos por comida</h2>
+        <div id="tabla-objetivos"><p class="secundario">Conéctate para verlos.</p></div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="pestanas">
+    <a href="#hoy" data-vista="hoy">Hoy</a>
+    <a href="#plan" data-vista="plan">Plan</a>
+    <a href="#progreso" data-vista="progreso">Progreso</a>
+    <a href="#ajustes" data-vista="ajustes">Ajustes</a>
+  </nav>
+</body>
+</html>
