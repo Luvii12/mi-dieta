@@ -326,12 +326,6 @@ const ACCIONES = {
     return importarPropuestasIA_(peticion);
   },
 
-  // Pide recetas nuevas a la API de Claude (sin usar: necesita ANTHROPIC_API_KEY). Petición: {comida, idea?, cantidad?}.
-  // Devuelve {nuevas: [ids], descartadas: [{nombre, motivo}], propuestas}.
-  proponerRecetas: function (peticion) {
-    return proponerRecetasIA_(peticion);
-  },
-
   // Petición: {receta_id}. La propuesta pasa a la biblioteca.
   aceptarPropuesta: function (peticion) {
     return aceptarPropuestaIA_(peticion);

@@ -5,11 +5,10 @@ const { cargarAppsScript } = require('./simulador_gas.js');
 
 const VIERNES = '2026-10-16T09:00:00+02:00';
 
-function preparar(conClave = true) {
+function preparar() {
   const gas = cargarAppsScript(VIERNES);
   gas.contexto.configurarHoja();
   gas.contexto.crearToken();
-  if (conClave) gas.propiedades.ANTHROPIC_API_KEY = 'sk-ant-prueba';
   return gas;
 }
 
@@ -37,11 +36,6 @@ const CON_NUEVO = Object.assign({}, TACOS, {
   nombre: 'Tacos de cochinita pibil',
   ingredientes_fijos: [{ alimento: 'achiote', gramos: 10 }],
   alimentos_nuevos: [{ id: 'achiote', nombre: 'Pasta de achiote', grupo: 'verdura_condimento', estado: 'crudo' }],
-});
-
-const respuestaClaude = recetas => ({
-  codigo: 200,
-  cuerpo: { stop_reason: 'end_turn', content: [{ type: 'text', text: JSON.stringify({ recetas }) }] },
 });
 
 test('evaluar: una receta buena cuadra con el objetivo de la comida', () => {
@@ -114,55 +108,9 @@ test('mensaje para Claude: objetivo, tabla sin excluidos, recetas existentes y v
   assert.match(texto, /X: No cuadra/);
 });
 
-test('proponerRecetas: guarda las válidas como propuestas y repite solo las descartadas', () => {
-  const gas = preparar();
-  const respuestas = [respuestaClaude([TACOS, SOLO_POLLO, CON_NUEVO]), respuestaClaude([Object.assign({}, TACOS, { nombre: 'Tacos de ternera' })])];
-  gas.red.responder = () => respuestas.shift();
-
-  const r = gas.llamar('proponerRecetas', { comida: 'Cena', idea: 'mexicano' });
-  assert.equal(r.ok, true, r.error);
-  assert.deepEqual(r.datos.nuevas, ['IA1', 'IA2', 'IA3']);
-  assert.deepEqual(r.datos.descartadas.map(d => d.nombre), ['Pollo a la plancha']);
-  assert.equal(gas.red.llamadas.length, 2);
-
-  // La petición a la API: modelo, clave en cabecera, JSON con esquema; el segundo intento cuenta el fallo.
-  const peticion = gas.red.llamadas[0];
-  const cuerpo = JSON.parse(peticion.opciones.payload);
-  assert.equal(peticion.url, 'https://api.anthropic.com/v1/messages');
-  assert.equal(peticion.opciones.headers['x-api-key'], 'sk-ant-prueba');
-  assert.equal(cuerpo.model, 'claude-sonnet-5-5');
-  assert.equal(cuerpo.output_config.format.type, 'json_schema');
-  const segundo = JSON.parse(gas.red.llamadas[1].opciones.payload).messages[0].content;
-  assert.match(segundo, /Propón 1 receta de cena/);
-  assert.match(segundo, /Pollo a la plancha: No cuadra/);
-  assert.match(segundo, /Tacos de pollo al pastor/, 'no repetir lo ya propuesto');
-
-  const recetas = filas(gas, 'recetas').filter(f => f.origen === 'ia');
-  assert.deepEqual(recetas.map(f => f.activa), ['propuesta', 'propuesta', 'propuesta']);
-  const estados = r.datos.propuestas.map(p => [p.id, p.estado]);
-  assert.deepEqual(estados, [['IA1', 'valida'], ['IA2', 'falta_alimento'], ['IA3', 'valida']]);
-  assert.equal(r.datos.propuestas[1].faltan[0].id, 'achiote');
-  assert.ok(r.datos.propuestas[1].ingredientes.some(i => i.alimento === 'achiote' && i.nuevo && i.nombre === 'Pasta de achiote'));
-
-  // Las propuestas no salen en la biblioteca ni en los planes hasta aceptarlas.
-  assert.equal(gas.llamar('recetas').datos.some(x => x.origen === 'ia'), false);
-});
-
-test('proponerRecetas: descarta platos con el nombre de una receta que ya existe', () => {
-  const gas = preparar();
-  const salmon = Object.assign({}, TACOS, { nombre: 'salmón al horno con costra de mostaza y miel, patatas asadas y salsa de eneldo ' });
-  const respuestas = [respuestaClaude([TACOS, TACOS]), respuestaClaude([salmon])];
-  gas.red.responder = () => respuestas.shift();
-  const r = gas.llamar('proponerRecetas', { comida: 'Cena', cantidad: 2 }).datos;
-  assert.deepEqual(r.nuevas, ['IA1']);
-  assert.deepEqual(r.descartadas.map(d => d.motivo), ['Ya hay una receta con ese nombre.', 'Ya hay una receta con ese nombre.']);
-});
-
 test('aceptar, descartar y añadir el alimento que falta', () => {
   const gas = preparar();
-  const respuestas = [respuestaClaude([TACOS, CON_NUEVO])];
-  gas.red.responder = () => respuestas.shift();
-  gas.llamar('proponerRecetas', { comida: 'Cena', cantidad: 2 });
+  gas.llamar('importarPropuestas', { comida: 'Cena', recetas: [TACOS, CON_NUEVO] });
 
   // Con el alimento aún sin añadir no se puede aceptar.
   assert.match(gas.llamar('aceptarPropuesta', { receta_id: 'IA2' }).error, /Antes añade Pasta de achiote/);
@@ -190,21 +138,6 @@ test('aceptar, descartar y añadir el alimento que falta', () => {
   assert.match(gas.llamar('descartarPropuesta', { receta_id: 'IA1' }).error, /No hay ninguna propuesta/);
 });
 
-test('proponerRecetas: errores claros (sin clave, clave mala, saturado, comida mala)', () => {
-  const sinClave = preparar(false);
-  assert.match(sinClave.llamar('proponerRecetas', { comida: 'Cena' }).error, /ANTHROPIC_API_KEY/);
-
-  const gas = preparar();
-  assert.match(gas.llamar('proponerRecetas', { comida: 'Brunch' }).error, /Comida no válida/);
-  gas.red.responder = () => ({ codigo: 401, cuerpo: { error: { message: 'invalid x-api-key' } } });
-  assert.match(gas.llamar('proponerRecetas', { comida: 'Cena' }).error, /clave .* no es válida/);
-  gas.red.responder = () => ({ codigo: 529, cuerpo: { error: { message: 'Overloaded' } } });
-  assert.match(gas.llamar('proponerRecetas', { comida: 'Cena' }).error, /saturado/);
-  gas.red.responder = () => ({ codigo: 200, cuerpo: { stop_reason: 'refusal', content: [] } });
-  assert.match(gas.llamar('proponerRecetas', { comida: 'Cena' }).error, /no ha querido/);
-  assert.equal(filas(gas, 'recetas').length, 22, 'nada guardado');
-});
-
 test('alimento nuevo: validación de los valores por 100 g', () => {
   const gas = preparar();
   const fila = d => gas.contexto.filaAlimentoNuevo_(Object.assign({ id: 'kefir', nombre: 'Kéfir', grupo: 'lacteo', estado: 'crudo',
@@ -226,18 +159,18 @@ test('ids de recetas IA: siguiente número libre', () => {
 });
 
 test('pedidoRecetas: instrucciones, mensaje y esquema para escribir recetas en Claude Code', () => {
-  const gas = preparar(false);
+  const gas = preparar();
+  assert.match(gas.llamar('pedidoRecetas', { comida: 'Brunch' }).error, /Comida no válida/);
   const r = gas.llamar('pedidoRecetas', { comida: 'Merienda', cantidad: 2, idea: 'dulce' });
   assert.equal(r.ok, true, r.error);
   assert.deepEqual(JSON.parse(JSON.stringify(r.datos.pedido)), { comida: 'Merienda', cantidad: 2, idea: 'dulce' });
   assert.match(r.datos.sistema, /nunca valores nutricionales/);
   assert.match(r.datos.mensaje, /Propón 2 recetas de merienda/);
   assert.equal(r.datos.esquema.required[0], 'recetas');
-  assert.equal(gas.red.llamadas.length, 0, 'no llama a la API');
 });
 
 test('importarPropuestas: probar no guarda; sin probar guarda como propuestas', () => {
-  const gas = preparar(false);
+  const gas = preparar();
   const prueba = gas.llamar('importarPropuestas', { comida: 'Cena', recetas: [TACOS, SOLO_POLLO, CON_NUEVO], probar: true });
   assert.equal(prueba.ok, true, prueba.error);
   assert.deepEqual(prueba.datos.validas.map(v => v.estado), ['valida', 'falta_alimento']);
@@ -251,4 +184,20 @@ test('importarPropuestas: probar no guarda; sin probar guarda como propuestas', 
   const otra = gas.llamar('importarPropuestas', { comida: 'Cena', recetas: [TACOS] });
   assert.match(otra.datos.descartadas[0].motivo, /Ya hay una receta/);
   assert.match(gas.llamar('importarPropuestas', { comida: 'Cena', recetas: [] }).error, /No hay recetas/);
+});
+
+test('importarPropuestas: guarda la que necesita un alimento nuevo con lo que falta, y no repite nombres', () => {
+  const gas = preparar();
+  const salmon = Object.assign({}, TACOS, { nombre: 'salmón al horno con costra de mostaza y miel, patatas asadas y salsa de eneldo ' });
+  const r = gas.llamar('importarPropuestas', { comida: 'Cena', recetas: [TACOS, TACOS, salmon, CON_NUEVO] }).datos;
+  assert.deepEqual(r.nuevas, ['IA1', 'IA2']);
+  assert.deepEqual(r.descartadas.map(d => d.motivo), ['Ya hay una receta con ese nombre.', 'Ya hay una receta con ese nombre.']);
+  const recetas = filas(gas, 'recetas').filter(f => f.origen === 'ia');
+  assert.deepEqual(recetas.map(f => f.activa), ['propuesta', 'propuesta']);
+  const conNuevo = r.propuestas.find(p => p.id === 'IA2');
+  assert.equal(conNuevo.estado, 'falta_alimento');
+  assert.equal(conNuevo.faltan[0].id, 'achiote');
+  assert.ok(conNuevo.ingredientes.some(i => i.alimento === 'achiote' && i.nuevo && i.nombre === 'Pasta de achiote'));
+  // Las propuestas no salen en la biblioteca ni en los planes hasta aceptarlas.
+  assert.equal(gas.llamar('recetas').datos.some(x => x.origen === 'ia'), false);
 });

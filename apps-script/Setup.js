@@ -67,16 +67,6 @@ function instalarActivador() {
   Logger.log('Activador instalado: revisarFinDePlan cada día hacia las 7:00.');
 }
 
-// 4) Recetas con IA: después de guardar ANTHROPIC_API_KEY en Propiedades del script, ejecútalo una vez.
-//    Google pedirá permiso para «conectarse a un servicio externo» (la API de Claude). Hace una llamada mínima
-//    (cuesta una fracción de céntimo) para comprobar que la clave funciona.
-function probarClaude() {
-  const respuesta = llamarClaude_('Responde en JSON.', 'Devuelve {"ok": true}.', {
-    type: 'object', additionalProperties: false, required: ['ok'], properties: { ok: { type: 'boolean' } },
-  });
-  Logger.log(respuesta.ok ? 'La API de Claude responde: todo listo.' : 'Respuesta inesperada: %s', JSON.stringify(respuesta));
-}
-
 // Si crees que el token se ha filtrado: crea uno nuevo (el anterior deja de funcionar).
 function cambiarToken() {
   PropertiesService.getScriptProperties().deleteProperty('APP_TOKEN');

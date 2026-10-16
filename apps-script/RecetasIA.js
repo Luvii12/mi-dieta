@@ -1,23 +1,21 @@
 // Recetas propuestas por la IA (Fase 5). Claude propone platos en JSON usando los alimentos de la hoja;
 // el código los valida y calcula los gramos. La IA nunca da valores nutricionales.
-// Vía de uso: Claude Code (con la suscripción del usuario) pide `pedidoRecetas`, escribe las recetas y las
-// manda con `importarPropuestas` (scripts/recetas_ia.js). La llamada directa a la API (`proponerRecetas`)
-// queda preparada pero sin usar: la API se paga aparte.
+// Las escribe Claude Code con la suscripción del usuario (sin API de pago): pide `pedidoRecetas`, escribe las
+// recetas y las manda con `importarPropuestas` (scripts/recetas_ia.js). La versión que llamaba a la API desde
+// Apps Script está en el historial de git (commit 3fb63e7); se quitó para no pedir permiso de servicios externos.
 //
 // Una receta propuesta se guarda en `recetas` con origen = ia y activa = propuesta hasta que el usuario la
 // añade a la biblioteca (activa = si) o la descarta (activa = descartada). Si necesita un alimento que no
 // está en la hoja, el ingrediente lleva `nuevo: {nombre, grupo, estado}` y la receta espera a que el
 // usuario añada ese alimento con los valores de la etiqueta o de BEDCA.
 
-const MODELO_IA = 'claude-sonnet-5-5';
-const URL_API_CLAUDE = 'https://api.anthropic.com/v1/messages';
 const RECETAS_POR_PETICION = 3;
 const MAX_ALIMENTOS_NUEVOS = 2;
 const GRUPOS_ALIMENTO = ['proteina', 'carbohidrato', 'grasa', 'lacteo', 'fruta', 'verdura_condimento'];
 const ESTADOS_ALIMENTO = ['crudo', 'cocinado'];
 const PATRON_ID_ALIMENTO = /^[a-z][a-z0-9_]{1,40}$/;
 
-// Formato que Claude tiene que devolver (structured outputs: la API garantiza que el JSON lo cumple).
+// Formato de las recetas que escribe Claude (JSON Schema).
 const ESQUEMA_RECETAS_IA = {
   type: 'object',
   additionalProperties: false,
@@ -228,7 +226,7 @@ function filaAlimentoNuevo_(datos, idsExistentes) {
     fuente: 'usuario (etiqueta/BEDCA)', verificado: 'si', codigo_barras: '' };
 }
 
-// ---------- Con Google (hoja, propiedades y UrlFetchApp) ----------
+// ---------- Con Google (hoja) ----------
 
 // Datos comunes para pedir y evaluar recetas de IA.
 function contextoIA_() {
@@ -342,27 +340,6 @@ function importarPropuestasIA_(peticion) {
   return { nuevas: ids, validas: resumen, descartadas: revision.descartadas, propuestas: listarPropuestas_() };
 }
 
-// Pide recetas a la API de Claude (necesita ANTHROPIC_API_KEY; de pago aparte, sin usar por ahora), las valida y
-// guarda como propuestas. Si se descarta alguna, se pide otra vez solo las que faltan, contando por qué.
-function proponerRecetasIA_(peticion) {
-  const datos = datosPedidoIA_(peticion);
-  const comida = datos.pedido.comida;
-  const cantidad = datos.pedido.cantidad;
-  const elegidas = [];
-  const descartadas = [];
-  let rechazosAnteriores = [];
-  for (let intento = 0; intento < 2 && elegidas.length < cantidad; intento++) {
-    const pedir = cantidad - elegidas.length;
-    const mensaje = datos.mensaje({ cantidad: pedir, recetas: datos.filasRecetas.concat(elegidas), descartadas: rechazosAnteriores });
-    const respuesta = llamarClaude_(SISTEMA_RECETAS_IA, mensaje, ESQUEMA_RECETAS_IA);
-    const revision = revisarRecetasIA_((respuesta.recetas || []).slice(0, pedir), comida, datos.ctx, datos.filasRecetas, elegidas);
-    elegidas.push.apply(elegidas, revision.validas);
-    descartadas.push.apply(descartadas, revision.descartadas);
-    rechazosAnteriores = revision.descartadas;
-  }
-  return { nuevas: guardarPropuestasIA_(elegidas), descartadas: descartadas, propuestas: listarPropuestas_() };
-}
-
 const mismoNombre_ = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 
 // Pasa una propuesta a la biblioteca. Solo si ya tiene todos sus alimentos y cuadra con el objetivo.
@@ -395,57 +372,9 @@ function anadirAlimentoIA_(peticion) {
   return { propuestas: listarPropuestas_() };
 }
 
-// Llama a la API de Claude y devuelve el JSON de la respuesta (ya con el formato del esquema).
-function llamarClaude_(sistema, mensaje, esquema) {
-  const clave = PropertiesService.getScriptProperties().getProperty('ANTHROPIC_API_KEY');
-  if (!clave) {
-    throw new Error('Falta la clave de la API de Claude: añádela en Apps Script › Configuración del proyecto › Propiedades del script, con el nombre ANTHROPIC_API_KEY.');
-  }
-  const cuerpo = {
-    model: MODELO_IA,
-    max_tokens: 16000,
-    // Si un filtro de seguridad rechazara la petición, la API la repite con el modelo que recomienda.
-    fallbacks: 'default',
-    output_config: { effort: 'low', format: { type: 'json_schema', schema: esquema } },
-    system: sistema,
-    messages: [{ role: 'user', content: mensaje }],
-  };
-  const respuesta = UrlFetchApp.fetch(URL_API_CLAUDE, {
-    method: 'post',
-    contentType: 'application/json',
-    headers: { 'x-api-key': clave, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'server-side-fallback-2026-07-01' },
-    payload: JSON.stringify(cuerpo),
-    muteHttpExceptions: true,
-  });
-  const codigo = respuesta.getResponseCode();
-  let datos = null;
-  try {
-    datos = JSON.parse(respuesta.getContentText());
-  } catch (err) {
-    // Se trata abajo como error.
-  }
-  if (codigo !== 200 || !datos) throw new Error(mensajeErrorClaude_(codigo, datos));
-  if (datos.stop_reason === 'refusal') throw new Error('Claude no ha querido proponer estas recetas. Prueba con otra idea.');
-  if (datos.stop_reason === 'max_tokens') throw new Error('La respuesta de Claude se cortó. Prueba a pedir menos recetas.');
-  const texto = (datos.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-  try {
-    return JSON.parse(texto);
-  } catch (err) {
-    throw new Error('Claude devolvió una respuesta que no se entiende. Prueba otra vez.');
-  }
-}
-
-function mensajeErrorClaude_(codigo, datos) {
-  const detalle = datos && datos.error && datos.error.message ? ' (' + datos.error.message + ')' : '';
-  if (codigo === 401) return 'La clave de la API de Claude no es válida. Revisa ANTHROPIC_API_KEY en las propiedades del script.';
-  if (codigo === 429 || codigo === 529) return 'Claude está saturado ahora mismo. Prueba en unos minutos.';
-  if (codigo === 400 && /credit/i.test(detalle)) return 'No queda saldo en la cuenta de la API de Claude' + detalle + '.';
-  return 'Error de la API de Claude ' + codigo + detalle + '.';
-}
-
 if (typeof module !== 'undefined') {
   module.exports = {
     ESQUEMA_RECETAS_IA, SISTEMA_RECETAS_IA, mensajeRecetasIA_, normalizarRecetaIA_, evaluarRecetaIA_, desviaciones_,
-    limpiarIngredientesIA_, siguienteIdIA_, filaAlimentoNuevo_, mensajeErrorClaude_,
+    limpiarIngredientesIA_, siguienteIdIA_, filaAlimentoNuevo_,
   };
 }
