@@ -35,7 +35,8 @@ Carga inicial: `data/recetas_semilla.json`.
 
 ## Apps Script (web app)
 - `doGet` / `doPost` con parámetro `accion`; todas las peticiones llevan `token` y se rechazan si no coincide con `PropertiesService` (`APP_TOKEN`).
-- Acciones: `hoy`, `plan`, `recetas` (todas las activas ajustadas a su objetivo; hecha en Fase 1), `receta`, `marcarComida`, `cambiarPlato`, `valorar`, `registrarPeso`, `progreso`, `generarPlan`, `activarPlan`, `aceptarAjuste`, `config`.
+- Acciones hechas: `config`, `recetas` (Fase 1), `hoy`, `plan` (activo + borrador por días), `generarPlan` (borrador desde el lunes siguiente o al acabar el activo; sustituye al borrador anterior), `activarPlan` (`plan_id`; el activo anterior pasa a archivado) (Fase 2).
+- Acciones pendientes: `receta`, `marcarComida`, `cambiarPlato`, `valorar`, `registrarPeso`, `progreso`, `generarPlan`, `activarPlan`, `aceptarAjuste`, `config`.
 - La generación vive en Apps Script (V8). Respetar el límite de tiempo por ejecución; si hace falta, generar por semanas.
 - Activador temporal diario que comprueba si faltan 2 días para el fin del plan activo y genera el borrador.
 - Más adelante: `ANTHROPIC_API_KEY` en propiedades del script, llamada con `UrlFetchApp`.

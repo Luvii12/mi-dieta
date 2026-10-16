@@ -3,10 +3,10 @@
 > Memoria entre sesiones. Claude Code lo lee al empezar y lo actualiza al terminar cada tarea o antes de `/clear`. Mantenerlo por debajo de ~80 líneas: resumir lo antiguo.
 
 ## Estado actual
-- **Fase:** 2 · Generador de 14 días (explicada al usuario, esperando confirmación). Fase 1 terminada y probada en el móvil el 2026-10-16.
+- **Fase:** 2 · Generador de 14 días — hecha y desplegada; falta que el usuario la pruebe en el móvil. Hay un borrador real generado el 2026-10-16 (P20261016-105919, 19 oct–1 nov) pendiente de que lo active.
 - **URLs:** PWA https://luvii12.github.io/dieta_app/ · repo https://github.com/Luvii12/dieta_app · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
 - **Hecho en la nube:** hoja «Dieta» y script vinculado creados con clasp (IDs en `.clasp.json`); código subido con `clasp push --force` (autorizado por el usuario, para sobrescribir el manifiesto con zona Europe/Madrid).
-- **Siguiente paso:** confirmar decisiones abiertas de la Fase 2 y programar `Generador.js` + tests.
+- **Siguiente paso:** prueba del usuario (pestaña Plan → Activar; Hoy desde el lunes 19). Luego explicar y proponer la Fase 3 (pantallas de uso diario: marcar hecha/libre, cambiar plato, valorar).
 
 ## Decisiones tomadas
 | Fecha | Decisión |
@@ -24,6 +24,8 @@
 | 2026-10-16 | Optimizador propio sin dependencias: descenso por coordenadas sobre mínimos cuadrados acotados (`Nutricion.js`). Da los mismos gramos que el prototipo en las 22 recetas |
 | 2026-10-16 | Pantalla «Recetas» (Fase 1) con gramos ajustados, crudo/cocinado, macros frente a objetivo y aviso si una comida queda fuera de su tolerancia |
 | 2026-10-16 | Las 5 recetas fuera de margen por comida (D2, D4, C1, C3, C4) se quedan como están: el generador las compensa en el día. La tolerancia por comida es solo informativa; la del día es obligatoria |
+| 2026-10-16 | Planes empiezan el lunes siguiente (o el día después de acabar el activo). «Hoy» muestra el plan activo (solo lectura hasta la Fase 3) |
+| 2026-10-16 | Generador: elige recetas por día con reglas de repetición y pesos; prueba 20 combinaciones por día y hasta 50 planes completos, se queda el primero sin días a revisar. Valida con macros redondeados a 1 decimal (lo mismo que se guarda) |
 | 2026-10-16 | Datos iniciales: `scripts/generar_semilla.js` genera `apps-script/Semilla.js`; `configurarHoja()` carga solo en pestañas vacías. `nombre` de alimentos generado desde el `id` (el CSV no lo traía); `codigo_barras` vacío |
 
 ## Preguntas abiertas
@@ -31,6 +33,7 @@
 - El usuario está probando la semana de prueba (22 recetas); sus valoraciones decidirán qué recetas se quedan.
 
 ## Hecho
+- **2026-10-16 · Fase 2:** `Generador.js` + `Planes.js` + acciones `plan`/`generarPlan`/`activarPlan`/`hoy`; pestaña Plan (generar, revisar 14 días, activar) y Hoy con el plan activo (y sin conexión desde el plan guardado). `tests/simulador_gas.js` ejecuta el código real de Apps Script sobre una hoja en memoria. 67 tests. En Google: plan en 4,4 s, 0 días a revisar.
 - **2026-10-16 · Fase 1:** `Nutricion.js` (macros, optimizador, redondeo a 5 g/piezas, tolerancias comida y día con margen de proteína) + acción `recetas` + pantalla Recetas. 34 tests (regresión: mismos gramos que el prototipo, kcal ±0,15 %).
 - **2026-10-16 · Fase 0 terminada:** funciona en el móvil (instalada, conectada, lee/escribe). Git guarda el token de GitHub en `~/.git-credentials` (Hyprland no tiene servicio de secretos).
 - **2026-10-16 · Fase 0 (detalle):** Apps Script (`Main`, `Hoja`, `Setup`, `Util`, `Semilla`) con token y acciones `config` (lee/escribe) y `hoy` (vacía); PWA con Hoy, Ajustes (URL + token, prueba de escritura, objetivos), service worker, iconos; workflow de Pages; 14 tests en verde; prueba en navegador contra API simulada sin errores.

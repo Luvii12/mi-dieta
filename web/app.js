@@ -4,6 +4,7 @@ const TITULOS = { hoy: 'Hoy', plan: 'Plan', recetas: 'Recetas', progreso: 'Progr
 const COMIDAS = ['desayuno', 'almuerzo', 'merienda', 'cena'];
 const CACHE_HOY = 'dieta.ultimoHoy';
 const CACHE_RECETAS = 'dieta.recetas';
+const CACHE_PLAN = 'dieta.plan';
 
 const $ = id => document.getElementById(id);
 
@@ -17,6 +18,7 @@ function mostrarVista() {
   });
   $('titulo').textContent = TITULOS[vista];
   if (vista === 'hoy') cargarHoy();
+  if (vista === 'plan') cargarPlan();
   if (vista === 'recetas') cargarRecetas();
   if (vista === 'ajustes') cargarAjustes();
 }
@@ -28,17 +30,65 @@ function fechaLarga(iso) {
   return new Date(a, m - 1, d).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
+const NOMBRE_COMIDA = { Desayuno: 'Desayuno', Almuerzo: 'Almuerzo', Merienda: 'Merienda', Cena: 'Cena' };
+
+function fechaCorta(iso) {
+  const [a, m, d] = iso.split('-').map(Number);
+  return new Date(a, m - 1, d).toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+}
+
+function hoyIso() {
+  const f = new Date();
+  return `${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, '0')}-${String(f.getDate()).padStart(2, '0')}`;
+}
+
+const resumenMacros = m =>
+  `${numero(m.kcal, 0)} kcal · P ${numero(m.P, 0)} · C ${numero(m.C, 0)} · G ${numero(m.G, 0)}`;
+
+// Tarjeta de una comida del plan: nombre, macros, ingredientes y preparación.
+function tarjetaComida(c) {
+  const tarjeta = el('article', 'comida');
+  const cabecera = el('div', 'comida-cabecera');
+  cabecera.append(el('span', 'comida-tipo', NOMBRE_COMIDA[c.comida] || c.comida), el('span', 'comida-kcal', numero(c.macros.kcal, 0) + ' kcal'));
+  tarjeta.append(cabecera, el('h3', 'comida-nombre', c.nombre),
+    el('p', 'receta-macros', `P ${numero(c.macros.P)} g · C ${numero(c.macros.C)} g · G ${numero(c.macros.G)} g`));
+  const escalables = c.ingredientes.filter(i => i.escalable);
+  const fijos = c.ingredientes.filter(i => !i.escalable);
+  if (escalables.length) tarjeta.append(listaIngredientes('Ajustados a tu objetivo', escalables, true));
+  if (fijos.length) tarjeta.append(listaIngredientes('Fijos', fijos, false));
+  if (c.preparacion) {
+    const prep = el('details', 'preparacion-plegable');
+    prep.append(el('summary', null, 'Cómo se prepara'), el('p', 'preparacion', c.preparacion));
+    tarjeta.append(prep);
+  }
+  return tarjeta;
+}
+
+// Resumen del día frente al objetivo (tabla) y aviso si queda fuera de tolerancia.
+function resumenDia(dia, objetivoDia) {
+  const caja = el('div', 'resumen-dia');
+  caja.append(tablaMacros({ macros: dia.macros, objetivo: objetivoDia, evaluacion: dia.evaluacion }, 'Total'));
+  if (dia.revisar) caja.append(el('p', 'resultado error', 'Este día no cumple la tolerancia: revísalo o genera otro plan.'));
+  return caja;
+}
+
 function pintarHoy(hoy) {
   $('hoy-fecha').textContent = fechaLarga(hoy.fecha);
   const contenido = $('hoy-contenido');
+  contenido.innerHTML = '';
   if (!hoy.comidas.length) {
-    contenido.innerHTML = '';
-    const vacio = document.createElement('div');
-    vacio.className = 'vacio';
-    vacio.innerHTML = '<p><strong></strong></p><p class="secundario">Los planes se generarán a partir de la fase 2.</p>';
-    vacio.querySelector('strong').textContent = hoy.mensaje;
+    const vacio = el('div', 'vacio');
+    vacio.append(el('p', null, hoy.inicio ? `Tu plan empieza el ${fechaCorta(hoy.inicio)}.` : hoy.mensaje));
+    const a = el('a', 'boton-enlace', 'Ir a Plan');
+    a.href = '#plan';
+    vacio.append(a);
     contenido.append(vacio);
+    return;
   }
+  const total = el('div', 'tarjeta');
+  total.append(el('h2', null, 'Total del día'), resumenDia(hoy, hoy.objetivoDia));
+  contenido.append(total);
+  hoy.comidas.forEach(c => contenido.append(tarjetaComida(c)));
 }
 
 function pintarAviso(contenedor, texto, enlaceAjustes) {
@@ -65,7 +115,7 @@ async function cargarHoy() {
     pintarAviso($('hoy-contenido'), 'Conecta la app con tu hoja de Google para empezar.', true);
     return;
   }
-  const guardado = leerLocal(CACHE_HOY);
+  const guardado = hoyDesdeCache();
   if (guardado) pintarHoy(guardado);
   try {
     const hoy = await llamar('hoy');
@@ -73,6 +123,153 @@ async function cargarHoy() {
     pintarHoy(hoy);
   } catch (err) {
     if (!guardado) pintarAviso($('hoy-contenido'), err.message, false);
+  }
+}
+
+// Sin conexión: la última respuesta de «hoy» si es de hoy; si no, el día de hoy del plan activo guardado.
+function hoyDesdeCache() {
+  const fecha = hoyIso();
+  const guardado = leerLocal(CACHE_HOY);
+  if (guardado && guardado.fecha === fecha) return guardado;
+  const plan = leerLocal(CACHE_PLAN);
+  const dia = plan && plan.activo && plan.activo.dias.find(d => d.fecha === fecha);
+  if (dia) return Object.assign({ objetivoDia: plan.activo.objetivoDia }, dia);
+  return null;
+}
+
+// ---------- Plan ----------
+
+function tarjetaDia(dia, objetivoDia) {
+  const tarjeta = el('details', 'receta dia');
+  tarjeta.dataset.id = dia.fecha;
+  const resumen = el('summary');
+  resumen.append(el('span', 'receta-nombre dia-fecha', fechaCorta(dia.fecha)), el('span', 'receta-macros', resumenMacros(dia.macros)));
+  const platos = el('ul', 'dia-platos');
+  dia.comidas.forEach(c => {
+    const li = el('li');
+    li.append(el('span', 'comida-tipo', NOMBRE_COMIDA[c.comida] || c.comida), el('span', null, c.nombre));
+    platos.append(li);
+  });
+  resumen.append(platos);
+  if (dia.revisar) resumen.append(el('span', 'etiqueta error', 'Para revisar'));
+  tarjeta.append(resumen);
+  const cuerpo = el('div', 'receta-cuerpo');
+  cuerpo.append(resumenDia(dia, objetivoDia));
+  dia.comidas.forEach(c => cuerpo.append(tarjetaComida(c)));
+  tarjeta.append(cuerpo);
+  return tarjeta;
+}
+
+function seccionPlan(plan, titulo, botones) {
+  const seccion = el('section', 'bloque-plan');
+  const cabecera = el('div', 'tarjeta');
+  cabecera.append(el('h2', null, titulo),
+    el('p', 'secundario', `Del ${fechaCorta(plan.inicio)} al ${fechaCorta(plan.fin)}`));
+  const aRevisar = plan.dias.filter(d => d.revisar).length;
+  cabecera.append(el('p', aRevisar ? 'resultado error' : 'resultado ok',
+    aRevisar ? `${aRevisar} día(s) no cumplen la tolerancia.` : 'Los 14 días cumplen la tolerancia.'));
+  botones.forEach(b => cabecera.append(b));
+  seccion.append(cabecera);
+  plan.dias.forEach(d => seccion.append(tarjetaDia(d, plan.objetivoDia)));
+  return seccion;
+}
+
+function boton(texto, clase, accion) {
+  const b = el('button', clase, texto);
+  b.type = 'button';
+  b.addEventListener('click', accion);
+  return b;
+}
+
+let planActual = null;
+
+function pintarPlan(datos) {
+  planActual = datos;
+  const contenido = $('plan-contenido');
+  const abiertas = new Set([...contenido.querySelectorAll('details[open]')].map(d => d.dataset.id));
+  contenido.innerHTML = '';
+  const mensaje = el('p', 'resultado', '');
+  mensaje.id = 'plan-mensaje';
+  contenido.append(mensaje);
+
+  if (datos.borrador) {
+    contenido.append(seccionPlan(datos.borrador, 'Borrador sin activar', [
+      boton('Activar plan', 'boton-principal', () => activarPlan(datos.borrador.plan_id)),
+      boton('Generar otro borrador', 'secundario-boton', generarPlan),
+    ]));
+  }
+  if (datos.activo) {
+    const botones = datos.borrador ? [] : [boton('Generar el siguiente plan', 'secundario-boton', generarPlan)];
+    contenido.append(seccionPlan(datos.activo, 'Plan activo', botones));
+  }
+  if (!datos.borrador && !datos.activo) {
+    const vacio = el('div', 'vacio');
+    vacio.append(el('p', null, 'Todavía no tienes ningún plan.'),
+      el('p', 'secundario', 'Se generan 14 días a partir del lunes que viene, con tus recetas y tus objetivos.'),
+      boton('Generar plan', 'boton-principal', generarPlan));
+    contenido.append(vacio);
+  }
+  contenido.querySelectorAll('details.dia').forEach(d => { d.open = abiertas.has(d.dataset.id); });
+}
+
+function mensajePlan(texto, esError) {
+  const m = $('plan-mensaje');
+  if (m) mostrarResultado(m, texto, esError);
+}
+
+function bloquearBotonesPlan(bloquear) {
+  $('plan-contenido').querySelectorAll('button').forEach(b => { b.disabled = bloquear; });
+}
+
+async function cargarPlan() {
+  const { url, token } = leerConexion();
+  if (!url || !token) {
+    pintarAviso($('plan-contenido'), 'Conecta la app con tu hoja de Google para ver tu plan.', true);
+    return;
+  }
+  const guardado = leerLocal(CACHE_PLAN);
+  if (guardado) pintarPlan(guardado);
+  else pintarAviso($('plan-contenido'), 'Cargando plan…', false);
+  try {
+    const datos = await llamar('plan');
+    guardarLocal(CACHE_PLAN, datos);
+    pintarPlan(datos);
+  } catch (err) {
+    if (!guardado) pintarAviso($('plan-contenido'), err.message, false);
+  }
+}
+
+async function generarPlan() {
+  if (planActual && planActual.borrador && !confirm('Se sustituirá el borrador actual por uno nuevo. ¿Seguir?')) return;
+  bloquearBotonesPlan(true);
+  mensajePlan('Generando 14 días… puede tardar unos segundos.', false);
+  try {
+    const borrador = await llamar('generarPlan');
+    const datos = Object.assign({}, planActual || {}, { borrador: borrador });
+    guardarLocal(CACHE_PLAN, datos);
+    pintarPlan(datos);
+    if (borrador.descartadas && borrador.descartadas.length) {
+      mensajePlan(`Recetas no usadas: ${borrador.descartadas.map(d => `${d.id} (${d.motivo})`).join(', ')}.`, false);
+    }
+  } catch (err) {
+    bloquearBotonesPlan(false);
+    mensajePlan(err.message, true);
+  }
+}
+
+async function activarPlan(planId) {
+  bloquearBotonesPlan(true);
+  mensajePlan('Activando…', false);
+  try {
+    await llamar('activarPlan', { plan_id: planId });
+    guardarLocal(CACHE_HOY, null);
+    const datos = await llamar('plan');
+    guardarLocal(CACHE_PLAN, datos);
+    pintarPlan(datos);
+    mensajePlan('Plan activado. Lo verás en «Hoy» desde el ' + fechaCorta(datos.activo.inicio) + '.', false);
+  } catch (err) {
+    bloquearBotonesPlan(false);
+    mensajePlan(err.message, true);
   }
 }
 
@@ -108,9 +305,9 @@ function listaIngredientes(titulo, ingredientes, destacar) {
   return bloque;
 }
 
-function tablaMacros(ajuste) {
+function tablaMacros(ajuste, etiqueta = 'Receta') {
   const tabla = el('table', 'macros');
-  tabla.innerHTML = '<thead><tr><th></th><th>Receta</th><th>Objetivo</th><th>Desvío</th></tr></thead>';
+  tabla.innerHTML = `<thead><tr><th></th><th>${etiqueta}</th><th>Objetivo</th><th>Desvío</th></tr></thead>`;
   const cuerpo = el('tbody');
   ['kcal', 'P', 'C', 'G'].forEach(n => {
     const d = ajuste.evaluacion ? ajuste.evaluacion.detalle[n] : null;

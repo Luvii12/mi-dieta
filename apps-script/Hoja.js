@@ -26,6 +26,26 @@ function anadirFilas_(nombre, objetos) {
   hoja.getRange(primeraLibre, 1, filas.length, filas[0].length).setValues(filas);
 }
 
+// Sustituye todo el contenido de una pestaña (menos las cabeceras). Mantiene el formato de las columnas.
+function reescribirTabla_(nombre, objetos) {
+  const hoja = hoja_(nombre);
+  if (hoja.getLastRow() > 1) hoja.getRange(2, 1, hoja.getLastRow() - 1, hoja.getLastColumn()).clearContent();
+  anadirFilas_(nombre, objetos);
+}
+
+// Todas las recetas (activas o no) con los ingredientes ya convertidos: {id: receta}.
+function leerRecetasPorId_() {
+  const porId = {};
+  leerTabla_('recetas').forEach(fila => {
+    try {
+      porId[fila.id] = filaAReceta_(fila);
+    } catch (err) {
+      porId[fila.id] = Object.assign({}, fila, { error: err.message });
+    }
+  });
+  return porId;
+}
+
 function leerConfig_() {
   return configAObjeto_(leerTabla_('config'));
 }

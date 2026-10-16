@@ -1,0 +1,96 @@
+// Conversión entre planes generados, filas de Sheets (`planes`, `plan_comidas`) y lo que ve la PWA.
+// Funciones puras.
+
+// Plan generado → {plan: fila de `planes`, comidas: filas de `plan_comidas`}.
+function filasDesdePlan_(generado, planId, objetivos, tolerancias, creado) {
+  const plan = {
+    plan_id: planId,
+    inicio: generado.inicio,
+    fin: generado.fin,
+    estado: 'borrador',
+    objetivos: { comidas: objetivos, tolerancias: tolerancias },
+    creado: creado,
+  };
+  const comidas = [];
+  generado.dias.forEach(d => d.comidas.forEach(c => {
+    const m = redondearMacros_(c.macros);
+    comidas.push({
+      plan_id: planId,
+      fecha: d.fecha,
+      comida: c.comida,
+      receta_id: c.receta_id,
+      gramos: c.gramos,
+      kcal: m.kcal,
+      P: m.P,
+      C: m.C,
+      G: m.G,
+      hecha: 'no',
+      cambiada_por: '',
+    });
+  }));
+  return { plan: plan, comidas: comidas };
+}
+
+// Ingredientes de una comida guardada, con nombre, crudo/cocinado, si es escalable y piezas.
+function ingredientesDeComida_(gramos, receta, alimentos) {
+  const escalables = {};
+  ((receta && receta.ingredientes_escalables) || []).forEach(e => { escalables[e.alimento] = e; });
+  return Object.keys(gramos).map(id => {
+    const a = alimentos[id] || { nombre: id, estado: '' };
+    const ing = { alimento: id, nombre: a.nombre, estado: a.estado, gramos: gramos[id], escalable: Boolean(escalables[id]) };
+    if (escalables[id] && escalables[id].unidad && a.gramos_unidad) ing.piezas = Math.round(gramos[id] / a.gramos_unidad);
+    return ing;
+  }).sort((x, y) => Number(y.escalable) - Number(x.escalable));
+}
+
+// Fila de `planes` + sus filas de `plan_comidas` → plan por días para la PWA, con totales y evaluación.
+function vistaPlan_(filaPlan, filasComidas, recetasPorId, alimentos) {
+  const objetivos = parsearValor_(filaPlan.objetivos) || {};
+  const objComidas = objetivos.comidas || {};
+  const tolDia = (objetivos.tolerancias || {}).dia;
+  const objetivoDia = sumarMacros_(COMIDAS.map(c => objComidas[c] || { kcal: 0, P: 0, C: 0, G: 0 }));
+
+  const porFecha = {};
+  filasComidas.forEach(f => {
+    const receta = recetasPorId[f.receta_id];
+    (porFecha[f.fecha] = porFecha[f.fecha] || []).push({
+      comida: f.comida,
+      receta_id: f.receta_id,
+      nombre: receta ? receta.nombre : f.receta_id,
+      preparacion: receta ? receta.preparacion : '',
+      ingredientes: ingredientesDeComida_(parsearValor_(f.gramos) || {}, receta, alimentos),
+      macros: { kcal: Number(f.kcal), P: Number(f.P), C: Number(f.C), G: Number(f.G) },
+      objetivo: objComidas[f.comida] || null,
+      hecha: f.hecha || 'no',
+    });
+  });
+
+  const dias = Object.keys(porFecha).sort().map(fecha => {
+    const comidas = porFecha[fecha].sort((a, b) => COMIDAS.indexOf(a.comida) - COMIDAS.indexOf(b.comida));
+    const macros = sumarMacros_(comidas.map(c => c.macros));
+    const evaluacion = tolDia ? evaluarDia_(macros, objetivoDia, tolDia) : null;
+    return { fecha: fecha, comidas: comidas, macros: macros, evaluacion: evaluacion, revisar: evaluacion ? !evaluacion.ok : false };
+  });
+
+  return {
+    plan_id: filaPlan.plan_id,
+    inicio: filaPlan.inicio,
+    fin: filaPlan.fin,
+    estado: filaPlan.estado,
+    creado: filaPlan.creado,
+    objetivoDia: objetivoDia,
+    dias: dias,
+  };
+}
+
+// Plan cuyas recetas se penalizan al generar: el activo o, si no hay, el último archivado.
+function planDeReferencia_(planes) {
+  const activo = planes.find(p => p.estado === 'activo');
+  if (activo) return activo;
+  const archivados = planes.filter(p => p.estado === 'archivado').sort((a, b) => String(b.inicio).localeCompare(String(a.inicio)));
+  return archivados[0] || null;
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = { filasDesdePlan_, ingredientesDeComida_, vistaPlan_, planDeReferencia_ };
+}

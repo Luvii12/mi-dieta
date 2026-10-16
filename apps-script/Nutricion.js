@@ -38,6 +38,14 @@ function calcularMacros_(gramos, alimentos) {
   return total;
 }
 
+// Macros con 1 decimal: así se guardan en `plan_comidas`, y así se validan los días para que
+// lo comprobado sea exactamente lo guardado.
+function redondearMacros_(m) {
+  const r = {};
+  NUTRIENTES.forEach(n => { r[n] = Math.round(m[n] * 10) / 10; });
+  return r;
+}
+
 function sumarMacros_(lista) {
   const total = { kcal: 0, P: 0, C: 0, G: 0 };
   lista.forEach(m => NUTRIENTES.forEach(n => { total[n] += m[n]; }));
@@ -170,7 +178,7 @@ function ajustarReceta_(receta, objetivo, alimentos, tolComida) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    NUTRIENTES, indexarAlimentos_, calcularMacros_, sumarMacros_, minimosCuadradosAcotados_, optimizarGramos_,
+    NUTRIENTES, indexarAlimentos_, calcularMacros_, redondearMacros_, sumarMacros_, minimosCuadradosAcotados_, optimizarGramos_,
     redondearGramos_, evaluarComida_, evaluarDia_, ajustarReceta_,
   };
 }

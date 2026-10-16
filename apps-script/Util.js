@@ -100,6 +100,13 @@ function configAObjeto_(filas) {
   return config;
 }
 
+// 'P20261016-0900' → el mismo si está libre; si no, 'P20261016-0900-2', '-3'…
+function idUnico_(base, existentes) {
+  let id = base;
+  for (let n = 2; existentes.indexOf(id) >= 0; n++) id = base + '-' + n;
+  return id;
+}
+
 // Fila de la pestaña `recetas` → receta con los ingredientes ya como listas.
 function filaAReceta_(fila) {
   const leer = (texto, campo) => {
@@ -119,6 +126,6 @@ function filaAReceta_(fila) {
 if (typeof module !== 'undefined') {
   module.exports = {
     PESTANAS, COLUMNAS_FECHA, tokenValido_, manejar_, fechaIso_, normalizarCelda_, filasAObjetos_,
-    objetoAFila_, parsearValor_, serializarValor_, configAObjeto_, filaAReceta_,
+    objetoAFila_, parsearValor_, serializarValor_, configAObjeto_, filaAReceta_, idUnico_,
   };
 }

@@ -52,7 +52,8 @@ h2 { font-size: 1.05rem; margin: 0 0 12px; }
 main { padding: 0 16px; max-width: 640px; margin: 0 auto; }
 
 .secundario { color: var(--texto-suave); }
-#hoy-fecha { margin: 0 0 16px; text-transform: capitalize; }
+#hoy-fecha { margin: 0 0 16px; }
+#hoy-fecha::first-letter, .dia-fecha::first-letter { text-transform: uppercase; }
 
 .aviso {
   font-size: 0.8rem;
@@ -196,3 +197,37 @@ table.macros { margin-top: 16px; }
 table.macros tr.fuera td { color: var(--aviso); font-weight: 600; }
 
 .preparacion { margin: 0; }
+
+/* ---------- Hoy y Plan ---------- */
+
+button.boton-principal { margin-top: 8px; }
+.tarjeta button + button { margin-top: 8px; }
+button:disabled { opacity: 0.5; cursor: progress; }
+
+.comida {
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 14px 16px;
+  margin: 12px 0;
+}
+
+.comida-cabecera { display: flex; justify-content: space-between; align-items: baseline; }
+.comida-tipo { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--acento); }
+.comida-kcal { font-weight: 700; font-variant-numeric: tabular-nums; }
+.comida .comida-nombre { font-size: 1.05rem; margin: 4px 0 2px; line-height: 1.3; text-transform: none; letter-spacing: 0; color: var(--texto); }
+.comida .ingredientes h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--texto-suave); margin: 12px 0 4px; }
+
+.preparacion-plegable { margin-top: 10px; }
+.preparacion-plegable summary { cursor: pointer; font-weight: 600; color: var(--acento); font-size: 0.9rem; }
+.preparacion-plegable p { margin-top: 6px; }
+
+.resumen-dia table.macros { margin-top: 0; }
+
+.dia-platos { list-style: none; margin: 8px 0 0; padding: 0; font-size: 0.85rem; }
+.dia-platos li { display: flex; gap: 8px; padding: 2px 0; line-height: 1.35; }
+.dia-platos .comida-tipo { flex: 0 0 72px; font-size: 0.65rem; padding-top: 2px; }
+.dia .receta-cuerpo { padding-top: 12px; }
+.dia .comida { margin: 12px 0 0; background: var(--fondo); }
+
+.bloque-plan { margin-bottom: 24px; }

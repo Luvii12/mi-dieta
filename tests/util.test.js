@@ -80,3 +80,9 @@ test('cada pestaña tiene cabeceras únicas', () => {
   });
   assert.equal(Object.keys(U.PESTANAS).length, 9);
 });
+
+test('idUnico_: añade sufijo si el id ya existe', () => {
+  assert.equal(U.idUnico_('P1', []), 'P1');
+  assert.equal(U.idUnico_('P1', ['P1']), 'P1-2');
+  assert.equal(U.idUnico_('P1', ['P1', 'P1-2']), 'P1-3');
+});
