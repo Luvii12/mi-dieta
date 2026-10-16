@@ -13,7 +13,9 @@ Pasos que hace el usuario a mano. Claude Code puede ejecutar los comandos de cla
    - `configurarHoja` → crea las 9 pestañas y carga 95 alimentos, 22 recetas y la configuración. Google pedirá permisos la primera vez.
    - `crearToken` → el token aparece en el *Registro de ejecución*. Copiarlo.
 6. Publicar: *Implementar → Nueva implementación → Aplicación web*, «Ejecutar como: yo», «Quién tiene acceso: cualquier usuario». Copiar la URL que termina en `/exec`.
-   Al cambiar el código más adelante: `clasp push` y *Implementar → Gestionar implementaciones → editar → Nueva versión* (así la URL no cambia).
+   Al cambiar el código más adelante (lo hace Claude Code):
+   `clasp push --force` y `clasp update-deployment <id de la URL /exec>` → nueva versión con la misma URL.
+   Sin `--force`, clasp pide confirmación por el manifiesto y, fuera de una terminal interactiva, no sube nada.
 
 ## 2. GitHub Pages
 1. Crear un repositorio vacío (p. ej. `dieta_app`). Puede ser público: no contiene secretos.

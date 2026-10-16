@@ -87,9 +87,10 @@ function parsearValor_(texto) {
   }
 }
 
-// Valor JS → texto para la pestaña `config`.
+// Valor JS → texto para la pestaña `config`. Siempre JSON, también los textos ('"16/10/2026"'):
+// así Sheets no los confunde con fechas o números aunque cambie el formato de la celda.
 function serializarValor_(valor) {
-  return typeof valor === 'string' ? valor : JSON.stringify(valor);
+  return JSON.stringify(valor);
 }
 
 // Filas de `config` → {clave: valor}.

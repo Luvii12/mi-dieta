@@ -38,12 +38,8 @@ function guardarConfig_(clave, valor) {
     const hoja = hoja_('config');
     const claves = hoja.getRange(1, 1, Math.max(hoja.getLastRow(), 1), 1).getValues().map(f => f[0]);
     const indice = claves.indexOf(clave);
-    const texto = serializarValor_(valor);
-    if (indice > 0) {
-      hoja.getRange(indice + 1, 2).setValue(texto);
-    } else {
-      hoja.appendRow([clave, texto]);
-    }
+    const fila = indice > 0 ? indice + 1 : hoja.getLastRow() + 1;
+    hoja.getRange(fila, 1, 1, 2).setNumberFormat('@').setValues([[clave, serializarValor_(valor)]]);
   } finally {
     bloqueo.releaseLock();
   }

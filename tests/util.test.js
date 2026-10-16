@@ -61,6 +61,9 @@ test('config: ida y vuelta de valores', () => {
   assert.deepEqual(U.parsearValor_(U.serializarValor_(obj)), obj);
   assert.equal(U.parsearValor_(U.serializarValor_(4)), 4);
   assert.equal(U.parsearValor_('hola'), 'hola');
+  // Los textos se guardan entre comillas para que Sheets no los convierta en fecha.
+  assert.equal(U.serializarValor_('16/10/2026, 10:22:04'), '"16/10/2026, 10:22:04"');
+  assert.equal(U.parsearValor_(U.serializarValor_('16/10/2026, 10:22:04')), '16/10/2026, 10:22:04');
   assert.deepEqual(U.configAObjeto_([{ clave: 'a', valor: '1' }, { clave: 'b', valor: 'texto' }]), { a: 1, b: 'texto' });
 });
 
