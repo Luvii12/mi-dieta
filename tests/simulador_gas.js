@@ -82,7 +82,21 @@ function cargarAppsScript(ahoraIso) {
     static now() { return new DateReal(ahoraIso).getTime(); }
   }
   let uuid = 0;
+  // Llamadas a internet (API de Claude): los tests ponen en `red.responder` qué contestar.
+  // responder(url, opciones) → {codigo, cuerpo}. Cada llamada queda en `red.llamadas`.
+  const red = {
+    llamadas: [],
+    responder: () => { throw new Error('Sin red en los tests'); },
+  };
   const contexto = vm.createContext({
+    UrlFetchApp: {
+      fetch: (url, opciones) => {
+        red.llamadas.push({ url, opciones });
+        const r = red.responder(url, opciones);
+        const texto = typeof r.cuerpo === 'string' ? r.cuerpo : JSON.stringify(r.cuerpo);
+        return { getResponseCode: () => r.codigo, getContentText: () => texto };
+      },
+    },
     console,
     Intl,
     Date: ahoraIso ? DateFija : DateReal,
@@ -116,7 +130,7 @@ function cargarAppsScript(ahoraIso) {
     const salida = contexto.doPost({ postData: { contents: JSON.stringify({ ...extra, accion, token: propiedades.APP_TOKEN }) } });
     return JSON.parse(salida.texto);
   };
-  return { contexto, libro, propiedades, registro, llamar };
+  return { contexto, libro, propiedades, registro, llamar, red };
 }
 
 module.exports = { cargarAppsScript, formatDate };

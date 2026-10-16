@@ -12,7 +12,7 @@ Un único archivo de Google Sheets. Cada pestaña es una tabla; la primera fila 
 Carga inicial: `data/alimentos.csv` (valores aproximados, revisar contra BEDCA o etiqueta).
 
 ### `recetas`
-`id`, `comida` (Desayuno, Almuerzo, Merienda, Cena), `nombre`, `preparacion`, `ingredientes_fijos` (JSON `[{"alimento","gramos"}]`), `ingredientes_escalables` (JSON `[{"alimento","min_g","max_g","unidad"}]`), `origen` (semilla / ia / manual), `activa` (si/no).
+`id`, `comida` (Desayuno, Almuerzo, Merienda, Cena), `nombre`, `preparacion`, `ingredientes_fijos` (JSON `[{"alimento","gramos"}]`), `ingredientes_escalables` (JSON `[{"alimento","min_g","max_g","unidad"}]`), `origen` (semilla / ia / manual), `activa` (si / no / propuesta / descartada). Las propuestas de la IA esperan revisión; si necesitan un alimento que no está en la hoja, el ingrediente lleva `nuevo: {nombre, grupo, estado}` (se quita al aceptarla).
 Carga inicial: `data/recetas_semilla.json`.
 
 ### `valoraciones`
@@ -39,7 +39,7 @@ Carga inicial: `data/recetas_semilla.json`.
 - Fase 4: `progreso` (pesos de 6 semanas con media de 7 días, cambio semanal, meta, bloque activo con adherencia, racha), `registrarPeso` (`peso_kg`, `fecha?`; uno por día), `alimentos`, `renombrarAlimento` (`id`, `nombre`), `guardarExcluidos` (`alimentos`: [ids]). `plan` devuelve también `siguiente` y, en el borrador, `bloque` y `balance` (adherencia, ritmo y propuesta con 2 opciones). `activarPlan` acepta `ajuste_kcal` (una de las opciones): cambia los objetivos de config, recalcula los gramos del borrador (mismos platos) y lo apunta en `ajustes_historial`.
 - La generación vive en Apps Script (V8). Respetar el límite de tiempo por ejecución; si hace falta, generar por semanas.
 - Activador temporal diario (`revisarFinDePlan`, se instala ejecutando `instalarActivador()` en el editor): si faltan 2 días o menos para el fin del plan activo y no hay borrador ni siguiente, genera el borrador.
-- Más adelante: `ANTHROPIC_API_KEY` en propiedades del script, llamada con `UrlFetchApp`.
+- Fase 5 (`RecetasIA.js`): `propuestas`, `pedidoRecetas` (`comida`, `cantidad?`, `idea?` → instrucciones, mensaje y esquema para escribir recetas en Claude Code), `importarPropuestas` (`comida`, `recetas`, `probar?`: valida y, sin `probar`, guarda como propuestas), `proponerRecetas` (sin usar: API de pago) (`comida`, `idea?`, `cantidad?` = 3; llama a Claude `claude-sonnet-5-5` con salida JSON por esquema, valida y reintenta una vez solo las descartadas), `aceptarPropuesta` / `descartarPropuesta` (`receta_id`), `anadirAlimento` (`alimento`: valores por 100 g que mete el usuario; `fuente` = usuario, `verificado` = si). Clave en `ANTHROPIC_API_KEY` (propiedades del script); `probarClaude()` comprueba la clave y pide el permiso de servicios externos.
 
 ## Frontend (PWA)
 - `manifest.json` + service worker para instalar y abrir sin conexión (último plan en caché).

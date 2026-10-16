@@ -19,8 +19,10 @@ Los macros los ponen pocos ingredientes (proteína, carbohidrato, grasa principa
 
 El usuario las está probando y puntuando. Las puntuaciones decidirán qué recetas se quedan.
 
-## Recetas generadas por IA (fase posterior)
+## Recetas generadas por IA (Fase 5)
 La IA devuelve JSON con el mismo formato que la semilla (`nombre`, `comida`, `preparacion`, `ingredientes_fijos`, `ingredientes_escalables`), usando solo `id` de la pestaña `alimentos`. El código:
 1. Rechaza alimentos desconocidos o excluidos.
 2. Ejecuta el optimizador; si no cuadra la comida dentro de tolerancia, la receta se descarta.
-3. Guarda la receta con `origen = ia` para que el usuario la valore.
+3. Guarda la receta con `origen = ia` y `activa = propuesta`; el usuario la revisa en Recetas y la añade o la descarta.
+
+Si la IA necesita un alimento que no está en la tabla, lo declara en `alimentos_nuevos` (id, nombre, grupo, crudo/cocinado, **sin macros**). La propuesta queda «Falta alimento» hasta que el usuario lo añade con los valores de la etiqueta o de BEDCA; entonces pasa el optimizador como las demás. Máximo 2 alimentos nuevos por receta.

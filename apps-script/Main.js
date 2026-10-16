@@ -308,6 +308,45 @@ const ACCIONES = {
     });
     return ids;
   },
+
+  // ---------- Recetas con IA (RecetasIA.js) ----------
+
+  // Recetas propuestas por la IA pendientes de revisar, con sus gramos o con los alimentos que les faltan.
+  propuestas: function () {
+    return listarPropuestas_();
+  },
+
+  // Instrucciones y datos para escribir recetas en Claude Code. Petición: {comida, cantidad?, idea?}.
+  pedidoRecetas: function (peticion) {
+    return pedidoRecetasIA_(peticion);
+  },
+
+  // Recetas escritas en Claude Code. Petición: {comida, recetas, probar?}. Con `probar` no guarda nada.
+  importarPropuestas: function (peticion) {
+    return importarPropuestasIA_(peticion);
+  },
+
+  // Pide recetas nuevas a la API de Claude (sin usar: necesita ANTHROPIC_API_KEY). Petición: {comida, idea?, cantidad?}.
+  // Devuelve {nuevas: [ids], descartadas: [{nombre, motivo}], propuestas}.
+  proponerRecetas: function (peticion) {
+    return proponerRecetasIA_(peticion);
+  },
+
+  // Petición: {receta_id}. La propuesta pasa a la biblioteca.
+  aceptarPropuesta: function (peticion) {
+    return aceptarPropuestaIA_(peticion);
+  },
+
+  // Petición: {receta_id}.
+  descartarPropuesta: function (peticion) {
+    return descartarPropuestaIA_(peticion);
+  },
+
+  // Alimento nuevo que pide una propuesta, con los valores por 100 g que mete el usuario.
+  // Petición: {alimento: {id, nombre, grupo, estado, kcal_100, proteina_100, carbohidratos_100, grasa_100, gramos_por_unidad}}.
+  anadirAlimento: function (peticion) {
+    return anadirAlimentoIA_(peticion);
+  },
 };
 
 // Lo ejecuta el activador diario (ver instalarActivador en Setup.js): si al plan activo le quedan 2 días

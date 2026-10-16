@@ -3,9 +3,9 @@
 > Memoria entre sesiones. Claude Code lo lee al empezar y lo actualiza al terminar cada tarea o antes de `/clear`. Mantenerlo por debajo de ~80 líneas: resumir lo antiguo.
 
 ## Estado actual
-- **Fase:** 4 · Progreso y ajuste quincenal — hecha y desplegada el 2026-10-16 (web app versión 7, misma URL; PWA `dieta-v7`; activador instalado por el usuario). 97 tests.
+- **Fase:** 5 · Recetas con IA — código hecho el 2026-10-16, **sin desplegar** (PWA `dieta-v8`). 109 tests. Fase 4 desplegada (web app versión 7).
 - **URLs:** PWA https://luvii12.github.io/dieta_app/ · repo https://github.com/Luvii12/dieta_app · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
-- **Siguiente paso:** el usuario prueba la Fase 4 en el móvil (registrar peso, Ajustes, y al final del bloque el borrador automático con la propuesta). Después, Fase 5 (recetas con IA).
+- **Siguiente paso:** desplegar la Fase 5 (`clasp push` + `clasp deploy`, y luego push de la PWA). El usuario crea `.conexion.local.json` con `{"url": "<URL /exec>", "token": "<APP_TOKEN>"}` para `scripts/recetas_ia.js`. Después, primera tanda real de recetas (proceso en `CLAUDE.md`).
 - **Desplegar:** `clasp push --force` y `clasp deploy -i <id del despliegue AKfycbwVOiJ…> -d "…"` (mantiene la URL); la PWA se publica sola al hacer push a `main`. Desplegar el servidor **antes** que la PWA.
 
 ## Decisiones tomadas
@@ -15,33 +15,19 @@
 | 2026-10-15 | Chat con IA aplazado; prioridad: generar la dieta automáticamente cada 2 semanas |
 | 2026-10-15 | Generación híbrida: recetas con ingredientes fijos/escalables + optimizador de gramos en código |
 | 2026-10-15 | Referencia provisional: «Ajustes Fran. Déficit» ≈ 1.655 kcal (P132 · C159 · G53), según lo que suman sus menús |
-| 2026-10-16 | Sin plugins de memoria ni de tokens: memoria en este archivo; no instalar nada sin confirmación |
-| 2026-10-16 | **App independiente**: repositorio, PWA, hoja de Google y Apps Script propios. No se integra ni comparte código o datos con la app de fitness/rutinas del usuario |
-| 2026-10-16 | PWA en JS sin build ni dependencias (`web/`); motor en `apps-script/` compatible con Node para tests (`node --test`) |
-| 2026-10-16 | La PWA llama por POST `text/plain` (evita CORS); el token va en el cuerpo, nunca en la URL. `doGet` no da datos |
-| 2026-10-16 | Usuario autoriza `clasp push --force` siempre en este proyecto (el repo es la fuente de verdad del código de Apps Script) |
-| 2026-10-16 | Valores de `config` siempre como JSON (también textos, entre comillas): Sheets convertía «16/10/2026, 10:22» en fecha |
-| 2026-10-16 | Optimizador propio sin dependencias: descenso por coordenadas sobre mínimos cuadrados acotados (`Nutricion.js`). Da los mismos gramos que el prototipo en las 22 recetas |
-| 2026-10-16 | Pantalla «Recetas» (Fase 1) con gramos ajustados, crudo/cocinado, macros frente a objetivo y aviso si una comida queda fuera de su tolerancia |
-| 2026-10-16 | Las 5 recetas fuera de margen por comida (D2, D4, C1, C3, C4) se quedan como están: el generador las compensa en el día. La tolerancia por comida es solo informativa; la del día es obligatoria |
-| 2026-10-16 | Planes empiezan el lunes siguiente (o el día después de acabar el activo). «Hoy» muestra el plan activo (solo lectura hasta la Fase 3) |
-| 2026-10-16 | Generador: elige recetas por día con reglas de repetición y pesos; prueba 20 combinaciones por día y hasta 50 planes completos, se queda el primero sin días a revisar. Valida con macros redondeados a 1 decimal (lo mismo que se guarda) |
-| 2026-10-16 | Datos iniciales: `scripts/generar_semilla.js` genera `apps-script/Semilla.js`; `configurarHoja()` carga solo en pestañas vacías. `nombre` de alimentos generado desde el `id` (el CSV no lo traía); `codigo_barras` vacío |
-| 2026-10-16 | Diseño de la Fase 3 en adelante: seguir `design/` tal cual (capturas + `DESIGN.md` «Mediterranean Culinary»). Proceso en `CLAUDE.md` › «Diseño de la interfaz» |
-| 2026-10-16 | Sin Tailwind por CDN: el diseño se pasa a CSS propio con los tokens de `DESIGN.md`. Google Fonts sí (cacheadas en el service worker) |
-| 2026-10-16 | Skills de diseño: reglas de extracción de `image-to-code` copiadas a `CLAUDE.md` (no se instala); `web-design-guidelines` y `awesome-design-md` no se instalan (revisión a mano con la lista de `CLAUDE.md`) |
-| 2026-10-16 | El diseño marca el estilo; sus botones y datos son orientativos: solo lo que tenga función real, sin sobrecargar. Sin fotos (tesela con icono de la comida), sin horas |
-| 2026-10-16 | Fase 3: barra inferior Hoy · Plan · Progreso · Ajustes (Recetas se recuperó después, ver abajo; a la receta también se llega desde el plato). «Cambiar plato» abre panel con alternativas + «Comida libre». Ajustes: solo nuevo aspecto (edición en Fase 4) |
-
-| 2026-10-16 | `awesome-design-md` descartado definitivamente (confirmado por el usuario) |
-| 2026-10-16 | «Cambiar plato» guarda la receta nueva en `cambiada_por` (la original queda en `receta_id`) y la comida vuelve a pendiente. «Comida libre» = `hecha: libre`: cuenta como hecha y suma sus kcal previstas en «Hoy» |
-| 2026-10-16 | Modo oscuro: misma estructura que el claro con los colores de `mi_dieta_hoy_modo_oscuro` (sin su tira semanal ni la tarjeta de hidratación) |
-| 2026-10-16 | Vuelve la pestaña **Recetas** (barra de 5: Hoy · Plan · Recetas · Progreso · Ajustes): biblioteca por comida con el estilo de las tarjetas de Plan; `#receta/<id>` abre la misma pantalla Receta, sin «Marcar como hecha». Base para editar recetas en la Fase 4 |
-| 2026-10-16 | Marcar y valorar necesitan conexión: se ven al momento y, si el servidor falla, se deshacen con un aviso |
-
+| 2026-10-16 | Sin plugins ni skills instaladas: memoria en este archivo; nada se instala sin confirmación. `awesome-design-md` y `web-design-guidelines` descartados |
+| 2026-10-16 | **App independiente** de la de fitness/rutinas (repo, PWA, hoja y Apps Script propios) |
+| 2026-10-16 | PWA en JS sin build (`web/`); motor en `apps-script/` probado en Node (`node --test`, `tests/simulador_gas.js`). POST `text/plain` con el token en el cuerpo. `clasp push --force` autorizado siempre |
+| 2026-10-16 | Valores de `config` siempre como JSON. Optimizador propio (descenso por coordenadas), mismos gramos que el prototipo |
+| 2026-10-16 | Tolerancia por comida solo informativa en las recetas semilla (D2, D4, C1, C3, C4 fuera, las compensa el día); la del día es obligatoria. **Las recetas de IA sí deben cumplir la de su comida** |
+| 2026-10-16 | Planes empiezan el lunes siguiente (o al acabar el activo). Generador: 20 combinaciones por día, hasta 50 planes, valida con macros a 1 decimal |
+| 2026-10-16 | Diseño: `design/` manda en el estilo; botones y datos de las capturas son orientativos. Sin fotos ni horas. CSS propio con tokens de `DESIGN.md`, Google Fonts cacheadas |
+| 2026-10-16 | Barra de 5: Hoy · Plan · Recetas · Progreso · Ajustes. «Cambiar plato» guarda en `cambiada_por`; «Comida libre» = `hecha: libre`. Marcar y valorar necesitan conexión (se deshacen si falla) |
 | 2026-10-16 | Fase 4 (decidido por el usuario): Progreso con meta de peso y racha (sin cintura, momento de la toma ni proteína media); Nuevo plan con 2 opciones de ajuste; Ajustes edita objetivos, excluidos, nombres de alimentos e interruptor «Comida libre semanal» (sin favoritos); activador instalado con `instalarActivador()` |
 | 2026-10-16 | Activar un borrador con el plan activo aún en curso lo deja como «siguiente» (no se pierden los últimos días). «Nuevo plan» es la vista del borrador dentro de la pestaña Plan. Elegir un ajuste recalcula los gramos del borrador con los mismos platos |
 | 2026-10-16 | Comida libre semanal apagada: «Cambiar plato» no ofrece comida libre y todas las libres cuentan como no hechas en la adherencia |
+| 2026-10-16 | Fase 5 (decidido por el usuario): **las recetas las escribe Claude Code con la suscripción, sin API de pago** (`scripts/recetas_ia.js`: pedido → probar → enviar). El usuario revisa cada propuesta en Recetas y la añade o descarta; si falta un alimento, **el usuario mete sus macros** (etiqueta/BEDCA), la IA nunca da valores. La llamada a la API (`claude-sonnet-5-5`) queda en el servidor sin usar y sin botón |
+| 2026-10-16 | Recetas IA: ids `IA1, IA2…`; `activa` = propuesta/descartada; las descartadas no se borran (para que la IA no las repita). Un reintento con los motivos si se descarta alguna; descarta nombres repetidos |
 
 ## Preguntas abiertas
 - Nombres de alimentos generados desde el `id` («Ternera picada 5», «Aceite ml»): ya se pueden renombrar en Ajustes › Nombres de alimentos.
@@ -49,9 +35,7 @@
 - El usuario está probando la semana de prueba (22 recetas); sus valoraciones decidirán qué recetas se quedan.
 
 ## Hecho
+- **2026-10-16 · Fase 5 (sin desplegar):** `RecetasIA.js` (instrucciones y esquema, validación, alimentos nuevos), acciones `propuestas`, `pedidoRecetas`, `importarPropuestas`, `aceptarPropuesta`, `descartarPropuesta`, `anadirAlimento` (+ `proponerRecetas`/`probarClaude()` sin usar). `scripts/recetas_ia.js`. PWA: sección «Propuestas de la IA» en Recetas, Receta con Añadir/Descartar y formulario de alimento nuevo (`abrirFormulario` pasa a `comun.js`). Corregido un «null» al pie de las recetas de la biblioteca. Probado con 2 cenas reales en el servidor local. 109 tests.
 - **2026-10-16 · Fase 4 (desplegada):** `Progreso.js` (media móvil, ritmo, adherencia, racha, regla de ajuste, reparto), acciones `progreso`, `registrarPeso`, `alimentos`, `renombrarAlimento`, `guardarExcluidos`, `activarPlan` con ajuste, estado «siguiente», `revisarFinDePlan` + `instalarActivador`. PWA: `progreso.js` (gráfica SVG + hoja de peso), `nuevoplan.js`, Ajustes editable, aviso de nuevo plan en Hoy. 97 tests.
 - **2026-10-16 · Fase 3:** acciones `marcarComida`, `alternativas`, `cambiarPlato`, `valorar` (+ `grupo` en ingredientes y `valoracion`/`cambiada` en cada comida). PWA rehecha con el diseño de `design/` en módulos (`comun`, `datos`, `hoy`, `plan`, `recetas`, `receta`, `cambiar`, `ajustes`); fuentes de Google cacheadas por el service worker (v4). 74 tests.
-- **2026-10-16 · Fase 2:** `Generador.js` + `Planes.js` + acciones `plan`/`generarPlan`/`activarPlan`/`hoy`; pestaña Plan (generar, revisar 14 días, activar) y Hoy con el plan activo (y sin conexión desde el plan guardado). `tests/simulador_gas.js` ejecuta el código real de Apps Script sobre una hoja en memoria. 67 tests. En Google: plan en 4,4 s, 0 días a revisar.
-- **2026-10-16 · Fase 1:** `Nutricion.js` (macros, optimizador, redondeo a 5 g/piezas, tolerancias comida y día con margen de proteína) + acción `recetas` + pantalla Recetas. 34 tests (regresión: mismos gramos que el prototipo, kcal ±0,15 %).
-- **2026-10-16 · Fase 0 terminada:** funciona en el móvil (instalada, conectada, lee/escribe). Git guarda el token de GitHub en `~/.git-credentials` (Hyprland no tiene servicio de secretos).
-- **2026-10-16 · Fase 0 (detalle):** Apps Script (`Main`, `Hoja`, `Setup`, `Util`, `Semilla`) con token y acciones `config` (lee/escribe) y `hoy` (vacía); PWA con Hoy, Ajustes (URL + token, prueba de escritura, objetivos), service worker, iconos; workflow de Pages; 14 tests en verde; prueba en navegador contra API simulada sin errores.
+- **2026-10-16 · Fases 0–2:** esqueleto (token, `config`, PWA instalable), motor nutricional (`Nutricion.js`, 34 tests de regresión con el prototipo) y generador de 14 días (`Generador.js`, `Planes.js`; plan en 4,4 s en Google). Git guarda el token de GitHub en `~/.git-credentials`.

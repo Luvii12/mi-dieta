@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 # clasp guarda aquí las credenciales si se usa login local al proyecto
 .clasprc.json
+
+# Conexión con Apps Script para scripts/recetas_ia.js (lleva el token: nunca al repo)
+.conexion.local.json

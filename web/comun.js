@@ -82,6 +82,56 @@ export const enlaceReceta = (planId, fecha, comida) => `#receta/${encodeURICompo
 // ¿Cuenta como hecha? La comida libre también (se sale del plan, pero no queda pendiente).
 export const estaHecha = comida => comida.hecha === 'si' || comida.hecha === 'libre';
 
+// ---------- Formulario en panel inferior ----------
+
+// '78,4' → 78.4; vacío o no numérico → NaN
+const leerNumero = texto => (String(texto).trim() === '' ? NaN : Number(String(texto).replace(',', '.')));
+
+function controlFormulario(c) {
+  if (c.tipo === 'opciones') {
+    return h('select', { name: c.clave }, c.opciones.map(([valor, texto]) => h('option', { value: valor, selected: valor === c.valor }, texto)));
+  }
+  if (c.tipo === 'texto') return h('input', { type: 'text', autocomplete: 'off', maxlength: 60, name: c.clave, value: c.valor || '' });
+  return h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', name: c.clave,
+    value: c.valor === null || c.valor === undefined ? '' : numero(c.valor, c.decimales || 0).replace(/\./g, '') });
+}
+
+// Panel con campos. campos: [{clave, etiqueta, unidad, valor, decimales, tipo ('numero' | 'texto' | 'opciones'),
+// opciones: [[valor, texto]], ancho (ocupa toda la fila)}]. Los números llegan como número (NaN si están vacíos).
+// guardar(valores) lanza un Error con el mensaje si algo no vale. foco: data-foco o id al que volver al cerrar.
+export function abrirFormulario({ titulo, nota, campos, guardar, foco, textoGuardar }) {
+  const panel = $('panel-formulario');
+  $('formulario-titulo').textContent = titulo;
+  $('formulario-nota').textContent = nota || '';
+  $('formulario-estado').textContent = '';
+  $('formulario-guardar').textContent = textoGuardar || 'Guardar';
+  $('formulario-campos').replaceChildren(...campos.map(c => h('label', { class: 'campo' + (c.ancho ? ' campo-ancho' : '') },
+    h('span', { class: 'campo-etiqueta' }, c.etiqueta),
+    h('span', { class: 'campo-caja' }, controlFormulario(c), c.unidad ? h('span', { class: 'campo-unidad' }, c.unidad) : null))));
+  $('form-formulario').onsubmit = async evento => {
+    evento.preventDefault();
+    const valores = {};
+    campos.forEach(c => {
+      const valor = panel.querySelector(`[name="${c.clave}"]`).value;
+      valores[c.clave] = c.tipo === 'texto' || c.tipo === 'opciones' ? valor.trim() : leerNumero(valor);
+    });
+    const boton = $('formulario-guardar');
+    boton.disabled = true;
+    $('formulario-estado').textContent = 'Guardando…';
+    try {
+      await guardar(valores);
+      panel.close();
+      const volver = document.querySelector(`[data-foco="${foco}"]`) || $(foco);
+      if (volver) volver.focus();
+    } catch (err) {
+      $('formulario-estado').textContent = err.message;
+    } finally {
+      boton.disabled = false;
+    }
+  };
+  panel.showModal();
+}
+
 // ---------- Aviso flotante ----------
 
 let temporizador = null;

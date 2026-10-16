@@ -2,7 +2,7 @@
 // nombres de alimentos y conexión con la hoja de Google (design/mi_dieta_ajustes).
 
 import { llamar, leerConexion, guardarConexion, leerLocal, guardarLocal } from './api.js';
-import { $, h, icono, numero, avisar, COMIDAS, ICONO_COMIDA } from './comun.js';
+import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';
 
 const CACHE_CONFIG = 'dieta.config';
 const CACHE_ALIMENTOS = 'dieta.alimentos';
@@ -16,9 +16,6 @@ let alimentos = null;
 export function kcalDia(cfg) {
   return COMIDAS.reduce((s, c) => s + (Number((cfg['objetivo_' + c.toLowerCase()] || {}).kcal) || 0), 0);
 }
-
-// '78,4' → 78.4; vacío o no numérico → NaN
-const leerNumero = texto => (String(texto).trim() === '' ? NaN : Number(String(texto).replace(',', '.')));
 
 // ---------- Objetivos y preferencias ----------
 
@@ -56,40 +53,6 @@ async function guardarConfig(cambios) {
   guardarLocal(CACHE_CONFIG, nueva);
   pintarObjetivos();
   return nueva;
-}
-
-// Panel con campos numéricos. campos: [{clave, etiqueta, unidad, valor, decimales}].
-// guardar(valores) lanza un Error con el mensaje si algo no vale.
-function abrirFormulario({ titulo, nota, campos, guardar, foco }) {
-  const panel = $('panel-formulario');
-  $('formulario-titulo').textContent = titulo;
-  $('formulario-nota').textContent = nota || '';
-  $('formulario-estado').textContent = '';
-  $('formulario-campos').replaceChildren(...campos.map(c => h('label', { class: 'campo' },
-    h('span', { class: 'campo-etiqueta' }, c.etiqueta),
-    h('span', { class: 'campo-caja' },
-      h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', name: c.clave,
-        value: c.valor === null || c.valor === undefined ? '' : numero(c.valor, c.decimales || 0).replace(/\./g, '') }),
-      h('span', { class: 'campo-unidad' }, c.unidad)))));
-  $('form-formulario').onsubmit = async evento => {
-    evento.preventDefault();
-    const valores = {};
-    campos.forEach(c => { valores[c.clave] = leerNumero(panel.querySelector(`[name="${c.clave}"]`).value); });
-    const boton = $('formulario-guardar');
-    boton.disabled = true;
-    $('formulario-estado').textContent = 'Guardando…';
-    try {
-      await guardar(valores);
-      panel.close();
-      const volver = document.querySelector(`[data-foco="${foco}"]`) || $(foco);
-      if (volver) volver.focus();
-    } catch (err) {
-      $('formulario-estado').textContent = err.message;
-    } finally {
-      boton.disabled = false;
-    }
-  };
-  panel.showModal();
 }
 
 function editarObjetivo(comida) {

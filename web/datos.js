@@ -8,6 +8,7 @@ import { hoyIso } from './comun.js';
 const CACHE_HOY = 'dieta.ultimoHoy';
 const CACHE_PLAN = 'dieta.plan';
 const CACHE_RECETAS = 'dieta.recetas';
+const CACHE_PROPUESTAS = 'dieta.propuestas';
 
 export const leerPlan = () => leerLocal(CACHE_PLAN);
 export const guardarPlan = datos => guardarLocal(CACHE_PLAN, datos);
@@ -15,11 +16,28 @@ export const guardarHoy = hoy => guardarLocal(CACHE_HOY, hoy);
 export const olvidarHoy = () => guardarLocal(CACHE_HOY, null);
 export const leerRecetas = () => leerLocal(CACHE_RECETAS);
 export const guardarRecetas = recetas => guardarLocal(CACHE_RECETAS, recetas);
+export const leerPropuestas = () => leerLocal(CACHE_PROPUESTAS);
+export const guardarPropuestas = propuestas => guardarLocal(CACHE_PROPUESTAS, propuestas);
 
-// Receta de la biblioteca con la misma forma que una comida del plan (para la pantalla «Receta»).
+// Receta de la biblioteca (o propuesta de la IA) con la misma forma que una comida del plan (para la
+// pantalla «Receta»). Las propuestas llevan `propuesta` (estado, alimentos que faltan o motivo) y, si aún
+// les falta un alimento, ingredientes con sus límites en vez de gramos y macros = null.
 export function buscarReceta(id) {
   const r = (leerRecetas() || []).find(x => x.id === id);
-  if (!r || !r.ajuste) return null;
+  if (!r) {
+    const p = (leerPropuestas() || []).find(x => x.id === id);
+    if (!p) return null;
+    return {
+      comida: p.comida,
+      receta_id: p.id,
+      nombre: p.nombre,
+      preparacion: p.preparacion,
+      ingredientes: p.ajuste ? p.ajuste.ingredientes : (p.ingredientes || []),
+      macros: p.ajuste ? p.ajuste.macros : null,
+      propuesta: p,
+    };
+  }
+  if (!r.ajuste) return null;
   return {
     comida: r.comida,
     receta_id: r.id,
@@ -137,4 +155,30 @@ export async function cambiarPlato(planId, fecha, comida, recetaId) {
     dia.evaluacion = nuevo.evaluacion;
     dia.revisar = nuevo.revisar;
   });
+}
+
+// ---------- Recetas propuestas por la IA ----------
+
+// Llama a una acción que devuelve las propuestas actualizadas y las guarda.
+async function conPropuestas(accion, extra) {
+  const r = await llamar(accion, extra);
+  guardarPropuestas(r.propuestas);
+  avisarCambio();
+  return r;
+}
+
+export const descartarPropuesta = id => conPropuestas('descartarPropuesta', { receta_id: id });
+export const anadirAlimento = alimento => conPropuestas('anadirAlimento', { alimento });
+
+// La receta pasa a la biblioteca: se vuelve a pedir la biblioteca para tenerla con sus gramos.
+export async function aceptarPropuesta(id) {
+  const r = await llamar('aceptarPropuesta', { receta_id: id });
+  try {
+    guardarRecetas(await llamar('recetas'));
+  } catch (err) {
+    // Se actualizará al abrir Recetas.
+  }
+  guardarPropuestas(r.propuestas);
+  avisarCambio();
+  return r;
 }

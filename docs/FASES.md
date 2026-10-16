@@ -30,7 +30,7 @@ Cada fase termina con algo usable en el móvil. Parar al final de cada una.
 - **Hecho cuando**: al acabar un bloque se genera solo el borrador siguiente con la propuesta de ajuste.
 
 ## Fase 5 · Recetas con IA
-- Llamada a la API de Claude desde Apps Script para proponer recetas nuevas (JSON validado).
+- Claude Code (con la suscripción, sin API de pago) escribe recetas nuevas en JSON; Apps Script las valida con el optimizador y las guarda como propuestas que el usuario acepta o descarta en la app (`scripts/recetas_ia.js`, ver `CLAUDE.md`).
 - **Hecho cuando**: la biblioteca crece con recetas IA que pasan el optimizador.
 
 ## Fase 6 · Extras

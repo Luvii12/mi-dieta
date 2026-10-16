@@ -65,6 +65,13 @@ Decidido (2026-10-16): sin fotos de platos hasta la Fase 6 (en su hueco, tesela 
 
 `awesome-design-md` (VoltAgent) **no se usa**: es un catálogo de estilos de otras marcas y esta app ya tiene su propio `DESIGN.md`.
 
+## Recetas nuevas con IA (Fase 5): las escribe Claude Code
+Cuando Fran pida recetas nuevas («propón 3 cenas mexicanas»), las escribe Claude Code dentro de su suscripción; **no se usa la API de Claude** (se paga aparte; `proponerRecetas` y `probarClaude()` quedan preparados sin usar). Pasos:
+1. `node scripts/recetas_ia.js pedido <Comida> [cantidad] [idea]` → instrucciones, tabla de alimentos, objetivo, recetas existentes y valoraciones (lo da la hoja real; conexión en `.conexion.local.json`, fuera del repo).
+2. Escribir las recetas en un JSON del scratchpad con el formato del esquema (`nombre`, `preparacion`, `ingredientes_fijos`, `ingredientes_escalables`, `alimentos_nuevos`) siguiendo esas instrucciones. Nunca macros.
+3. `node scripts/recetas_ia.js probar <Comida> <archivo>` → gramos y macros, o por qué se descarta. Corregir y repetir hasta que valgan.
+4. Enseñar a Fran las recetas (nombre, idea, macros) y, con su visto bueno, `enviar`: quedan como propuestas en la pestaña Recetas para que las acepte o descarte en el móvil (y meta los macros de los alimentos nuevos).
+
 ## Reglas de trabajo
 1. Trabaja **por fases** (`docs/FASES.md`) y para al terminar cada una para que el usuario pruebe en el móvil.
 2. Antes de escribir código de una fase, propone la estructura y espera confirmación si hay decisiones abiertas.

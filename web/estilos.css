@@ -1098,3 +1098,28 @@ button.fila-alimento:hover { background: var(--superficie-baja); }
 .aviso-plan { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-color: var(--secundario-borde); background: var(--secundario-suave); text-decoration: none; }
 .aviso-plan-texto { flex: 1; display: flex; flex-direction: column; font-size: 12px; line-height: 16px; color: var(--texto-suave); }
 .aviso-plan-texto strong { font-size: 14px; line-height: 18px; color: var(--texto); }
+
+/* ---------- Recetas con IA (Fase 5) ---------- */
+
+.boton:disabled { opacity: 0.5; cursor: not-allowed; }
+.boton:disabled:active { transform: none; }
+.grupo-titulo.texto-terciario { color: var(--terciario); }
+.barra-accion-doble { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+.barra-accion-doble .boton { padding: 10px 12px; }
+
+/* Formulario: campos que ocupan la fila entera y listas desplegables */
+.formulario-campos .campo-ancho { grid-column: 1 / -1; }
+.form-formulario .campo select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: var(--radio-md);
+  border: 1px solid var(--borde-variante);
+  background: var(--superficie-baja);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 16px;
+  line-height: 22px;
+}
+.form-formulario .campo select:focus { outline: none; border: 1.5px solid var(--primario); }
+.form-formulario .campo input:not([inputmode]) { font-variant-numeric: normal; padding-right: 12px; }
