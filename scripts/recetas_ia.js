@@ -28,12 +28,13 @@ function conexion() {
 }
 
 // Igual que la PWA: POST text/plain con el token en el cuerpo. Apps Script responde con una redirección
-// que fetch sigue sola.
+// que fetch sigue sola. Las cabeceras Sec-Fetch-* las pone el navegador; sin ellas Google no entrega la
+// respuesta (la redirección vuelve a /exec y acaba en una página HTML).
 async function llamar(accion, extra) {
   const { url, token } = conexion();
   const respuesta = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    headers: { 'Content-Type': 'text/plain;charset=utf-8', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Dest': 'empty' },
     body: JSON.stringify(Object.assign({}, extra, { accion, token })),
   });
   const texto = await respuesta.text();
