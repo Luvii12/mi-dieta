@@ -1,6 +1,6 @@
 // Service worker: guarda los archivos de la app para que abra sin conexión.
 // Al cambiar cualquier archivo de web/, sube VERSION para que el móvil descargue la nueva.
-const VERSION = 'dieta-v5';
+const VERSION = 'dieta-v6';
 const FUENTES = 'dieta-fuentes-v1';
 const ARCHIVOS = [
   './',
@@ -54,8 +54,10 @@ self.addEventListener('fetch', evento => {
     return;
   }
   if (url.origin !== self.location.origin) return;
+  // `no-cache`: siempre se pregunta al servidor si hay versión nueva. Si no, el navegador podía mezclar
+  // un index.html nuevo con un app.js viejo guardado (GitHub Pages deja guardar 10 minutos).
   evento.respondWith(
-    fetch(peticion)
+    fetch(peticion.url, { cache: 'no-cache', credentials: 'same-origin' })
       .then(respuesta => {
         const copia = respuesta.clone();
         caches.open(VERSION).then(cache => cache.put(peticion, copia));

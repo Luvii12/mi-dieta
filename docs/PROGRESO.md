@@ -3,7 +3,7 @@
 > Memoria entre sesiones. Claude Code lo lee al empezar y lo actualiza al terminar cada tarea o antes de `/clear`. Mantenerlo por debajo de ~80 líneas: resumir lo antiguo.
 
 ## Estado actual
-- **Fase:** 3 · Pantallas de uso diario — hecha y desplegada el 2026-10-16 (web app versión 6 «Fase 3: pestaña Recetas», misma URL; Pages con service worker `dieta-v5`, incluida la pestaña Recetas). Falta que el usuario siga un día completo desde el móvil.
+- **Fase:** 3 · Pantallas de uso diario — hecha y desplegada el 2026-10-16 (web app versión 6 «Fase 3: pestaña Recetas», misma URL; Pages con service worker `dieta-v6`, incluida la pestaña Recetas; el service worker pide siempre `no-cache` para no mezclar archivos nuevos y viejos). Falta que el usuario siga un día completo desde el móvil.
 - **URLs:** PWA https://luvii12.github.io/dieta_app/ · repo https://github.com/Luvii12/dieta_app · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
 - **Hecho en la nube:** hoja «Dieta» y script vinculado creados con clasp (IDs en `.clasp.json`); código subido con `clasp push --force` (autorizado por el usuario, para sobrescribir el manifiesto con zona Europe/Madrid).
 - **Siguiente paso:** el usuario prueba la Fase 3 en el móvil; después, Fase 4 (Progreso, Nuevo plan y edición en Ajustes).
