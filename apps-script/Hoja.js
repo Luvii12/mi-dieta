@@ -80,15 +80,14 @@ function leerConfig_() {
 
 // Crea o actualiza una fila de `config`. Usa un bloqueo para que dos peticiones no pisen la misma fila.
 function guardarConfig_(clave, valor) {
-  const bloqueo = LockService.getScriptLock();
-  bloqueo.waitLock(10000);
-  try {
-    const hoja = hoja_('config');
-    const claves = hoja.getRange(1, 1, Math.max(hoja.getLastRow(), 1), 1).getValues().map(f => f[0]);
-    const indice = claves.indexOf(clave);
-    const fila = indice > 0 ? indice + 1 : hoja.getLastRow() + 1;
-    hoja.getRange(fila, 1, 1, 2).setNumberFormat('@').setValues([[clave, serializarValor_(valor)]]);
-  } finally {
-    bloqueo.releaseLock();
-  }
+  conBloqueo_(() => escribirConfig_(clave, valor));
+}
+
+// Igual que guardarConfig_, para usar cuando ya se tiene el bloqueo.
+function escribirConfig_(clave, valor) {
+  const hoja = hoja_('config');
+  const claves = hoja.getRange(1, 1, Math.max(hoja.getLastRow(), 1), 1).getValues().map(f => f[0]);
+  const indice = claves.indexOf(clave);
+  const fila = indice > 0 ? indice + 1 : hoja.getLastRow() + 1;
+  hoja.getRange(fila, 1, 1, 2).setNumberFormat('@').setValues([[clave, serializarValor_(valor)]]);
 }

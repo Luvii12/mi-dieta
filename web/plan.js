@@ -1,18 +1,23 @@
-// Pantalla «Plan»: los 14 días del plan activo (o del borrador), navegables por día
-// (design/mi_dieta_plan_14_d_as). Desde aquí se genera y se activa el plan.
+// Pantalla «Plan»: los 14 días del plan activo o del siguiente, navegables por día
+// (design/mi_dieta_plan_14_d_as), y el borrador como «Nuevo plan» (nuevoplan.js). Desde aquí se genera
+// y se activa el plan.
 
-import { llamar } from './api.js';
+import { llamar, guardarLocal } from './api.js';
 import { $, h, icono, numero, fechaTitulo, fechaCorta, diaDeSemana, hoyIso, diasEntre, tesela, enlaceReceta, estaHecha } from './comun.js';
 import { leerPlan, guardarPlan, olvidarHoy } from './datos.js';
 import { vacio } from './hoy.js';
+import { vistaNuevoPlan } from './nuevoplan.js';
 
-// Qué plan se está viendo ('activo' o 'borrador') y qué día de cada uno.
+const VISTAS = ['activo', 'siguiente', 'borrador'];
+const NOMBRE_VISTA = { activo: 'Plan activo', siguiente: 'Siguiente', borrador: 'Nuevo plan' };
+
+// Qué plan se está viendo y qué día de cada uno. Si hay borrador se enseña primero: está esperando revisión.
 let vista = null;
 const diaElegido = {};
 
 function planVisible(datos) {
   if (vista && datos[vista]) return vista;
-  return datos.activo ? 'activo' : 'borrador';
+  return ['borrador', 'activo', 'siguiente'].find(v => datos[v]);
 }
 
 function tiraDias(plan, elegido) {
@@ -88,7 +93,7 @@ function boton(texto, clase, accion) {
 
 function pintar(contenedor, datos) {
   contenedor.replaceChildren(h('p', { id: 'plan-mensaje', class: 'mensaje', role: 'status' }));
-  if (!datos.activo && !datos.borrador) {
+  if (!datos.activo && !datos.borrador && !datos.siguiente) {
     const caja = vacio('Todavía no tienes ningún plan. Se generan 14 días a partir del lunes que viene, con tus recetas y tus objetivos.');
     caja.append(boton('Generar plan', 'boton-primario', () => generarPlan(datos)));
     contenedor.prepend(caja);
@@ -96,6 +101,25 @@ function pintar(contenedor, datos) {
   }
   vista = planVisible(datos);
   const plan = datos[vista];
+  const partes = [];
+  const presentes = VISTAS.filter(v => datos[v]);
+  if (presentes.length > 1) {
+    partes.push(h('div', { class: 'selector', role: 'group', 'aria-label': 'Plan que se muestra', style: `grid-template-columns: repeat(${presentes.length}, 1fr)` },
+      presentes.map(v => h('button', {
+        type: 'button', class: 'selector-opcion', 'aria-pressed': v === vista ? 'true' : 'false', 'data-foco': 'vista-' + v,
+        onclick: () => { vista = v; pintar(contenedor, datos); },
+      }, NOMBRE_VISTA[v]))));
+  }
+  if (vista === 'borrador') {
+    partes.push(...vistaNuevoPlan(plan, {
+      activar: ajuste => activarPlan(datos, plan.plan_id, ajuste),
+      regenerar: () => generarPlan(datos),
+      repintar: () => pintarPlan(contenedor),
+    }));
+    contenedor.prepend(...partes.filter(Boolean));
+    return;
+  }
+
   const hoy = hoyIso();
   let elegido = diaElegido[plan.plan_id];
   if (!plan.dias.some(d => d.fecha === elegido)) elegido = plan.dias.some(d => d.fecha === hoy) ? hoy : plan.dias[0].fecha;
@@ -103,21 +127,13 @@ function pintar(contenedor, datos) {
   const dia = plan.dias.find(d => d.fecha === elegido);
   const indice = diasEntre(plan.inicio, elegido);
 
-  const partes = [];
-  if (datos.activo && datos.borrador) {
-    partes.push(h('div', { class: 'selector', role: 'group', 'aria-label': 'Plan que se muestra' },
-      ['activo', 'borrador'].map(v => h('button', {
-        type: 'button', class: 'selector-opcion', 'aria-pressed': v === vista ? 'true' : 'false',
-        onclick: () => { vista = v; pintar(contenedor, datos); },
-      }, v === 'activo' ? 'Plan activo' : 'Borrador'))));
-  }
   partes.push(
     h('div', { class: 'plan-cabecera' },
       h('div', { class: 'plan-titulo' },
         h('h1', null, `Plan del ${fechaCorta(plan.inicio)} al ${fechaCorta(plan.fin)}`),
         vista === 'activo'
           ? h('span', { class: 'insignia insignia-activo' }, h('span', { class: 'punto-activo' }), 'Activo')
-          : h('span', { class: 'insignia insignia-borrador' }, 'Borrador')),
+          : h('span', { class: 'insignia insignia-borrador' }, 'Siguiente')),
       h('p', { class: 'subtitulo' }, `Semana ${indice < 7 ? 1 : 2} de 2 · ${plan.dias.length} días personalizados`)),
     tiraDias(plan, elegido),
     h('div', { class: 'dia-cabecera' },
@@ -126,14 +142,10 @@ function pintar(contenedor, datos) {
     h('div', { class: 'lista-comidas lista-plan' }, dia.comidas.map(c => tarjetaComida(plan, dia, c))),
     totalDia(dia, plan.objetivoDia));
 
-  const aRevisar = plan.dias.filter(d => d.revisar).length;
   const acciones = h('div', { class: 'acciones-plan' });
-  if (vista === 'borrador') {
-    acciones.append(
-      h('p', { class: 'subtitulo' }, aRevisar ? `${aRevisar} día(s) no cumplen la tolerancia.` : 'Los 14 días cumplen la tolerancia.'),
-      boton('Activar plan', 'boton-primario', () => activarPlan(datos, plan.plan_id)),
-      boton('Generar otro borrador', 'boton-secundario', () => generarPlan(datos)));
-  } else if (!datos.borrador) {
+  if (vista === 'siguiente') {
+    acciones.append(h('p', { class: 'subtitulo' }, `Empieza el ${fechaTitulo(plan.inicio).toLowerCase()}, al acabar el plan activo.`));
+  } else if (!datos.borrador && !datos.siguiente) {
     acciones.append(boton('Generar el siguiente plan', 'boton-secundario', () => generarPlan(datos)));
   }
   partes.push(acciones);
@@ -160,9 +172,11 @@ async function generarPlan(datos) {
   if (datos.borrador && !confirm('Se sustituirá el borrador actual por uno nuevo. ¿Seguir?')) return;
   bloquear(true);
   mensaje('Generando 14 días… puede tardar unos segundos.');
+  window.scrollTo(0, 0);
   try {
     const borrador = await llamar('generarPlan');
-    const nuevos = Object.assign({}, datos, { borrador });
+    // Se vuelve a pedir el plan completo: el borrador trae así el balance y la propuesta de ajuste.
+    const nuevos = await llamar('plan').catch(() => Object.assign({}, datos, { borrador }));
     guardarPlan(nuevos);
     vista = 'borrador';
     pintar($('vista-plan'), nuevos);
@@ -175,17 +189,23 @@ async function generarPlan(datos) {
   }
 }
 
-async function activarPlan(datos, planId) {
+// ajusteKcal: opción elegida de la propuesta (0 = mantener las calorías).
+async function activarPlan(datos, planId, ajusteKcal = 0) {
   bloquear(true);
   mensaje('Activando…');
+  window.scrollTo(0, 0);
   try {
-    await llamar('activarPlan', { plan_id: planId });
+    const r = await llamar('activarPlan', { plan_id: planId, ajuste_kcal: ajusteKcal });
     olvidarHoy();
     const nuevos = await llamar('plan');
     guardarPlan(nuevos);
-    vista = 'activo';
+    vista = r.estado;
     pintar($('vista-plan'), nuevos);
-    mensaje(`Plan activado. Lo verás en «Hoy» desde el ${fechaTitulo(nuevos.activo.inicio).toLowerCase()}.`);
+    mensaje(r.estado === 'siguiente'
+      ? `Plan programado: empieza el ${fechaTitulo(r.inicio).toLowerCase()}, cuando acabe el actual.`
+      : `Plan activado. Lo verás en «Hoy» desde el ${fechaTitulo(r.inicio).toLowerCase()}.`);
+    // Los objetivos pueden haber cambiado con el ajuste.
+    llamar('config').then(config => guardarLocal('dieta.config', config)).catch(() => {});
   } catch (err) {
     bloquear(false);
     mensaje(err.message, true);

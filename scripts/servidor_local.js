@@ -1,7 +1,8 @@
 // Servidor local para probar la PWA sin Google: sirve web/ y responde a /api con el código real de
 // Apps Script sobre una hoja en memoria (se pierde al cerrar). Crea un plan activo generado como si hoy
 // fuera hace una semana, así «hoy» siempre cae dentro del plan.
-// Uso: npm run servidor  (o `node scripts/servidor_local.js borrador` para tener además un borrador).
+// Uso: npm run servidor  (o `node scripts/servidor_local.js borrador` para tener además pesajes de 3 semanas,
+// las comidas pasadas marcadas y un borrador con su propuesta de ajuste).
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -15,6 +16,13 @@ prep.contexto.crearToken();
 const p = prep.llamar('generarPlan').datos;
 prep.llamar('activarPlan', { plan_id: p.plan_id });
 if (process.argv[2] === 'borrador') {
+  const dia = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+  prep.contexto.anadirFilas_('pesos', Array.from({ length: 20 }, (_, i) => ({
+    fecha: dia(20 - i), peso_kg: Math.round((81 - i * 0.07 + Math.sin(i) * 0.3) * 10) / 10, cintura_cm: '' })));
+  const hoy = dia(0);
+  const comidas = prep.contexto.leerTabla_('plan_comidas')
+    .map((f, i) => Object.assign(f, { hecha: f.fecha < hoy ? (i % 9 === 0 ? 'no' : 'si') : f.hecha }));
+  prep.contexto.reescribirTabla_('plan_comidas', comidas);
   const p2 = cargarAppsScript(new Date().toISOString());
   p2.libro.hojas.splice(0, p2.libro.hojas.length, ...prep.libro.hojas);
   Object.assign(p2.propiedades, prep.propiedades);

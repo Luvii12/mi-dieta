@@ -110,17 +110,46 @@ test('plan → activar → hoy: el día a día del plan activo', () => {
   assert.equal(hoy.evaluacion.ok, true);
 });
 
-test('activarPlan: el nuevo empieza al acabar el activo y el anterior se archiva', () => {
+// Mismo libro y token, con otro «ahora».
+function enFecha(gas, ahoraIso) {
+  const otro = cargarAppsScript(ahoraIso);
+  otro.libro.hojas.splice(0, otro.libro.hojas.length, ...gas.libro.hojas);
+  Object.assign(otro.propiedades, gas.propiedades);
+  return otro;
+}
+
+test('activarPlan: si el activo no ha acabado, el nuevo queda como siguiente y pasa a activo al empezar', () => {
   const gas = preparar();
   const primero = gas.llamar('generarPlan').datos;
   gas.llamar('activarPlan', { plan_id: primero.plan_id });
   const segundo = gas.llamar('generarPlan').datos;
   assert.equal(segundo.inicio, '2026-11-02');
-  assert.equal(gas.llamar('activarPlan', { plan_id: segundo.plan_id }).ok, true);
-  const estados = Object.fromEntries(filas(gas, 'planes').map(p => [p.plan_id, p.estado]));
-  assert.equal(estados[primero.plan_id], 'archivado');
-  assert.equal(estados[segundo.plan_id], 'activo');
-  assert.equal(filas(gas, 'plan_comidas').length, 112, 'las comidas del archivado se conservan');
+  const r = gas.llamar('activarPlan', { plan_id: segundo.plan_id });
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.datos.estado, 'siguiente');
+  const estados = () => Object.fromEntries(filas(gas, 'planes').map(p => [p.plan_id, p.estado]));
+  assert.deepEqual(estados(), { [primero.plan_id]: 'activo', [segundo.plan_id]: 'siguiente' });
+  const vista = gas.llamar('plan').datos;
+  assert.equal(vista.activo.plan_id, primero.plan_id);
+  assert.equal(vista.siguiente.plan_id, segundo.plan_id);
+  // Un tercer borrador empieza después del siguiente.
+  assert.equal(gas.llamar('generarPlan').datos.inicio, '2026-11-16');
+
+  const lunes = enFecha(gas, '2026-11-02T08:00:00+01:00');
+  assert.equal(lunes.llamar('hoy').datos.plan_id, segundo.plan_id);
+  assert.deepEqual(estados(), { [primero.plan_id]: 'archivado', [segundo.plan_id]: 'activo', [filas(gas, 'planes')[2].plan_id]: 'borrador' });
+  assert.equal(filas(gas, 'plan_comidas').length, 168, 'las comidas del archivado se conservan');
+});
+
+test('activarPlan: con el activo ya terminado, lo archiva', () => {
+  const gas = preparar();
+  const primero = gas.llamar('generarPlan').datos;
+  gas.llamar('activarPlan', { plan_id: primero.plan_id });
+  const despues = enFecha(gas, '2026-11-03T08:00:00+01:00');
+  const segundo = despues.llamar('generarPlan').datos;
+  assert.equal(segundo.inicio, '2026-11-09');
+  assert.equal(despues.llamar('activarPlan', { plan_id: segundo.plan_id }).datos.estado, 'activo');
+  assert.equal(filas(gas, 'planes').find(p => p.plan_id === primero.plan_id).estado, 'archivado');
 });
 
 test('activarPlan: errores claros', () => {
@@ -247,4 +276,134 @@ test('valorar: la última valoración cuenta y «No lo repetiría» la quita de 
   assert.equal(recetas.find(x => x.id === actual).valoracion, 'me_encanta');
   assert.equal(recetas.find(x => x.id === otra).valoracion, 'no_repetir');
   assert.ok(recetas.find(x => x.id === actual).ajuste.ingredientes.every(i => i.grupo));
+});
+
+// ---------- Fase 4: progreso y ajuste quincenal ----------
+
+test('registrarPeso + progreso: uno por día, media de 7 días, meta, adherencia y racha', () => {
+  const { gas, plan } = planActivoEnMiercoles();
+  gas.llamar('config', { cambios: { peso_objetivo: 75 } });
+  let r = gas.llamar('registrarPeso', { peso_kg: '80,4' });
+  assert.equal(r.ok, true, r.error);
+  r = gas.llamar('registrarPeso', { peso_kg: 80.2 });
+  assert.equal(filas(gas, 'pesos').length, 1, 'el mismo día se sustituye');
+  gas.llamar('registrarPeso', { peso_kg: 81, fecha: '2026-10-19' });
+  const p = gas.llamar('progreso').datos;
+  assert.deepEqual(p.ultimo, { fecha: '2026-10-21', peso: 80.2 });
+  assert.equal(p.pesos.length, 2);
+  assert.equal(p.pesos[1].media, 80.6);
+  assert.equal(p.meta, 75);
+  assert.equal(p.bloque.numero, 1);
+  assert.equal(p.bloque.dia, 3);
+  assert.equal(p.bloque.adherencia.planificadas, 8, 'lunes y martes');
+  assert.equal(p.racha, 0);
+  ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'].forEach(c => {
+    gas.llamar('marcarComida', { plan_id: plan.plan_id, fecha: '2026-10-21', comida: c, hecha: 'si' });
+  });
+  const despues = gas.llamar('progreso').datos;
+  assert.equal(despues.racha, 1);
+  assert.deepEqual(despues.bloque.adherencia, { hechas: 4, planificadas: 12, sin_marcar: 8, pct: 33 });
+  assert.match(gas.llamar('registrarPeso', { peso_kg: 'mucho' }).error, /no válido/);
+  assert.match(gas.llamar('registrarPeso', { peso_kg: 80, fecha: '2027-01-01' }).error, /Fecha no válida/);
+});
+
+test('alimentos, renombrarAlimento y guardarExcluidos', () => {
+  const gas = preparar();
+  const lista = gas.llamar('alimentos').datos;
+  assert.equal(lista.length, 95);
+  const salmon = lista.find(a => a.id === 'salmon');
+  assert.ok(salmon.recetas >= 2);
+  assert.equal(salmon.excluido, false);
+  assert.equal(gas.llamar('renombrarAlimento', { id: 'salmon', nombre: '  Salmón fresco ' }).datos.nombre, 'Salmón fresco');
+  assert.equal(filas(gas, 'alimentos').find(a => a.id === 'salmon').nombre, 'Salmón fresco');
+  assert.match(gas.llamar('renombrarAlimento', { id: 'salmon', nombre: ' ' }).error, /entre 1 y 60/);
+  assert.match(gas.llamar('renombrarAlimento', { id: 'xx', nombre: 'X' }).error, /No existe/);
+
+  gas.contexto.anadirFilas_('preferencias', [{ tipo: 'alergia', alimento_id: 'nueces', nota: '' }]);
+  assert.deepEqual(gas.llamar('guardarExcluidos', { alimentos: ['salmon', 'salmon'] }).datos, ['salmon']);
+  assert.equal(gas.llamar('alimentos').datos.find(a => a.id === 'salmon').excluido, true);
+  gas.llamar('guardarExcluidos', { alimentos: [] });
+  assert.deepEqual(filas(gas, 'preferencias').map(p => p.tipo), ['alergia'], 'las alergias no se tocan');
+  assert.match(gas.llamar('guardarExcluidos', { alimentos: ['xx'] }).error, /No existe/);
+});
+
+// Plan activo del 19 oct al 1 nov con pesajes diarios y todas las comidas hechas hasta el día indicado.
+function bloqueCompleto(ahoraIso, porDia) {
+  const gas = preparar();
+  const plan = gas.llamar('generarPlan').datos;
+  gas.llamar('activarPlan', { plan_id: plan.plan_id });
+  const hoy = ahoraIso.slice(0, 10);
+  const pesos = [];
+  for (let i = 0; i <= 13; i++) {
+    const fecha = new Date(Date.UTC(2026, 9, 19 + i)).toISOString().slice(0, 10);
+    if (fecha <= hoy) pesos.push({ fecha, peso_kg: Math.round((80 - porDia * i) * 100) / 100, cintura_cm: '' });
+  }
+  gas.contexto.anadirFilas_('pesos', pesos);
+  const comidas = filas(gas, 'plan_comidas').map(f => Object.assign(f, { hecha: f.fecha < hoy ? 'si' : f.hecha }));
+  gas.contexto.reescribirTabla_('plan_comidas', comidas);
+  return { gas: enFecha(gas, ahoraIso), plan };
+}
+
+test('revisarFinDePlan: genera el borrador 2 días antes del fin, con balance y propuesta', () => {
+  const { gas: antes } = bloqueCompleto('2026-10-29T07:00:00+01:00', 0.01);
+  antes.contexto.revisarFinDePlan();
+  assert.equal(filas(antes, 'planes').length, 1, '3 días antes todavía no');
+
+  const { gas, plan } = bloqueCompleto('2026-10-30T07:00:00+01:00', 0.01);
+  gas.contexto.revisarFinDePlan();
+  assert.equal(filas(gas, 'planes').length, 2);
+  gas.contexto.revisarFinDePlan();
+  assert.equal(filas(gas, 'planes').length, 2, 'no genera otro si ya hay borrador');
+
+  const vista = gas.llamar('plan').datos;
+  assert.equal(vista.borrador.inicio, '2026-11-02');
+  assert.equal(vista.borrador.bloque, 2);
+  const b = vista.borrador.balance;
+  assert.equal(b.plan_id, plan.plan_id);
+  assert.equal(b.bloque, 1);
+  assert.equal(b.pesajes, 12);
+  assert.equal(b.adherencia.pct, 100);
+  assert.ok(b.ritmo.ritmo_pct > -0.25, 'pierde poco');
+  assert.equal(b.propuesta.motivo, 'lento');
+  assert.deepEqual(b.propuesta.opciones.map(o => o.delta), [-120, 0]);
+  assert.equal(gas.llamar('hoy').datos.nuevo_plan, true);
+});
+
+test('activarPlan con ajuste: cambia objetivos, recalcula gramos del borrador y lo apunta en el historial', () => {
+  const { gas } = bloqueCompleto('2026-10-31T09:00:00+01:00', 0.01);
+  const borrador = gas.llamar('generarPlan').datos;
+  const antes = filas(gas, 'plan_comidas').filter(f => f.plan_id === borrador.plan_id);
+  assert.match(gas.llamar('activarPlan', { plan_id: borrador.plan_id, ajuste_kcal: 50 }).error, /no válido/);
+
+  const r = gas.llamar('activarPlan', { plan_id: borrador.plan_id, ajuste_kcal: -120 });
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.datos.estado, 'siguiente');
+  const config = gas.llamar('config').datos;
+  const total = ['desayuno', 'almuerzo', 'merienda', 'cena'].reduce((s, c) => s + config['objetivo_' + c].kcal, 0);
+  assert.ok(Math.abs(total - 1535) <= 2, String(total));
+  assert.equal(config.objetivo_almuerzo.P, 41.1);
+
+  const despues = filas(gas, 'plan_comidas').filter(f => f.plan_id === borrador.plan_id);
+  assert.deepEqual(despues.map(f => f.receta_id), antes.map(f => f.receta_id), 'mismos platos');
+  const kcal = lista => lista.reduce((s, f) => s + Number(f.kcal), 0) / 14;
+  assert.ok(kcal(despues) < kcal(antes) - 60, `${kcal(antes)} → ${kcal(despues)}`);
+  const siguiente = gas.llamar('plan').datos.siguiente;
+  assert.ok(Math.abs(siguiente.objetivoDia.kcal - 1535) <= 2);
+
+  const historial = filas(gas, 'ajustes_historial');
+  assert.equal(historial.length, 1);
+  assert.equal(historial[0].propuesta_kcal, -120);
+  assert.equal(historial[0].aceptada, 'si');
+});
+
+test('activarPlan manteniendo: no cambia objetivos, pero aplica los editados en Ajustes', () => {
+  const { gas } = bloqueCompleto('2026-10-31T09:00:00+01:00', 0.1);
+  const borrador = gas.llamar('generarPlan').datos;
+  assert.equal(gas.llamar('plan').datos.borrador.balance.propuesta.motivo, 'en_ritmo');
+  gas.llamar('config', { cambios: { objetivo_cena: { kcal: 400, P: 36, C: 33, G: 13 } } });
+  const r = gas.llamar('activarPlan', { plan_id: borrador.plan_id, ajuste_kcal: 0 });
+  assert.equal(r.ok, true, r.error);
+  const siguiente = gas.llamar('plan').datos.siguiente;
+  assert.deepEqual(siguiente.dias[0].comidas[3].objetivo, { kcal: 400, P: 36, C: 33, G: 13 });
+  assert.equal(filas(gas, 'ajustes_historial')[0].aceptada, 'si');
 });

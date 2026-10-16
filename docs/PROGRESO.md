@@ -3,11 +3,10 @@
 > Memoria entre sesiones. Claude Code lo lee al empezar y lo actualiza al terminar cada tarea o antes de `/clear`. Mantenerlo por debajo de ~80 líneas: resumir lo antiguo.
 
 ## Estado actual
-- **Fase:** 3 · Pantallas de uso diario — hecha y desplegada el 2026-10-16 (web app versión 6 «Fase 3: pestaña Recetas», misma URL; Pages con service worker `dieta-v6`, incluida la pestaña Recetas; el service worker pide siempre `no-cache` para no mezclar archivos nuevos y viejos). Falta que el usuario siga un día completo desde el móvil.
+- **Fase:** 4 · Progreso y ajuste quincenal — hecha y desplegada el 2026-10-16 (web app versión 7, misma URL; PWA `dieta-v7`; activador instalado por el usuario). 97 tests.
 - **URLs:** PWA https://luvii12.github.io/dieta_app/ · repo https://github.com/Luvii12/dieta_app · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
-- **Hecho en la nube:** hoja «Dieta» y script vinculado creados con clasp (IDs en `.clasp.json`); código subido con `clasp push --force` (autorizado por el usuario, para sobrescribir el manifiesto con zona Europe/Madrid).
-- **Siguiente paso:** el usuario prueba la Fase 3 en el móvil; después, Fase 4 (Progreso, Nuevo plan y edición en Ajustes).
-- **Desplegar:** `clasp push --force` y `clasp deploy -i <id del despliegue AKfycbwVOiJ…> -d "…"` (mantiene la URL); la PWA se publica sola al hacer push a `main`.
+- **Siguiente paso:** el usuario prueba la Fase 4 en el móvil (registrar peso, Ajustes, y al final del bloque el borrador automático con la propuesta). Después, Fase 5 (recetas con IA).
+- **Desplegar:** `clasp push --force` y `clasp deploy -i <id del despliegue AKfycbwVOiJ…> -d "…"` (mantiene la URL); la PWA se publica sola al hacer push a `main`. Desplegar el servidor **antes** que la PWA.
 
 ## Decisiones tomadas
 | Fecha | Decisión |
@@ -40,12 +39,17 @@
 | 2026-10-16 | Vuelve la pestaña **Recetas** (barra de 5: Hoy · Plan · Recetas · Progreso · Ajustes): biblioteca por comida con el estilo de las tarjetas de Plan; `#receta/<id>` abre la misma pantalla Receta, sin «Marcar como hecha». Base para editar recetas en la Fase 4 |
 | 2026-10-16 | Marcar y valorar necesitan conexión: se ven al momento y, si el servidor falla, se deshacen con un aviso |
 
+| 2026-10-16 | Fase 4 (decidido por el usuario): Progreso con meta de peso y racha (sin cintura, momento de la toma ni proteína media); Nuevo plan con 2 opciones de ajuste; Ajustes edita objetivos, excluidos, nombres de alimentos e interruptor «Comida libre semanal» (sin favoritos); activador instalado con `instalarActivador()` |
+| 2026-10-16 | Activar un borrador con el plan activo aún en curso lo deja como «siguiente» (no se pierden los últimos días). «Nuevo plan» es la vista del borrador dentro de la pestaña Plan. Elegir un ajuste recalcula los gramos del borrador con los mismos platos |
+| 2026-10-16 | Comida libre semanal apagada: «Cambiar plato» no ofrece comida libre y todas las libres cuentan como no hechas en la adherencia |
+
 ## Preguntas abiertas
-- Nombres de alimentos generados desde el `id` («Ternera picada 5», «Aceite ml»): renombrarlos desde la app en la Fase 4 (edición en Ajustes) o antes a mano en la pestaña `alimentos` (la columna `nombre` es solo para mostrar; el `id` no se toca).
+- Nombres de alimentos generados desde el `id` («Ternera picada 5», «Aceite ml»): ya se pueden renombrar en Ajustes › Nombres de alimentos.
 - Valores de `data/alimentos.csv` sin verificar (aproximados).
 - El usuario está probando la semana de prueba (22 recetas); sus valoraciones decidirán qué recetas se quedan.
 
 ## Hecho
+- **2026-10-16 · Fase 4 (desplegada):** `Progreso.js` (media móvil, ritmo, adherencia, racha, regla de ajuste, reparto), acciones `progreso`, `registrarPeso`, `alimentos`, `renombrarAlimento`, `guardarExcluidos`, `activarPlan` con ajuste, estado «siguiente», `revisarFinDePlan` + `instalarActivador`. PWA: `progreso.js` (gráfica SVG + hoja de peso), `nuevoplan.js`, Ajustes editable, aviso de nuevo plan en Hoy. 97 tests.
 - **2026-10-16 · Fase 3:** acciones `marcarComida`, `alternativas`, `cambiarPlato`, `valorar` (+ `grupo` en ingredientes y `valoracion`/`cambiada` en cada comida). PWA rehecha con el diseño de `design/` en módulos (`comun`, `datos`, `hoy`, `plan`, `recetas`, `receta`, `cambiar`, `ajustes`); fuentes de Google cacheadas por el service worker (v4). 74 tests.
 - **2026-10-16 · Fase 2:** `Generador.js` + `Planes.js` + acciones `plan`/`generarPlan`/`activarPlan`/`hoy`; pestaña Plan (generar, revisar 14 días, activar) y Hoy con el plan activo (y sin conexión desde el plan guardado). `tests/simulador_gas.js` ejecuta el código real de Apps Script sobre una hoja en memoria. 67 tests. En Google: plan en 4,4 s, 0 días a revisar.
 - **2026-10-16 · Fase 1:** `Nutricion.js` (macros, optimizador, redondeo a 5 g/piezas, tolerancias comida y día con margen de proteína) + acción `recetas` + pantalla Recetas. 34 tests (regresión: mismos gramos que el prototipo, kcal ±0,15 %).

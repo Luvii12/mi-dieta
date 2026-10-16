@@ -1,5 +1,6 @@
 // Panel «Cambiar plato»: otras recetas de la misma comida con los gramos recalculados, y «Comida libre».
 
+import { leerLocal } from './api.js';
 import { $, h, icono, numero, tesela, pastillasMacros } from './comun.js';
 import { alternativas, cambiarPlato, marcarComida } from './datos.js';
 
@@ -29,7 +30,8 @@ export async function abrirCambiarPlato(planId, fecha, comida) {
   lista.replaceChildren();
   panel.showModal();
 
-  const libre = opcion([
+  // Con «Comida libre semanal» apagada en Ajustes no se ofrece.
+  const libre = (leerLocal('dieta.config') || {}).comida_libre_semanal === false ? null : opcion([
     h('span', { class: 'tesela tesela-libre', 'aria-hidden': 'true' }, icono('celebration')),
     h('span', { class: 'alternativa-texto' },
       h('span', { class: 'alternativa-nombre' }, 'Comida libre'),
@@ -42,7 +44,7 @@ export async function abrirCambiarPlato(planId, fecha, comida) {
   } catch (err) {
     if (!panel.open) return;
     $('panel-estado').textContent = err.message;
-    lista.replaceChildren(libre);
+    if (libre) lista.replaceChildren(libre);
     return;
   }
   if (!panel.open) return;
@@ -56,7 +58,7 @@ export async function abrirCambiarPlato(planId, fecha, comida) {
         o.diaOk ? h('span', { class: 'alternativa-nota texto-secundario' }, icono('check_circle', 'relleno'), 'El día sigue cuadrando')
           : h('span', { class: 'alternativa-nota texto-terciario' }, icono('error'), `El día quedaría en ${numero(o.macrosDia.kcal)} kcal`)),
     ], () => aplicar(() => cambiarPlato(planId, fecha, comida.comida, o.receta_id)))),
-    libre);
+    libre || '');
 }
 
 export function prepararPanel() {

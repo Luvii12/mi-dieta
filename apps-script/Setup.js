@@ -37,6 +37,7 @@ function configurarHoja() {
     guardarConfig_('max_rep_desayuno', 4);
     guardarConfig_('max_rep_merienda', 4);
     guardarConfig_('dias_flexibles', 0);
+    guardarConfig_('comida_libre_semanal', true);
     guardarConfig_('kcal_minimas', 1400);
   }
   Logger.log('Hoja lista: %s alimentos, %s recetas.',
@@ -54,6 +55,16 @@ function crearToken() {
     Logger.log('Token nuevo creado.');
   }
   Logger.log('APP_TOKEN: %s', token);
+}
+
+// 3) Activador diario (hacia las 7:00): 2 días antes de que acabe el plan activo genera el borrador del
+//    siguiente. Ejecútalo una vez y acepta el permiso que pide Google. Repetirlo no duplica el activador.
+function instalarActivador() {
+  ScriptApp.getProjectTriggers()
+    .filter(t => t.getHandlerFunction() === 'revisarFinDePlan')
+    .forEach(t => ScriptApp.deleteTrigger(t));
+  ScriptApp.newTrigger('revisarFinDePlan').timeBased().everyDays(1).atHour(7).inTimezone(ZONA_HORARIA).create();
+  Logger.log('Activador instalado: revisarFinDePlan cada día hacia las 7:00.');
 }
 
 // Si crees que el token se ha filtrado: crea uno nuevo (el anterior deja de funcionar).

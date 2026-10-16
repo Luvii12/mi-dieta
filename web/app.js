@@ -7,12 +7,14 @@ import { cargarPlan, pintarPlan } from './plan.js';
 import { cargarReceta, pintarReceta, recordarAnterior } from './receta.js';
 import { cargarRecetas, pintarRecetas } from './recetas.js';
 import { cargarAjustes, prepararAjustes } from './ajustes.js';
+import { cargarProgreso, prepararProgreso } from './progreso.js';
 import { prepararPanel } from './cambiar.js';
 
 const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'progreso', 'ajustes'];
 // Pantallas que necesitan la conexión con la hoja configurada.
 const NECESITAN_CONEXION = { hoy: 'Conecta la app con tu hoja de Google para empezar.', plan: 'Conecta la app con tu hoja de Google para ver tu plan.',
-  recetas: 'Conecta la app con tu hoja de Google para ver tus recetas.' };
+  recetas: 'Conecta la app con tu hoja de Google para ver tus recetas.',
+  progreso: 'Conecta la app con tu hoja de Google para registrar tu peso.' };
 
 const vistaActual = () => {
   const nombre = location.hash.slice(1).split('/')[0];
@@ -43,6 +45,7 @@ function mostrarVista() {
   if (vista === 'plan') cargarPlan($('vista-plan'));
   if (vista === 'recetas') cargarRecetas($('vista-recetas'));
   if (vista === 'receta') cargarReceta($('vista-receta'));
+  if (vista === 'progreso') cargarProgreso($('vista-progreso'));
   if (vista === 'ajustes') cargarAjustes();
 }
 
@@ -66,6 +69,7 @@ function actualizarRed() {
 }
 
 prepararAjustes();
+prepararProgreso();
 prepararPanel();
 document.addEventListener('datos-cambiados', repintar);
 window.addEventListener('hashchange', mostrarVista);

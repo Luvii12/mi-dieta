@@ -39,6 +39,8 @@ Conversión: proteína y carbohidratos 4 kcal/g, grasa 9 kcal/g. Las kcal se cal
    - Menos de 4 pesajes en el bloque: no proponer ajuste.
 5. El ajuste se reparte proporcionalmente entre comidas y siempre es una **propuesta** que el usuario acepta.
 
+Implementación (`apps-script/Progreso.js`): ajuste de **120 kcal**, repartido por comidas según sus kcal y, dentro de cada una, entre C y G según su peso en kcal. Se ofrecen siempre **2 opciones**: la de la regla («Recomendado») y la otra: «Mantener» si la regla propone cambiar, o «Acelerar déficit (−120)» si la regla dice mantener. Las que rompen los límites de seguridad salen desactivadas. Si no hay pesajes 14 días antes (primer bloque), se compara con la primera semana con pesajes. Adherencia: días pasados + comidas de hoy ya marcadas; con «Comida libre semanal», la primera comida libre de cada semana no cuenta.
+
 ## Límites de seguridad
 - No bajar de 1.400 kcal/día ni de 1,6 g de proteína por kg de peso sin confirmación explícita.
 - No proponer pérdidas > 1 % del peso por semana.

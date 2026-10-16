@@ -37,6 +37,12 @@ export function fechaTitulo(iso) {
   return `${mayuscula(f.toLocaleDateString('es-ES', { weekday: 'long' }))}, ${f.getDate()} ${mes(f)}`;
 }
 
+// '2026-10-24' → 'Sábado, 24 de octubre'
+export function fechaLarga(iso) {
+  const f = aFecha(iso);
+  return mayuscula(f.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }));
+}
+
 // '2026-10-20' → '20 oct'
 export const fechaCorta = iso => `${aFecha(iso).getDate()} ${mes(aFecha(iso))}`;
 

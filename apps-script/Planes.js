@@ -100,6 +100,38 @@ function planDeReferencia_(planes) {
   return archivados[0] || null;
 }
 
+// Si el plan «siguiente» ya ha empezado, pasa a activo y el activo a archivado. Cambia `planes` y
+// devuelve si ha cambiado algo.
+function promoverPlanes_(planes, hoy) {
+  const siguiente = planes.find(p => p.estado === 'siguiente');
+  if (!siguiente || siguiente.inicio > hoy) return false;
+  planes.forEach(p => {
+    if (p.estado === 'activo') p.estado = 'archivado';
+  });
+  siguiente.estado = 'activo';
+  return true;
+}
+
+// Número de bloque de un plan: 1 para el primero que se usó, 2 para el siguiente… (los borradores
+// descartados no cuentan).
+function numeroBloque_(planes, plan) {
+  return planes.filter(p => p.estado !== 'borrador' && p.plan_id !== plan.plan_id && String(p.inicio) < String(plan.inicio)).length + 1;
+}
+
+// Recalcula gramos y macros de unas filas de `plan_comidas` para otros objetivos, con los mismos platos.
+// Cambia las filas.
+function reoptimizarComidas_(filas, objetivos, recetasPorId, alimentos) {
+  filas.forEach(f => {
+    const receta = recetasPorId[recetaDeComida_(f)];
+    if (!receta || receta.error) throw new Error('No se puede recalcular la receta ' + recetaDeComida_(f) + '.');
+    const ajuste = ajustarReceta_(receta, objetivos[f.comida], alimentos);
+    const m = redondearMacros_(ajuste.macros);
+    Object.assign(f, { gramos: ajuste.gramos, kcal: m.kcal, P: m.P, C: m.C, G: m.G });
+  });
+  return filas;
+}
+
 if (typeof module !== 'undefined') {
-  module.exports = { recetaDeComida_, filasDesdePlan_, ingredientesDeComida_, vistaPlan_, planDeReferencia_ };
+  module.exports = { recetaDeComida_, filasDesdePlan_, ingredientesDeComida_, vistaPlan_, planDeReferencia_, promoverPlanes_,
+    numeroBloque_, reoptimizarComidas_ };
 }

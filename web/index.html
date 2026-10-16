@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
   <!-- Solo los iconos que usa la app (en orden alfabético, como pide Google Fonts). -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400..700,0..1,0&icon_names=arrow_back,bakery_dining,calendar_month,calendar_today,celebration,check,check_circle,chevron_right,close,cloud_done,cloud_off,error,key,kitchen,link,lunch_dining,menu_book,monitoring,nutrition,outdoor_grill,pie_chart,restaurant,sensors,settings,skillet,soup_kitchen,sync,task_alt,tune,visibility,visibility_off&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400..700,0..1,0&icon_names=add,arrow_back,arrow_forward,auto_awesome,bakery_dining,block,calendar_month,calendar_today,celebration,check,check_circle,chevron_right,close,cloud_done,cloud_off,edit_note,error,event_available,expand_more,insights,key,kitchen,link,local_fire_department,lunch_dining,menu_book,monitor_weight,monitoring,nutrition,outdoor_grill,pie_chart,remove,restaurant,restaurant_menu,scale,search,sensors,settings,skillet,soup_kitchen,sync,task_alt,trending_down,trending_flat,trending_up,tune,verified,visibility,visibility_off,workspace_premium&display=block">
   <link rel="stylesheet" href="estilos.css">
   <script type="module" src="app.js"></script>
 </head>
@@ -36,13 +36,7 @@
     <section id="vista-recetas" class="vista" hidden></section>
     <section id="vista-receta" class="vista" hidden></section>
 
-    <section id="vista-progreso" class="vista" hidden>
-      <div class="cabecera-vista"><h1 class="titulo-pantalla">Progreso</h1></div>
-      <div class="tarjeta vacio">
-        <span class="icono vacio-icono" aria-hidden="true">monitoring</span>
-        <p>Peso, media de 7 días y adherencia llegarán en la Fase 4.</p>
-      </div>
-    </section>
+    <section id="vista-progreso" class="vista" hidden></section>
 
     <section id="vista-ajustes" class="vista" hidden>
       <div class="cabecera-vista">
@@ -63,6 +57,67 @@
         <ul id="lista-objetivos" class="tarjeta lista-objetivos">
           <li class="objetivo objetivo-vacio">Conéctate para verlos.</li>
         </ul>
+      </section>
+
+      <section class="ajustes-seccion" aria-labelledby="titulo-excluidos">
+        <div class="seccion-cabecera">
+          <div class="seccion-titulo seccion-titulo-sm">
+            <span class="icono texto-primario" aria-hidden="true">block</span>
+            <h2 id="titulo-excluidos">Alimentos que no como</h2>
+          </div>
+          <span id="excluidos-total" class="grupo-nota"></span>
+        </div>
+        <div class="tarjeta tarjeta-ajuste">
+          <p class="texto-ayuda">Los platos del plan nunca incluirán estos ingredientes. Se aplica a los próximos planes y al cambiar un plato.</p>
+          <ul id="lista-excluidos" class="chips" aria-label="Alimentos excluidos"></ul>
+          <button id="boton-anadir-excluido" type="button" class="boton boton-discontinuo">
+            <span class="icono" aria-hidden="true">add</span><span>Añadir alimento</span>
+          </button>
+          <p id="excluidos-estado" class="mensaje" role="status"></p>
+        </div>
+      </section>
+
+      <section class="ajustes-seccion" aria-labelledby="titulo-flexibilidad">
+        <div class="seccion-cabecera">
+          <div class="seccion-titulo seccion-titulo-sm">
+            <span class="icono texto-primario" aria-hidden="true">tune</span>
+            <h2 id="titulo-flexibilidad">Preferencias y flexibilidad</h2>
+          </div>
+        </div>
+        <div class="tarjeta lista-objetivos">
+          <div class="preferencia">
+            <div class="preferencia-texto">
+              <span class="preferencia-titulo"><span id="titulo-libre">Comida libre semanal</span> <span class="insignia insignia-ok">Recomendado</span></span>
+              <span id="descripcion-libre" class="texto-ayuda">Permite 1 comida libre por semana sin que cuente en contra de tu adherencia. Apagado, «Cambiar plato» no ofrece comida libre.</span>
+            </div>
+            <button id="interruptor-libre" type="button" class="interruptor" role="switch" aria-checked="true"
+                    aria-labelledby="titulo-libre" aria-describedby="descripcion-libre"><span class="interruptor-bola"></span></button>
+          </div>
+          <button id="fila-meta" type="button" class="objetivo objetivo-boton">
+            <span class="objetivo-icono texto-secundario" aria-hidden="true"><span class="icono">monitor_weight</span></span>
+            <span class="objetivo-texto">
+              <span class="objetivo-nombre">Peso objetivo</span>
+              <span class="objetivo-macros">Se muestra como meta en Progreso</span>
+            </span>
+            <span class="objetivo-kcal"><span id="meta-cifra" class="objetivo-cifra">—</span><span class="objetivo-unidad"> kg</span></span>
+            <span class="icono objetivo-flecha" aria-hidden="true">chevron_right</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="ajustes-seccion" aria-labelledby="titulo-nombres">
+        <div class="seccion-cabecera">
+          <div class="seccion-titulo seccion-titulo-sm">
+            <span class="icono texto-primario" aria-hidden="true">edit_note</span>
+            <h2 id="titulo-nombres">Nombres de alimentos</h2>
+          </div>
+        </div>
+        <div class="tarjeta tarjeta-ajuste">
+          <p class="texto-ayuda">Cómo se ven los alimentos en recetas y planes. Cambiar el nombre no cambia ningún cálculo.</p>
+          <button id="boton-nombres" type="button" class="boton boton-secundario">
+            <span class="icono texto-terciario" aria-hidden="true">edit_note</span><span>Cambiar nombres</span>
+          </button>
+        </div>
       </section>
 
       <section class="ajustes-seccion" aria-labelledby="titulo-conexion">
@@ -128,6 +183,68 @@
     </div>
     <p id="panel-estado" class="subtitulo" role="status"></p>
     <ul id="panel-lista" class="lista-alternativas"></ul>
+  </dialog>
+
+  <dialog id="panel-peso" class="hoja-inferior hoja-amplia" aria-labelledby="peso-titulo">
+    <span class="asa" aria-hidden="true"></span>
+    <div class="hoja-cabecera">
+      <div>
+        <h2 id="peso-titulo">Registrar peso de hoy</h2>
+        <p id="peso-fecha" class="hoja-sub"></p>
+      </div>
+      <button id="peso-cerrar" type="button" class="boton-icono boton-cerrar" aria-label="Cerrar">
+        <span class="icono" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <form id="form-peso" class="form-peso">
+      <div class="contador">
+        <label for="peso-valor" class="contador-etiqueta">Peso corporal</label>
+        <div class="contador-fila">
+          <button type="button" class="contador-boton" data-paso="-0.1" aria-label="Restar 100 gramos"><span class="icono" aria-hidden="true">remove</span></button>
+          <span class="contador-valor">
+            <input id="peso-valor" type="text" inputmode="decimal" autocomplete="off" required size="4">
+            <span class="contador-unidad">kg</span>
+          </span>
+          <button type="button" class="contador-boton" data-paso="0.1" aria-label="Sumar 100 gramos"><span class="icono" aria-hidden="true">add</span></button>
+        </div>
+      </div>
+      <p id="peso-estado" class="mensaje" role="status"></p>
+      <button id="peso-guardar" type="submit" class="boton boton-primario boton-grande">
+        <span class="icono" aria-hidden="true">check</span><span>Guardar peso</span>
+      </button>
+    </form>
+  </dialog>
+
+  <dialog id="panel-formulario" class="hoja-inferior" aria-labelledby="formulario-titulo">
+    <div class="hoja-cabecera">
+      <h2 id="formulario-titulo"></h2>
+      <button id="formulario-cerrar" type="button" class="boton-icono" aria-label="Cerrar">
+        <span class="icono" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <form id="form-formulario" class="form-formulario">
+      <p id="formulario-nota" class="subtitulo"></p>
+      <div id="formulario-campos" class="formulario-campos"></div>
+      <p id="formulario-estado" class="mensaje" role="status"></p>
+      <button id="formulario-guardar" type="submit" class="boton boton-primario">Guardar</button>
+    </form>
+  </dialog>
+
+  <dialog id="panel-alimentos" class="hoja-inferior hoja-alta" aria-labelledby="alimentos-titulo">
+    <div class="hoja-cabecera">
+      <h2 id="alimentos-titulo"></h2>
+      <button id="alimentos-cerrar" type="button" class="boton-icono" aria-label="Cerrar">
+        <span class="icono" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <label class="campo">
+      <span class="campo-caja">
+        <span class="icono campo-icono" aria-hidden="true">search</span>
+        <input id="alimentos-buscar" type="search" autocomplete="off" placeholder="Buscar alimento" aria-label="Buscar alimento">
+      </span>
+    </label>
+    <p id="alimentos-estado" class="mensaje" role="status"></p>
+    <ul id="alimentos-lista" class="lista-alimentos"></ul>
   </dialog>
 
   <div id="aviso" class="aviso-flotante" role="alert" hidden></div>

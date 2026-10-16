@@ -36,7 +36,7 @@ const ACCIONES = {
   // Las comidas de hoy del plan activo. Si hoy no hay plan, un mensaje que lo explica.
   hoy: function () {
     const hoy = fechaIso_(new Date());
-    const planes = leerTabla_('planes');
+    const planes = planesAlDia_();
     const activo = planes.find(p => p.estado === 'activo');
     const vacio = mensaje => ({ fecha: hoy, plan_id: null, comidas: [], mensaje: mensaje });
     if (!activo) {
@@ -50,12 +50,13 @@ const ACCIONES = {
     const dia = vista.dias[0];
     if (!dia) return vacio('El plan activo no tiene comidas para hoy.');
     return { fecha: hoy, plan_id: activo.plan_id, inicio: activo.inicio, fin: activo.fin, comidas: dia.comidas, macros: dia.macros,
-      objetivoDia: vista.objetivoDia, evaluacion: dia.evaluacion };
+      objetivoDia: vista.objetivoDia, evaluacion: dia.evaluacion, nuevo_plan: planes.some(p => p.estado === 'borrador') };
   },
 
-  // El plan activo y el borrador (si existen), por días.
+  // El plan activo, el siguiente (ya activado, empieza al acabar el activo) y el borrador, por días.
+  // El borrador lleva `bloque` (su número) y `balance`: cómo fue el bloque que termina y la propuesta de ajuste.
   plan: function () {
-    const planes = leerTabla_('planes');
+    const planes = planesAlDia_();
     const comidas = leerTabla_('plan_comidas');
     const recetas = leerRecetasPorId_();
     const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
@@ -64,7 +65,13 @@ const ACCIONES = {
       const p = planes.find(x => x.estado === estado);
       return p ? vistaPlan_(p, comidas.filter(f => f.plan_id === p.plan_id), recetas, alimentos, valoraciones) : null;
     };
-    return { activo: vista('activo'), borrador: vista('borrador') };
+    const resultado = { activo: vista('activo'), siguiente: vista('siguiente'), borrador: vista('borrador') };
+    if (resultado.borrador) {
+      const filaBorrador = planes.find(p => p.estado === 'borrador');
+      resultado.borrador.bloque = numeroBloque_(planes, filaBorrador);
+      resultado.borrador.balance = balanceBloque_(planes, comidas, leerConfig_(), fechaIso_(new Date()));
+    }
+    return resultado;
   },
 
   // Genera un plan de 14 días que empieza el lunes siguiente (o al acabar el activo) y lo guarda como
@@ -74,14 +81,14 @@ const ACCIONES = {
       const config = leerConfig_();
       const objetivos = objetivosDeConfig_(config);
       if (!config.tolerancias || !config.tolerancias.dia) throw new Error('Faltan las tolerancias en config.');
-      const planes = leerTabla_('planes');
+      const planes = planesAlDia_();
       const comidas = leerTabla_('plan_comidas');
-      const activo = planes.find(p => p.estado === 'activo');
+      const ultimoFin = planes.filter(p => p.estado === 'activo' || p.estado === 'siguiente').map(p => p.fin).sort().pop() || null;
       const referencia = planDeReferencia_(planes);
       const recetasPorId = leerRecetasPorId_();
 
       const generado = generarPlan_({
-        inicio: fechaInicioPlan_(fechaIso_(new Date()), activo ? activo.fin : null),
+        inicio: fechaInicioPlan_(fechaIso_(new Date()), ultimoFin),
         recetas: recetasActivas_(recetasPorId),
         alimentos: indexarAlimentos_(leerTabla_('alimentos')),
         objetivos: objetivos,
@@ -106,19 +113,61 @@ const ACCIONES = {
     });
   },
 
-  // Activa el borrador indicado; el plan activo anterior pasa a archivado.
+  // Activa el borrador indicado. Si el plan activo aún no ha terminado, el borrador queda como «siguiente»
+  // y pasa a activo el día que empieza; si no, el activo anterior pasa a archivado.
+  // `ajuste_kcal` (opcional): una de las opciones de la propuesta de ajuste (0 = mantener). Los objetivos
+  // de config se cambian según la opción y, si no coinciden con los del borrador, se recalculan sus
+  // gramos (mismos platos). La decisión queda en `ajustes_historial`.
   activarPlan: function (peticion) {
     return conBloqueo_(() => {
-      const planes = leerTabla_('planes');
+      const hoy = fechaIso_(new Date());
+      const planes = planesAlDia_();
       const plan = planes.find(p => p.plan_id === peticion.plan_id);
       if (!plan) throw new Error('No existe el plan ' + peticion.plan_id + '.');
       if (plan.estado !== 'borrador') throw new Error('Solo se puede activar un plan en borrador.');
-      planes.forEach(p => {
-        if (p.estado === 'activo') p.estado = 'archivado';
-      });
-      plan.estado = 'activo';
+      const config = leerConfig_();
+      const comidas = leerTabla_('plan_comidas');
+
+      const balance = balanceBloque_(planes, comidas, config, hoy);
+      const delta = Number(peticion.ajuste_kcal) || 0;
+      let objetivos = objetivosDeConfig_(config);
+      if (balance) {
+        const elegida = balance.propuesta.opciones.find(o => o.delta === delta);
+        if (!elegida) throw new Error('Ajuste no válido: ' + delta + ' kcal.');
+        if (elegida.bloqueada) throw new Error(elegida.bloqueada);
+      } else if (delta !== 0) {
+        throw new Error('No hay propuesta de ajuste para este plan.');
+      }
+      if (delta) {
+        objetivos = ajustarObjetivos_(objetivos, delta);
+        COMIDAS.forEach(c => escribirConfig_('objetivo_' + c.toLowerCase(), objetivos[c]));
+      }
+
+      const guardados = parsearValor_(plan.objetivos) || {};
+      if (!mismosObjetivos_(guardados.comidas, objetivos)) {
+        const delPlan = comidas.filter(f => f.plan_id === plan.plan_id);
+        reoptimizarComidas_(delPlan, objetivos, leerRecetasPorId_(), indexarAlimentos_(leerTabla_('alimentos')));
+        reescribirTabla_('plan_comidas', comidas);
+        plan.objetivos = { comidas: objetivos, tolerancias: guardados.tolerancias || config.tolerancias };
+      }
+
+      const activo = planes.find(p => p.estado === 'activo');
+      if (activo && activo.fin >= hoy && plan.inicio > activo.fin) {
+        if (planes.some(p => p.estado === 'siguiente')) throw new Error('Ya hay un plan programado para cuando acabe el activo.');
+        plan.estado = 'siguiente';
+      } else {
+        planes.forEach(p => {
+          if (p.estado === 'activo') p.estado = 'archivado';
+        });
+        plan.estado = 'activo';
+      }
       reescribirTabla_('planes', planes);
-      return { plan_id: plan.plan_id, inicio: plan.inicio, fin: plan.fin };
+      if (balance) {
+        anadirFilas_('ajustes_historial', [{ fecha: hoy, plan_id: balance.plan_id,
+          ritmo_semanal_pct: balance.ritmo ? balance.ritmo.ritmo_pct : '', adherencia_pct: balance.adherencia.pct === null ? '' : balance.adherencia.pct,
+          propuesta_kcal: balance.propuesta.opciones[0].delta, aceptada: delta === balance.propuesta.opciones[0].delta ? 'si' : 'no' }]);
+      }
+      return { plan_id: plan.plan_id, inicio: plan.inicio, fin: plan.fin, estado: plan.estado };
     });
   },
 
@@ -184,9 +233,126 @@ const ACCIONES = {
     conBloqueo_(() => anadirFilas_('valoraciones', [fila]));
     return fila;
   },
+
+  // Peso, media de 7 días de las últimas 6 semanas, adherencia del bloque activo y racha.
+  progreso: function () {
+    const hoy = fechaIso_(new Date());
+    const planes = planesAlDia_();
+    const config = leerConfig_();
+    const comidas = leerTabla_('plan_comidas');
+    const pesos = normalizarPesos_(leerTabla_('pesos'));
+    const desde = sumarDias_(hoy, -41);
+    const activo = planes.find(p => p.estado === 'activo');
+    const usados = planes.filter(p => p.estado !== 'borrador').map(p => p.plan_id);
+    const resultado = {
+      fecha: hoy,
+      pesos: mediaMovil_(pesos).filter(p => p.fecha >= desde),
+      ultimo: pesos.length ? pesos[pesos.length - 1] : null,
+      cambio_semana: cambioSemana_(pesos, hoy),
+      meta: Number(config.peso_objetivo) || null,
+      racha: racha_(comidas.filter(c => usados.indexOf(c.plan_id) >= 0), hoy),
+      bloque: null,
+    };
+    if (activo) {
+      const delPlan = comidas.filter(c => c.plan_id === activo.plan_id);
+      resultado.bloque = { numero: numeroBloque_(planes, activo), inicio: activo.inicio, fin: activo.fin,
+        dias: diasEntre_(activo.inicio, activo.fin) + 1, dia: Math.min(diasEntre_(activo.inicio, hoy) + 1, diasEntre_(activo.inicio, activo.fin) + 1),
+        adherencia: adherencia_(delPlan, activo.inicio, hoy, config.comida_libre_semanal !== false) };
+    }
+    return resultado;
+  },
+
+  // Guarda el peso de un día (uno por día: si ya había, lo sustituye). Petición: {peso_kg, fecha?}.
+  // Devuelve el progreso actualizado.
+  registrarPeso: function (peticion) {
+    const peso = Math.round(Number(String(peticion.peso_kg).replace(',', '.')) * 10) / 10;
+    if (!(peso >= 25 && peso <= 350)) throw new Error('Peso no válido: ' + peticion.peso_kg + '.');
+    const fecha = peticion.fecha || fechaIso_(new Date());
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha) || fecha > fechaIso_(new Date())) throw new Error('Fecha no válida: ' + fecha + '.');
+    conBloqueo_(() => {
+      if (!actualizarFilas_('pesos', f => f.fecha === fecha, { peso_kg: peso })) anadirFilas_('pesos', [{ fecha: fecha, peso_kg: peso }]);
+    });
+    return ACCIONES.progreso();
+  },
+
+  // Todos los alimentos (para Ajustes), con cuántas recetas activas los usan y si están excluidos.
+  alimentos: function () {
+    const usos = {};
+    recetasActivas_(leerRecetasPorId_()).forEach(r => r.ingredientes_fijos.concat(r.ingredientes_escalables).forEach(i => {
+      usos[i.alimento] = (usos[i.alimento] || 0) + 1;
+    }));
+    const excluidos = new Set(leerTabla_('preferencias').filter(p => p.tipo === 'excluido').map(p => p.alimento_id));
+    return leerTabla_('alimentos').map(a => ({ id: a.id, nombre: a.nombre || a.id, grupo: a.grupo, estado: a.estado,
+      recetas: usos[a.id] || 0, excluido: excluidos.has(a.id) }))
+      .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'));
+  },
+
+  // Cambia el nombre que se muestra de un alimento (el id no cambia). Petición: {id, nombre}.
+  renombrarAlimento: function (peticion) {
+    const nombre = String(peticion.nombre || '').trim();
+    if (!nombre || nombre.length > 60) throw new Error('El nombre debe tener entre 1 y 60 letras.');
+    const cambiadas = conBloqueo_(() => actualizarFilas_('alimentos', f => f.id === peticion.id, { nombre: nombre }));
+    if (!cambiadas) throw new Error('No existe el alimento ' + peticion.id + '.');
+    return { id: peticion.id, nombre: nombre };
+  },
+
+  // Sustituye la lista de alimentos excluidos (las alergias y favoritos no se tocan). Petición: {alimentos: [ids]}.
+  guardarExcluidos: function (peticion) {
+    const ids = Array.from(new Set(peticion.alimentos || []));
+    const existentes = new Set(leerTabla_('alimentos').map(a => a.id));
+    const desconocido = ids.find(id => !existentes.has(id));
+    if (desconocido) throw new Error('No existe el alimento ' + desconocido + '.');
+    conBloqueo_(() => {
+      const otras = leerTabla_('preferencias').filter(p => p.tipo !== 'excluido');
+      reescribirTabla_('preferencias', otras.concat(ids.map(id => ({ tipo: 'excluido', alimento_id: id, nota: '' }))));
+    });
+    return ids;
+  },
 };
 
+// Lo ejecuta el activador diario (ver instalarActivador en Setup.js): si al plan activo le quedan 2 días
+// o menos y aún no hay siguiente plan, genera el borrador. La propuesta de ajuste se calcula al abrirlo.
+function revisarFinDePlan() {
+  const hoy = fechaIso_(new Date());
+  const planes = planesAlDia_();
+  const activo = planes.find(p => p.estado === 'activo');
+  if (!activo || planes.some(p => p.estado === 'borrador' || p.estado === 'siguiente')) return;
+  if (diasEntre_(hoy, activo.fin) > 2) return;
+  const borrador = ACCIONES.generarPlan();
+  Logger.log('Borrador %s generado (%s a %s).', borrador.plan_id, borrador.inicio, borrador.fin);
+}
+
+// Lee `planes` y, si el plan «siguiente» ya ha empezado, lo pasa a activo (y el activo a archivado).
+function planesAlDia_() {
+  const planes = leerTabla_('planes');
+  // Sin bloqueo propio: se llama también desde dentro de otros bloqueos (y escribir lo mismo dos veces no hace daño).
+  if (promoverPlanes_(planes, fechaIso_(new Date()))) reescribirTabla_('planes', planes);
+  return planes;
+}
+
+// Cómo fue el bloque que termina (el activo o, si no hay, el último archivado) y la propuesta de ajuste
+// para el siguiente. null si no hay bloque anterior.
+function balanceBloque_(planes, comidas, config, hoy) {
+  const ref = planes.find(p => p.estado === 'activo') ||
+    planes.filter(p => p.estado === 'archivado').sort((a, b) => String(b.inicio).localeCompare(String(a.inicio)))[0];
+  if (!ref) return null;
+  const pesos = normalizarPesos_(leerTabla_('pesos'));
+  const pesajes = pesos.filter(p => p.fecha >= ref.inicio && p.fecha <= hoy).length;
+  const ritmo = ritmoSemanal_(pesos, hoy);
+  const adherencia = adherencia_(comidas.filter(c => c.plan_id === ref.plan_id), ref.inicio, hoy, config.comida_libre_semanal !== false);
+  const propuesta = proponerAjuste_({
+    ritmo: ritmo, adherencia: adherencia.pct, pesajes: pesajes, objetivos: objetivosDeConfig_(config),
+    kcalMinimas: Number(config.kcal_minimas) || 1400, peso: pesos.length ? pesos[pesos.length - 1].peso : null,
+  });
+  return { plan_id: ref.plan_id, bloque: numeroBloque_(planes, ref), inicio: ref.inicio, fin: ref.fin,
+    pesajes: pesajes, ritmo: ritmo, adherencia: adherencia, propuesta: propuesta };
+}
+
 const ESTADOS_COMIDA = ['si', 'no', 'libre'];
+
+function mismosObjetivos_(a, b) {
+  return Boolean(a) && COMIDAS.every(c => a[c] && ['kcal', 'P', 'C', 'G'].every(n => Number(a[c][n]) === Number(b[c][n])));
+}
 const VALORES_VALORACION = ['me_encanta', 'normal', 'no_repetir'];
 
 function recetasActivas_(recetasPorId) {

@@ -55,7 +55,7 @@ function modificarDias(cambiar) {
   }
   const plan = leerPlan();
   if (plan) {
-    [plan.activo, plan.borrador].filter(Boolean).forEach(p => p.dias.forEach(dia => cambiar(p.plan_id, dia)));
+    [plan.activo, plan.siguiente, plan.borrador].filter(Boolean).forEach(p => p.dias.forEach(dia => cambiar(p.plan_id, dia)));
     guardarPlan(plan);
   }
   avisarCambio();
@@ -71,7 +71,7 @@ function parchearComida(planId, fecha, comida, cambios) {
 // Una comida guardada, con su día y su plan. null si no está en el móvil.
 export function buscarComida(planId, fecha, comida) {
   const plan = leerPlan() || {};
-  for (const p of [plan.activo, plan.borrador]) {
+  for (const p of [plan.activo, plan.siguiente, plan.borrador]) {
     if (!p || p.plan_id !== planId) continue;
     const dia = p.dias.find(d => d.fecha === fecha);
     const c = dia && dia.comidas.find(x => x.comida === comida);
