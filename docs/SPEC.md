@@ -6,6 +6,7 @@ Generar cada 14 días un plan con 4 comidas diarias (desayuno, almuerzo, meriend
 ## Pantallas (móvil primero)
 1. **Hoy**: las 4 comidas del día con nombre del plato, ingredientes en gramos, macros de cada comida y total del día frente al objetivo. Botón para marcar cada comida como hecha y botón «cambiar plato» (otra receta de la misma comida con gramos recalculados, o «Comida libre»).
 2. **Plan**: los 14 días del bloque actual, navegables por día.
+3. **Recetas**: biblioteca de recetas activas por comida, con gramos ajustados al objetivo y su valoración; cada una abre su Receta.
 3. **Receta**: ingredientes (escalables en negrita, fijos aparte), preparación y valoración (Me encanta / Normal / No lo repetiría).
 4. **Progreso**: registro de peso (fecha, kg, opcional cintura), gráfica con la media móvil de 7 días y adherencia del bloque.
 5. **Ajustes**: objetivos por comida, tolerancias, alimentos excluidos, favoritos, días flexibles, número de repeticiones permitidas.

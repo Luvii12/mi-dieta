@@ -32,7 +32,7 @@ El usuario venía de un entrenador personal que le daba dietas en PDF. La app la
 - `docs/FASES.md` — orden de desarrollo y criterios de «terminado».
 - `data/alimentos.csv` — tabla de alimentos inicial (valores **aproximados**, `verificado = no`).
 - `data/recetas_semilla.json` — 22 recetas probadas con el optimizador y sus macros de prueba.
-- `web/` — PWA sin build: `app.js` (navegación), `comun.js` (utilidades), `datos.js` (copia local + acciones), una pantalla por archivo (`hoy.js`, `plan.js`, `receta.js`, `cambiar.js`, `ajustes.js`). Al cambiar algo de `web/`, subir `VERSION` en `sw.js` y añadir archivos nuevos a su lista.
+- `web/` — PWA sin build: `app.js` (navegación), `comun.js` (utilidades), `datos.js` (copia local + acciones), una pantalla por archivo (`hoy.js`, `plan.js`, `recetas.js`, `receta.js`, `cambiar.js`, `ajustes.js`). Al cambiar algo de `web/`, subir `VERSION` en `sw.js` y añadir archivos nuevos a su lista.
 - `prototipo/` — prototipo en Python que ya funciona: `semana.py` (optimizador de gramos con mínimos cuadrados acotados) y `dietas_entrenador.py` (cálculo de macros de las dietas originales). Úsalo como referencia y para tests de regresión: el port a JS debe dar resultados equivalentes.
 
 ## Diseño de la interfaz (desde la Fase 3)
@@ -45,6 +45,7 @@ Decidido (2026-10-16): sin fotos de platos hasta la Fase 6 (en su hueco, tesela 
 | Hoy (claro / oscuro) | `mi_dieta_hoy_modo_claro`, `mi_dieta_hoy_modo_oscuro` | 3 |
 | Plan (14 días) | `mi_dieta_plan_14_d_as` | 3 |
 | Receta | `mi_dieta_receta_pollo_al_curry` | 3 |
+| Recetas (biblioteca) | — sin diseño: mismas tarjetas que Plan | 3 |
 | Ajustes | `mi_dieta_ajustes` | 3 |
 | Progreso | `mi_dieta_progreso` | 4 |
 | Nuevo plan | `mi_dieta_nuevo_plan_fin_de_bloque` | 4 |

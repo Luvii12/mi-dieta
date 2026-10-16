@@ -233,14 +233,15 @@ body[data-vista="receta"] .barra-superior { display: none; }
   box-shadow: 0 -4px 6px -1px rgba(66, 48, 32, 0.04);
 }
 .navegacion a {
-  min-width: 64px;
+  flex: 1;
+  min-width: 0;
   min-height: 48px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
-  padding: 4px 12px;
+  padding: 4px 2px;
   font-size: 10px;
   line-height: 14px;
   font-weight: 700;
@@ -618,6 +619,11 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 .comida-plan-nombre { font-size: 14px; line-height: 20px; font-weight: 600; margin: 2px 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .comida-plan-flecha { font-size: 20px; color: var(--borde-variante); }
 .comida-plan-hecha { font-size: 20px; color: var(--secundario); }
+.receta-valoracion { font-size: 20px; line-height: 1; flex-shrink: 0; }
+
+/* ---------- Recetas ---------- */
+
+.grupo-recetas { display: flex; flex-direction: column; gap: 12px; }
 
 .total-dia {
   margin-top: 4px;

@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
   <!-- Solo los iconos que usa la app (en orden alfabético, como pide Google Fonts). -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400..700,0..1,0&icon_names=arrow_back,bakery_dining,calendar_month,calendar_today,celebration,check,check_circle,chevron_right,close,cloud_done,cloud_off,error,key,kitchen,link,lunch_dining,monitoring,nutrition,outdoor_grill,pie_chart,restaurant,sensors,settings,skillet,soup_kitchen,sync,task_alt,tune,visibility,visibility_off&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400..700,0..1,0&icon_names=arrow_back,bakery_dining,calendar_month,calendar_today,celebration,check,check_circle,chevron_right,close,cloud_done,cloud_off,error,key,kitchen,link,lunch_dining,menu_book,monitoring,nutrition,outdoor_grill,pie_chart,restaurant,sensors,settings,skillet,soup_kitchen,sync,task_alt,tune,visibility,visibility_off&display=block">
   <link rel="stylesheet" href="estilos.css">
   <script type="module" src="app.js"></script>
 </head>
@@ -33,6 +33,7 @@
   <main>
     <section id="vista-hoy" class="vista"></section>
     <section id="vista-plan" class="vista" hidden></section>
+    <section id="vista-recetas" class="vista" hidden></section>
     <section id="vista-receta" class="vista" hidden></section>
 
     <section id="vista-progreso" class="vista" hidden>
@@ -113,6 +114,7 @@
   <nav class="navegacion" aria-label="Secciones">
     <a href="#hoy" data-vista="hoy"><span class="icono" aria-hidden="true">restaurant</span><span>Hoy</span></a>
     <a href="#plan" data-vista="plan"><span class="icono" aria-hidden="true">calendar_month</span><span>Plan</span></a>
+    <a href="#recetas" data-vista="recetas"><span class="icono" aria-hidden="true">menu_book</span><span>Recetas</span></a>
     <a href="#progreso" data-vista="progreso"><span class="icono" aria-hidden="true">monitoring</span><span>Progreso</span></a>
     <a href="#ajustes" data-vista="ajustes"><span class="icono" aria-hidden="true">settings</span><span>Ajustes</span></a>
   </nav>

@@ -162,6 +162,7 @@ function ajustarReceta_(receta, objetivo, alimentos, tolComida) {
     const a = alimento_(i.alimento, alimentos);
     i.nombre = a.nombre;
     i.estado = a.estado;
+    i.grupo = a.grupo;
   });
 
   const gramosFinales = {};

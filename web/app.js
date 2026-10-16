@@ -1,16 +1,18 @@
-// Arranque y navegación entre pantallas (#hoy, #plan, #receta/…, #progreso, #ajustes).
+// Arranque y navegación entre pantallas (#hoy, #plan, #recetas, #receta/…, #progreso, #ajustes).
 
 import { leerConexion } from './api.js';
 import { $ } from './comun.js';
 import { cargarHoy, pintarHoy, vacio } from './hoy.js';
 import { cargarPlan, pintarPlan } from './plan.js';
 import { cargarReceta, pintarReceta, recordarAnterior } from './receta.js';
+import { cargarRecetas, pintarRecetas } from './recetas.js';
 import { cargarAjustes, prepararAjustes } from './ajustes.js';
 import { prepararPanel } from './cambiar.js';
 
-const VISTAS = ['hoy', 'plan', 'receta', 'progreso', 'ajustes'];
+const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'progreso', 'ajustes'];
 // Pantallas que necesitan la conexión con la hoja configurada.
-const NECESITAN_CONEXION = { hoy: 'Conecta la app con tu hoja de Google para empezar.', plan: 'Conecta la app con tu hoja de Google para ver tu plan.' };
+const NECESITAN_CONEXION = { hoy: 'Conecta la app con tu hoja de Google para empezar.', plan: 'Conecta la app con tu hoja de Google para ver tu plan.',
+  recetas: 'Conecta la app con tu hoja de Google para ver tus recetas.' };
 
 const vistaActual = () => {
   const nombre = location.hash.slice(1).split('/')[0];
@@ -39,6 +41,7 @@ function mostrarVista() {
   }
   if (vista === 'hoy') cargarHoy($('vista-hoy'));
   if (vista === 'plan') cargarPlan($('vista-plan'));
+  if (vista === 'recetas') cargarRecetas($('vista-recetas'));
   if (vista === 'receta') cargarReceta($('vista-receta'));
   if (vista === 'ajustes') cargarAjustes();
 }
@@ -50,6 +53,7 @@ function repintar() {
   const vista = vistaActual();
   if (vista === 'hoy') pintarHoy($('vista-hoy'));
   if (vista === 'plan') pintarPlan($('vista-plan'));
+  if (vista === 'recetas') pintarRecetas($('vista-recetas'));
   if (vista === 'receta') pintarReceta($('vista-receta'));
   if (foco) {
     const elemento = document.querySelector(`#vista-${vista} [data-foco="${foco}"]`);
@@ -61,11 +65,6 @@ function actualizarRed() {
   $('estado-red').hidden = navigator.onLine;
 }
 
-try {
-  localStorage.removeItem('dieta.recetas'); // caché de la antigua pestaña Recetas
-} catch (err) {
-  // Sin almacenamiento no hay nada que borrar.
-}
 prepararAjustes();
 prepararPanel();
 document.addEventListener('datos-cambiados', repintar);

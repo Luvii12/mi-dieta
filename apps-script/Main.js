@@ -10,16 +10,18 @@ const ACCIONES = {
     return leerConfig_();
   },
 
-  // Todas las recetas activas con los gramos ajustados al objetivo de su comida.
+  // Todas las recetas activas con los gramos ajustados al objetivo de su comida y su última valoración.
   // Si una receta no se puede calcular (p. ej. alimento desconocido) lleva `error` en vez de `ajuste`.
   recetas: function () {
     const config = leerConfig_();
     const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
     const tolComida = (config.tolerancias || {}).comida;
+    const valoraciones = valoracionesActuales_();
     return leerTabla_('recetas')
       .filter(fila => fila.activa === 'si')
       .map(fila => {
-        const resultado = { id: fila.id, comida: fila.comida, nombre: fila.nombre, preparacion: fila.preparacion, origen: fila.origen };
+        const resultado = { id: fila.id, comida: fila.comida, nombre: fila.nombre, preparacion: fila.preparacion, origen: fila.origen,
+          valoracion: valoraciones[fila.id] || null };
         try {
           const objetivo = config['objetivo_' + String(fila.comida).toLowerCase()];
           if (!objetivo) throw new Error('No hay objetivo para «' + fila.comida + '» en config.');

@@ -1,10 +1,10 @@
-// Pantalla «Receta» de una comida del plan: macros, ingredientes pesados para tus objetivos, preparación,
-// valoración y «Marcar como hecha» (design/mi_dieta_receta_pollo_al_curry).
-// Ruta: #receta/<plan_id>/<fecha>/<comida>
+// Pantalla «Receta»: macros, ingredientes pesados para tus objetivos, preparación, valoración y, si es una
+// comida del plan activo, «Marcar como hecha» (design/mi_dieta_receta_pollo_al_curry).
+// Rutas: #receta/<plan_id>/<fecha>/<comida> (comida de un plan) y #receta/<id> (biblioteca de recetas).
 
 import { llamar } from './api.js';
 import { h, icono, numero, fechaTitulo, ICONO_COMIDA, avisar } from './comun.js';
-import { buscarComida, guardarPlan, marcarComida, valorar } from './datos.js';
+import { buscarComida, buscarReceta, guardarPlan, guardarRecetas, marcarComida, valorar } from './datos.js';
 import { vacio } from './hoy.js';
 
 const VALORACIONES = [
@@ -49,7 +49,7 @@ function ingredienteFijo(ing) {
 }
 
 function pintar(contenedor, encontrada) {
-  const { comida: c, dia, plan, activo } = encontrada;
+  const { comida: c, dia, plan, activo, biblioteca } = encontrada;
   const pesados = c.ingredientes.filter(i => i.escalable);
   const fijos = c.ingredientes.filter(i => !i.escalable);
   const listaPasos = pasos(c.preparacion);
@@ -68,7 +68,9 @@ function pintar(contenedor, encontrada) {
     h('div', { class: 'receta-contenido' },
       h('section', { class: 'tarjeta receta-cabecera' },
         h('p', { class: 'receta-meta' },
-          h('span', { class: 'texto-primario' }, c.comida), h('span', { class: 'separador' }, '•'), fechaTitulo(dia.fecha),
+          h('span', { class: 'texto-primario' }, c.comida), h('span', { class: 'separador' }, '•'),
+          biblioteca ? (c.fueraDeMargen ? h('span', { class: 'texto-terciario' }, 'Fuera de margen en esta comida') : 'Ajustada a tu objetivo')
+            : fechaTitulo(dia.fecha),
           c.cambiada ? [h('span', { class: 'separador' }, '•'), h('span', { class: 'texto-secundario' }, 'Plato cambiado')] : null),
         h('h1', null, c.nombre),
         h('div', { class: 'macro-cajas' },
@@ -121,27 +123,35 @@ let anterior = null;
 export const recordarAnterior = hash => { anterior = hash; };
 function volver() {
   if (anterior && !anterior.startsWith('#receta')) history.back();
-  else location.hash = '#plan';
+  else location.hash = esDeBiblioteca() ? '#recetas' : '#plan';
 }
 
-function partesRuta() {
-  const [, planId, fecha, comida] = location.hash.split('/');
-  return [decodeURIComponent(planId || ''), fecha, comida];
+const partesRuta = () => location.hash.split('/').slice(1).map(decodeURIComponent);
+const esDeBiblioteca = () => partesRuta().length === 1;
+
+function buscar() {
+  if (esDeBiblioteca()) {
+    const comida = buscarReceta(partesRuta()[0]);
+    return comida && { comida: comida, biblioteca: true, activo: false };
+  }
+  return buscarComida(...partesRuta());
 }
 
 export function pintarReceta(contenedor) {
-  const encontrada = buscarComida(...partesRuta());
+  const encontrada = buscar();
   if (encontrada) pintar(contenedor, encontrada);
   return Boolean(encontrada);
 }
 
 export async function cargarReceta(contenedor) {
   if (pintarReceta(contenedor)) return;
+  const [volverA, texto] = esDeBiblioteca() ? ['#recetas', 'Ir a Recetas'] : ['#plan', 'Ir a Plan'];
   contenedor.replaceChildren(h('p', { class: 'cargando' }, 'Cargando receta…'));
   try {
-    guardarPlan(await llamar('plan'));
-    if (!pintarReceta(contenedor)) contenedor.replaceChildren(vacio('Esta comida ya no está en tus planes.', 'Ir a Plan', '#plan'));
+    if (esDeBiblioteca()) guardarRecetas(await llamar('recetas'));
+    else guardarPlan(await llamar('plan'));
+    if (!pintarReceta(contenedor)) contenedor.replaceChildren(vacio('Esta receta ya no está disponible.', texto, volverA));
   } catch (err) {
-    contenedor.replaceChildren(vacio(err.message, 'Ir a Plan', '#plan'));
+    contenedor.replaceChildren(vacio(err.message, texto, volverA));
   }
 }

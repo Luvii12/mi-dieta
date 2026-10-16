@@ -243,4 +243,8 @@ test('valorar: la última valoración cuenta y «No lo repetiría» la quita de 
   assert.match(gas.llamar('valorar', { receta_id: actual, valor: 'regular' }).error, /no válida/);
   assert.match(gas.llamar('valorar', { receta_id: 'ZZ', valor: 'normal' }).error, /No existe/);
   assert.equal(filas(gas, 'valoraciones').length, 3);
+  const recetas = gas.llamar('recetas').datos;
+  assert.equal(recetas.find(x => x.id === actual).valoracion, 'me_encanta');
+  assert.equal(recetas.find(x => x.id === otra).valoracion, 'no_repetir');
+  assert.ok(recetas.find(x => x.id === actual).ajuste.ingredientes.every(i => i.grupo));
 });

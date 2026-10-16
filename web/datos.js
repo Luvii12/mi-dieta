@@ -7,11 +7,30 @@ import { hoyIso } from './comun.js';
 
 const CACHE_HOY = 'dieta.ultimoHoy';
 const CACHE_PLAN = 'dieta.plan';
+const CACHE_RECETAS = 'dieta.recetas';
 
 export const leerPlan = () => leerLocal(CACHE_PLAN);
 export const guardarPlan = datos => guardarLocal(CACHE_PLAN, datos);
 export const guardarHoy = hoy => guardarLocal(CACHE_HOY, hoy);
 export const olvidarHoy = () => guardarLocal(CACHE_HOY, null);
+export const leerRecetas = () => leerLocal(CACHE_RECETAS);
+export const guardarRecetas = recetas => guardarLocal(CACHE_RECETAS, recetas);
+
+// Receta de la biblioteca con la misma forma que una comida del plan (para la pantalla «Receta»).
+export function buscarReceta(id) {
+  const r = (leerRecetas() || []).find(x => x.id === id);
+  if (!r || !r.ajuste) return null;
+  return {
+    comida: r.comida,
+    receta_id: r.id,
+    nombre: r.nombre,
+    preparacion: r.preparacion,
+    ingredientes: r.ajuste.ingredientes,
+    macros: r.ajuste.macros,
+    valoracion: r.valoracion,
+    fueraDeMargen: Boolean(r.ajuste.evaluacion && !r.ajuste.evaluacion.ok),
+  };
+}
 
 // Avisa a la pantalla abierta de que los datos guardados han cambiado.
 const avisarCambio = () => document.dispatchEvent(new Event('datos-cambiados'));
@@ -80,13 +99,23 @@ export async function marcarComida(planId, fecha, comida, hecha) {
 }
 
 export async function valorar(recetaId, valor) {
-  const cambiar = v => modificarDias((id, dia) => dia.comidas.forEach(c => {
-    if (c.receta_id === recetaId) c.valoracion = v;
-  }));
-  let antes = null;
-  modificarDias((id, dia) => dia.comidas.forEach(c => {
-    if (c.receta_id === recetaId) antes = c.valoracion;
-  }));
+  const cambiar = v => {
+    const recetas = leerRecetas();
+    if (recetas) {
+      recetas.filter(r => r.id === recetaId).forEach(r => { r.valoracion = v; });
+      guardarRecetas(recetas);
+    }
+    modificarDias((id, dia) => dia.comidas.forEach(c => {
+      if (c.receta_id === recetaId) c.valoracion = v;
+    }));
+  };
+  const enBiblioteca = (leerRecetas() || []).find(r => r.id === recetaId);
+  let antes = enBiblioteca ? enBiblioteca.valoracion : null;
+  if (!enBiblioteca) {
+    modificarDias((id, dia) => dia.comidas.forEach(c => {
+      if (c.receta_id === recetaId) antes = c.valoracion;
+    }));
+  }
   cambiar(valor);
   try {
     await llamar('valorar', { receta_id: recetaId, valor });
