@@ -1,9 +1,9 @@
 // Progreso y regla de ajuste quincenal (docs/NUTRICION.md).
 const test = require('node:test');
 const assert = require('node:assert/strict');
-Object.assign(globalThis, require('../apps-script/Util.js'), require('../apps-script/Nutricion.js'), require('../apps-script/Generador.js'));
-const P = require('../apps-script/Progreso.js');
-const { promoverPlanes_, numeroBloque_ } = require('../apps-script/Planes.js');
+Object.assign(globalThis, require('../web/motor/Util.js'), require('../web/motor/Nutricion.js'), require('../web/motor/Generador.js'));
+const P = require('../web/motor/Progreso.js');
+const { promoverPlanes_, numeroBloque_ } = require('../web/motor/Planes.js');
 const { SEMILLA } = require('../apps-script/Semilla.js');
 
 const OBJ = SEMILLA.objetivos;

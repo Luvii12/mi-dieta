@@ -6,8 +6,8 @@ Pasos que hace el usuario a mano. Claude Code puede ejecutar los comandos de cla
 1. Activar la API de Apps Script: https://script.google.com/home/usersettings
 2. `clasp login` (en Claude Code: `! clasp login`). Elegir la cuenta donde vivirá la hoja.
 3. Crear la hoja con el script vinculado (desde la raíz del repo):
-   `clasp create --type sheets --title "Dieta" --rootDir apps-script`
-   Si clasp sobrescribe `apps-script/appsscript.json`, restaurarlo con `git checkout apps-script/appsscript.json`.
+   `clasp create --type sheets --title "Dieta" --rootDir .` (sube lo que dice `.claspignore`: `appsscript.json`, `apps-script/` y `web/motor/`)
+   Si clasp sobrescribe `appsscript.json`, restaurarlo con `git checkout appsscript.json`.
 4. Subir el código: `clasp push`
 5. En el editor (`clasp open-script`), ejecutar una vez, por este orden:
    - `configurarHoja` → crea las 9 pestañas y carga 95 alimentos, 22 recetas y la configuración. Google pedirá permisos la primera vez.

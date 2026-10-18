@@ -33,6 +33,7 @@ El usuario venía de un entrenador personal que le daba dietas en PDF. La app la
 - `data/alimentos.csv` — tabla de alimentos inicial (valores **aproximados**, `verificado = no`).
 - `data/recetas_semilla.json` — 22 recetas probadas con el optimizador y sus macros de prueba.
 - `web/` — PWA sin build: `app.js` (navegación), `comun.js` (utilidades), `datos.js` (copia local + acciones), una pantalla por archivo (`hoy.js`, `plan.js`, `recetas.js`, `receta.js`, `cambiar.js`, `ajustes.js`). Al cambiar algo de `web/`, subir `VERSION` en `sw.js` y añadir archivos nuevos a su lista.
+- `web/motor/` — motor compartido (desde M1): `Acciones.js` (lo que hace cada petición), `Nutricion`, `Generador`, `Planes`, `Progreso`, `RecetasIA`, `Util`. Sin APIs de Google: usa las funciones de almacén que pone `apps-script/Hoja.js` (Sheets) o `Memoria.js` (navegador). clasp lo sube junto a `apps-script/` (`rootDir` = raíz, ver `.claspignore`). `tests/motor.test.js` exige que memoria y Apps Script den lo mismo. La PWA aún no lo carga (M2).
 - `prototipo/` — prototipo en Python que ya funciona: `semana.py` (optimizador de gramos con mínimos cuadrados acotados) y `dietas_entrenador.py` (cálculo de macros de las dietas originales). Úsalo como referencia y para tests de regresión: el port a JS debe dar resultados equivalentes.
 
 ## Diseño de la interfaz (desde la Fase 3)
@@ -73,7 +74,7 @@ Cuando Fran pida recetas nuevas («propón 3 cenas mexicanas»), las escribe Cla
 4. Enseñar a Fran las recetas (nombre, idea, macros) y, con su visto bueno, `enviar`: quedan como propuestas en la pestaña Recetas para que las acepte o descarte en el móvil (y meta los macros de los alimentos nuevos).
 
 ## Skill «dietista» (fuera del repo)
-Agente dietista de Fran como skill de claude.ai (móvil, web y Claude Code): fuente en `~/Escritorio/claude/dietista/dietista/`, se sube como `dietista.zip`. Copia `NUTRICION.md`, las instrucciones de `apps-script/RecetasIA.js` y los ids de `data/alimentos.csv`: si cambian objetivos, reglas de ajuste, tolerancias o el formato de recetas, actualizar también la skill, regenerar el zip y avisar a Fran de que lo vuelva a subir.
+Agente dietista de Fran como skill de claude.ai (móvil, web y Claude Code): fuente en `~/Escritorio/claude/dietista/dietista/`, se sube como `dietista.zip`. Copia `NUTRICION.md`, las instrucciones de `web/motor/RecetasIA.js` y los ids de `data/alimentos.csv`: si cambian objetivos, reglas de ajuste, tolerancias o el formato de recetas, actualizar también la skill, regenerar el zip y avisar a Fran de que lo vuelva a subir.
 
 ## Reglas de trabajo
 1. Trabaja **por fases** (`docs/FASES.md`) y para al terminar cada una para que el usuario pruebe en el móvil.

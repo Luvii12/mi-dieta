@@ -47,6 +47,19 @@ function fechaIso_(fecha) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: ZONA_HORARIA }).format(fecha);
 }
 
+// Fecha → texto con formato tipo 'yyyyMMdd-HHmmss' (yyyy, MM, dd, HH, mm, ss y 'literal') en hora de Madrid.
+// Hace lo mismo que Utilities.formatDate de Apps Script, pero funciona también en el navegador.
+function fechaHora_(fecha, formato) {
+  const partes = {};
+  new Intl.DateTimeFormat('en-GB', {
+    timeZone: ZONA_HORARIA, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
+  }).formatToParts(fecha).forEach(p => { partes[p.type] = p.value; });
+  return formato.replace(/'([^']*)'|yyyy|MM|dd|HH|mm|ss/g, (m, literal) => {
+    if (literal !== undefined) return literal;
+    return { yyyy: partes.year, MM: partes.month, dd: partes.day, HH: partes.hour, mm: partes.minute, ss: partes.second }[m];
+  });
+}
+
 // Valor de celda → valor JS. Las fechas que Sheets haya convertido vuelven a ISO.
 function normalizarCelda_(valor) {
   if (valor instanceof Date) return fechaIso_(valor);

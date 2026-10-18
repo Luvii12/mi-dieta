@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const N = require('../apps-script/Nutricion.js');
+const N = require('../web/motor/Nutricion.js');
 const { SEMILLA } = require('../apps-script/Semilla.js');
 const recetasJson = require('../data/recetas_semilla.json');
 

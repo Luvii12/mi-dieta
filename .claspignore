@@ -1,0 +1,7 @@
+# Qué sube clasp a Apps Script (rootDir es la raíz del repo): el manifiesto, apps-script/ y el motor.
+**/**
+!appsscript.json
+!apps-script/*.js
+!web/motor/*.js
+# El almacén en memoria es solo para el navegador.
+web/motor/Memoria.js

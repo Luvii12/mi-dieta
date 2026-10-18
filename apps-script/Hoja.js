@@ -1,4 +1,6 @@
 // Acceso a Google Sheets. Único sitio que usa SpreadsheetApp.
+// Almacén de Apps Script: leerTabla_, anadirFilas_, reescribirTabla_, actualizarFilas_, escribirConfig_ y
+// conBloqueo_. En el navegador las mismas funciones las pone web/motor/Memoria.js.
 
 function libro_() {
   return SpreadsheetApp.getActiveSpreadsheet();
@@ -59,28 +61,6 @@ function conBloqueo_(fn) {
   } finally {
     bloqueo.releaseLock();
   }
-}
-
-// Todas las recetas (activas o no) con los ingredientes ya convertidos: {id: receta}.
-function leerRecetasPorId_() {
-  const porId = {};
-  leerTabla_('recetas').forEach(fila => {
-    try {
-      porId[fila.id] = filaAReceta_(fila);
-    } catch (err) {
-      porId[fila.id] = Object.assign({}, fila, { error: err.message });
-    }
-  });
-  return porId;
-}
-
-function leerConfig_() {
-  return configAObjeto_(leerTabla_('config'));
-}
-
-// Crea o actualiza una fila de `config`. Usa un bloqueo para que dos peticiones no pisen la misma fila.
-function guardarConfig_(clave, valor) {
-  conBloqueo_(() => escribirConfig_(clave, valor));
 }
 
 // Igual que guardarConfig_, para usar cuando ya se tiene el bloqueo.

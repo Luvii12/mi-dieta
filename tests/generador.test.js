@@ -1,8 +1,8 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 // En Apps Script todos los archivos comparten ámbito global; en Node se imita así.
-Object.assign(globalThis, require('../apps-script/Nutricion.js'));
-const G = require('../apps-script/Generador.js');
+Object.assign(globalThis, require('../web/motor/Nutricion.js'));
+const G = require('../web/motor/Generador.js');
 const { SEMILLA } = require('../apps-script/Semilla.js');
 
 const alimentos = indexarAlimentos_(SEMILLA.alimentos);

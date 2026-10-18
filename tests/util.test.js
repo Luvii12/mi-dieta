@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const U = require('../apps-script/Util.js');
+const U = require('../web/motor/Util.js');
 
 test('token: sin token guardado se rechaza todo', () => {
   assert.equal(U.tokenValido_('abc', null), false);

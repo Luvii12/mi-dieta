@@ -4,7 +4,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { PESTANAS } = require('../apps-script/Util.js');
+const { PESTANAS } = require('../web/motor/Util.js');
 
 const NUMERICAS = ['kcal_100', 'proteina_100', 'carbohidratos_100', 'grasa_100', 'gramos_por_unidad'];
 

@@ -71,6 +71,14 @@ function formatDate(fecha, zona, formato) {
   });
 }
 
+const RAIZ = path.join(__dirname, '..');
+const jsDe = dir => fs.readdirSync(path.join(RAIZ, dir)).filter(f => f.endsWith('.js')).sort().map(f => path.join(RAIZ, dir, f));
+
+// Lo mismo que sube clasp (ver .claspignore): apps-script/ y el motor, sin el almacén del navegador.
+function archivosAppsScript() {
+  return jsDe('apps-script').concat(jsDe('web/motor').filter(f => path.basename(f) !== 'Memoria.js'));
+}
+
 // ahoraIso: momento fijo para `new Date()` dentro del script (p. ej. '2026-10-21T09:00:00+02:00').
 function cargarAppsScript(ahoraIso) {
   const libro = crearLibro();
@@ -105,9 +113,8 @@ function cargarAppsScript(ahoraIso) {
       createTextOutput: texto => ({ texto, setMimeType() { return this; } }),
     },
   });
-  const dir = path.join(__dirname, '..', 'apps-script');
-  fs.readdirSync(dir).filter(f => f.endsWith('.js')).sort().forEach(f => {
-    vm.runInContext(fs.readFileSync(path.join(dir, f), 'utf8'), contexto, { filename: f });
+  archivosAppsScript().forEach(archivo => {
+    vm.runInContext(fs.readFileSync(archivo, 'utf8'), contexto, { filename: path.relative(RAIZ, archivo) });
   });
   // Las declaraciones `const` de nivel superior no son propiedades del contexto: se exponen aquí.
   vm.runInContext('this.__ACCIONES = ACCIONES;', contexto);
@@ -119,4 +126,4 @@ function cargarAppsScript(ahoraIso) {
   return { contexto, libro, propiedades, registro, llamar };
 }
 
-module.exports = { cargarAppsScript, formatDate };
+module.exports = { cargarAppsScript, formatDate, archivosAppsScript, jsDe, RAIZ };

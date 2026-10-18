@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('fs');
 const path = require('path');
 const { construirSemilla, nombreDesdeId } = require('../scripts/generar_semilla.js');
-const { PESTANAS } = require('../apps-script/Util.js');
+const { PESTANAS } = require('../web/motor/Util.js');
 const { SEMILLA } = require('../apps-script/Semilla.js');
 
 const raiz = path.join(__dirname, '..');
