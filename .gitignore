@@ -2,9 +2,6 @@ node_modules/
 __pycache__/
 *.pyc
 .DS_Store
-# Del antiguo Apps Script (retirado en M6): credenciales de clasp y URL + token. Se pueden borrar.
-.clasprc.json
-.conexion.local.json
 
 # Conexión con Supabase para los scripts (URL, clave pública, cuentas y clave secreta: nunca al repo)
 .supabase.local.json

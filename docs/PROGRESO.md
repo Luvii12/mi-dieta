@@ -3,9 +3,9 @@
 > Memoria entre sesiones. Claude Code lo lee al empezar y lo actualiza al terminar cada tarea o antes de `/clear`. Mantenerlo por debajo de ~80 líneas: resumir lo antiguo.
 
 ## Estado actual
-- **Fase:** multiusuario **M6, código hecho (2026-10-18, sin publicar)**: `npm run invitar`, «Cambiar contraseña» en Ajustes › Cuenta, guía `docs/INSTALAR.md`, Apps Script fuera del repo e implementación web archivada. 132 tests. **Siguiente:** publicar, que Fran quite el activador y dé las altas; M6 queda hecha cuando los tres usen la app una semana sin incidencias.
+- **Fase:** multiusuario **M6, publicada (2026-10-18)**: `npm run invitar`, «Cambiar contraseña» en Ajustes › Cuenta, guía `docs/INSTALAR.md`, Apps Script fuera del repo e implementación web archivada. 132 tests. Activador quitado por Fran. **Siguiente:** que Fran dé las altas; M6 queda hecha cuando los tres usen la app una semana sin incidencias.
 - **URLs:** PWA https://luvii12.github.io/mi-dieta/ · repo https://github.com/Luvii12/mi-dieta · Supabase `umzalhsxowdwteqursyc`. La hoja de Google es solo copia de seguridad (hasta 18-10).
-- **Pendiente de Fran:** quitar el activador de Apps Script (script.google.com › proyecto de la hoja › Activadores › `revisarFinDePlan` › Eliminar); `npm run invitar -- <email>` para su hermano y su novia (en su terminal) y mandarles el mensaje; `npm run cambiar-contrasena` en una terminal propia (la cuenta real aún tiene la contraseña débil de pruebas; no cambiarla desde la app, o los scripts dejan de entrar); opcional, hacerse administrador por SQL (`docs/SUPABASE.md` §8); puede borrar `.conexion.local.json`.
+- **Pendiente de Fran:** `npm run invitar -- <email>` para su hermano y su novia (en su terminal) y mandarles el mensaje; `npm run cambiar-contrasena` en una terminal propia (la cuenta real aún tiene la contraseña débil de pruebas; no cambiarla desde la app, o los scripts dejan de entrar); opcional, hacerse administrador por SQL (`docs/SUPABASE.md` §8).
 - **Publicar:** push a `main` (sube `VERSION` en `web/sw.js`).
 - **Generación automática:** la hace la PWA al abrirse (una vez al día por móvil, `dieta.planRevisado`).
 
