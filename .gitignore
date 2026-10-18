@@ -7,3 +7,6 @@ __pycache__/
 
 # Conexión con Apps Script para scripts/recetas_ia.js (lleva el token: nunca al repo)
 .conexion.local.json
+
+# Conexión con Supabase para scripts/probar_rls.js (URL, clave pública y usuarios de prueba)
+.supabase.local.json

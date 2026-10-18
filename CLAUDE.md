@@ -7,7 +7,7 @@ El usuario venía de un entrenador personal que le daba dietas en PDF. La app la
 
 ## Fuera de alcance por ahora
 - **Chat con IA**: se hará más adelante, cuando la app funcione. No implementarlo.
-- Login y multiusuario: no hacen falta.
+- ~~Login y multiusuario~~: ahora sí, en migración (2026-10-18, ver `docs/PLAN_MULTIUSUARIO.md`).
 - Imágenes de platos, lista de la compra y recordatorios: fases finales.
 
 ## Decisiones ya tomadas (no cambiar sin preguntar)
@@ -15,7 +15,7 @@ El usuario venía de un entrenador personal que le daba dietas en PDF. La app la
 | --- | --- |
 | Plataforma | PWA en **GitHub Pages**, interfaz en **español**, pensada para móvil |
 | Independencia | **App separada**: su propio repositorio, hoja de Google y Apps Script. No tocar, integrar ni reutilizar la app de fitness/rutinas que el usuario ya tiene |
-| Datos | **Google Sheets** (una pestaña por tabla), sin base de datos de pago |
+| Datos | **Google Sheets** (una pestaña por tabla), sin base de datos de pago. **En migración a Supabase gratis** (`docs/PLAN_MULTIUSUARIO.md`) |
 | Servidor | **Google Apps Script** publicado como web app; la PWA solo habla con él |
 | Acceso | Sin login: token secreto en cada petición, guardado en las propiedades del script |
 | Secretos | La clave de la API de Claude **nunca** va en el repo ni en el frontend (GitHub Pages es público) |
@@ -71,6 +71,9 @@ Cuando Fran pida recetas nuevas («propón 3 cenas mexicanas»), las escribe Cla
 2. Escribir las recetas en un JSON del scratchpad con el formato del esquema (`nombre`, `preparacion`, `ingredientes_fijos`, `ingredientes_escalables`, `alimentos_nuevos`) siguiendo esas instrucciones. Nunca macros.
 3. `node scripts/recetas_ia.js probar <Comida> <archivo>` → gramos y macros, o por qué se descarta. Corregir y repetir hasta que valgan.
 4. Enseñar a Fran las recetas (nombre, idea, macros) y, con su visto bueno, `enviar`: quedan como propuestas en la pestaña Recetas para que las acepte o descarte en el móvil (y meta los macros de los alimentos nuevos).
+
+## Skill «dietista» (fuera del repo)
+Agente dietista de Fran como skill de claude.ai (móvil, web y Claude Code): fuente en `~/Escritorio/claude/dietista/dietista/`, se sube como `dietista.zip`. Copia `NUTRICION.md`, las instrucciones de `apps-script/RecetasIA.js` y los ids de `data/alimentos.csv`: si cambian objetivos, reglas de ajuste, tolerancias o el formato de recetas, actualizar también la skill, regenerar el zip y avisar a Fran de que lo vuelva a subir.
 
 ## Reglas de trabajo
 1. Trabaja **por fases** (`docs/FASES.md`) y para al terminar cada una para que el usuario pruebe en el móvil.

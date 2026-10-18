@@ -5,7 +5,7 @@
 ## Estado actual
 - **Fase:** 5 · Recetas con IA — desplegada el 2026-10-16 (web app versión 8, misma URL; PWA `dieta-v8`). 107 tests. Fase 4 desplegada (web app versión 7).
 - **URLs:** PWA https://luvii12.github.io/mi-dieta/ · repo https://github.com/Luvii12/mi-dieta · web app: implementación `AKfycbwVOiJ…` (URL /exec completa la tiene el usuario; el token NUNCA va al repo).
-- **Siguiente paso:** comprobar en el móvil que la app sigue respondiendo tras el despliegue. El usuario crea `.conexion.local.json` con `{"url": "<URL /exec>", "token": "<APP_TOKEN>"}` para `scripts/recetas_ia.js`. Después, primera tanda real de recetas (proceso en `CLAUDE.md`).
+- **Siguiente paso (nuevo):** M0 hecha el 2026-10-18 (proyecto `umzalhsxowdwteqursyc`, esquema cargado, `npm run probar-rls` 30/30). Usuarios de prueba: los dos emails de Fran con contraseña débil (cambiarla si uno pasa a ser la cuenta real en M3). Siguiente: M1 (motor en el navegador). Pendiente de antes: comprobar en el móvil que la app sigue respondiendo tras el despliegue. El usuario crea `.conexion.local.json` con `{"url": "<URL /exec>", "token": "<APP_TOKEN>"}` para `scripts/recetas_ia.js`. Después, primera tanda real de recetas (proceso en `CLAUDE.md`).
 - **Desplegar:** `clasp push --force` y `clasp deploy -i <id del despliegue AKfycbwVOiJ…> -d "…"` (mantiene la URL); la PWA se publica sola al hacer push a `main`. Desplegar el servidor **antes** que la PWA.
 
 ## Decisiones tomadas
@@ -30,6 +30,9 @@
 | 2026-10-16 | Repo renombrado `dieta_app` → **`mi-dieta`** (PWA en `/mi-dieta/`): Android tenía registrada una instalación rota de `/dieta_app/` (no salía en `chrome://webapks`) y no dejaba instalarla. Manifest con `id: "./"`. No borrar datos del sitio `luvii12.github.io`: la app de gym guarda ahí sus entrenos (IndexedDB) |
 | 2026-10-18 | Apps Script tarda ~2–3,5 s por llamada (unos 2 s fijos). Al abrir la app, tras la pantalla actual, se precargan Recetas (+ propuestas) y Progreso en segundo plano; todas las pantallas pintan primero lo guardado |
 | 2026-10-16 | Recetas IA: ids `IA1, IA2…`; `activa` = propuesta/descartada; las descartadas no se borran (para que la IA no las repita). Un reintento con los motivos si se descarta alguna; descarta nombres repetidos |
+| 2026-10-18 | Skill **dietista** (claude.ai, fuera del repo, en `~/Escritorio/claude/dietista/`): diseña recetas en el JSON de la app, interpreta progreso y recomienda ajustes; nunca da macros para la app ni hace planes con gramos a mano |
+| 2026-10-18 | **Migración a Supabase y multiusuario** (Fran, su hermano y su novia): Supabase gratis por `fetch`, email + contraseña con registro cerrado, biblioteca de recetas común, objetivos calculados al darse de alta, motor en el navegador. Plan por fases M0–M6 en `docs/PLAN_MULTIUSUARIO.md` |
+| 2026-10-18 | M0: tablas con las mismas columnas que las pestañas + `user_id` (planes con clave `user_id, plan_id`); `config` sigue siendo clave/valor por usuario; `perfiles` para el alta de M4. Comunes: leer y añadir todos, cambiar/borrar quien lo creó o un administrador (tabla `administradores`, solo por SQL) |
 
 ## Preguntas abiertas
 - Nombres de alimentos generados desde el `id` («Ternera picada 5», «Aceite ml»): ya se pueden renombrar en Ajustes › Nombres de alimentos.
