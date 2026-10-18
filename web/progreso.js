@@ -138,6 +138,15 @@ function pintar(contenedor, p) {
       icono('scale'), p.ultimo && p.ultimo.fecha === p.fecha ? 'Cambiar el peso de hoy' : 'Registrar peso de hoy'));
 }
 
+// Igual que precargarRecetas: progreso en segundo plano al abrir la app.
+export async function precargarProgreso() {
+  try {
+    guardarLocal(CACHE_PROGRESO, await llamar('progreso'));
+  } catch (err) {
+    // Se reintenta al abrir Progreso.
+  }
+}
+
 export async function cargarProgreso(contenedor) {
   const guardado = leerLocal(CACHE_PROGRESO);
   if (guardado) pintar(contenedor, guardado);

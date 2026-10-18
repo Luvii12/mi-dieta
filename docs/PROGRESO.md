@@ -28,6 +28,7 @@
 | 2026-10-16 | Comida libre semanal apagada: «Cambiar plato» no ofrece comida libre y todas las libres cuentan como no hechas en la adherencia |
 | 2026-10-16 | Fase 5 (decidido por el usuario): **las recetas las escribe Claude Code con la suscripción, sin API de pago** (`scripts/recetas_ia.js`: pedido → probar → enviar). El usuario revisa cada propuesta en Recetas y la añade o descarta; si falta un alimento, **el usuario mete sus macros** (etiqueta/BEDCA), la IA nunca da valores. La versión con API (`claude-sonnet-5-5`) se quitó antes de desplegar: `UrlFetchApp` obligaba a dar un permiso nuevo y, sin darlo, la web app entera dejaría de responder. Está en el commit `3fb63e7` |
 | 2026-10-16 | Repo renombrado `dieta_app` → **`mi-dieta`** (PWA en `/mi-dieta/`): Android tenía registrada una instalación rota de `/dieta_app/` (no salía en `chrome://webapks`) y no dejaba instalarla. Manifest con `id: "./"`. No borrar datos del sitio `luvii12.github.io`: la app de gym guarda ahí sus entrenos (IndexedDB) |
+| 2026-10-18 | Apps Script tarda ~2–3,5 s por llamada (unos 2 s fijos). Al abrir la app, tras la pantalla actual, se precargan Recetas (+ propuestas) y Progreso en segundo plano; todas las pantallas pintan primero lo guardado |
 | 2026-10-16 | Recetas IA: ids `IA1, IA2…`; `activa` = propuesta/descartada; las descartadas no se borran (para que la IA no las repita). Un reintento con los motivos si se descarta alguna; descarta nombres repetidos |
 
 ## Preguntas abiertas

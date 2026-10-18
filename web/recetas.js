@@ -98,6 +98,18 @@ export function pintarRecetas(contenedor) {
   return Boolean(recetas);
 }
 
+// Descarga la biblioteca y las propuestas en segundo plano (al abrir la app), para que la pestaña se vea
+// al momento y ya actualizada. Si falla, no pasa nada: se pedirán al abrir la pestaña.
+export async function precargarRecetas() {
+  try {
+    const [recetas, propuestas] = await Promise.all([llamar('recetas'), llamar('propuestas')]);
+    guardarRecetas(recetas);
+    guardarPropuestas(propuestas);
+  } catch (err) {
+    // Sin conexión o servidor lento: se reintenta al abrir Recetas.
+  }
+}
+
 export async function cargarRecetas(contenedor) {
   const habia = pintarRecetas(contenedor);
   if (!habia) contenedor.replaceChildren(h('p', { class: 'cargando' }, 'Calculando recetas…'));

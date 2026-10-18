@@ -5,9 +5,9 @@ import { $ } from './comun.js';
 import { cargarHoy, pintarHoy, vacio } from './hoy.js';
 import { cargarPlan, pintarPlan } from './plan.js';
 import { cargarReceta, pintarReceta, recordarAnterior } from './receta.js';
-import { cargarRecetas, pintarRecetas } from './recetas.js';
+import { cargarRecetas, pintarRecetas, precargarRecetas } from './recetas.js';
 import { cargarAjustes, prepararAjustes } from './ajustes.js';
-import { cargarProgreso, prepararProgreso } from './progreso.js';
+import { cargarProgreso, prepararProgreso, precargarProgreso } from './progreso.js';
 import { prepararPanel } from './cambiar.js';
 
 const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'progreso', 'ajustes'];
@@ -77,6 +77,16 @@ window.addEventListener('online', actualizarRed);
 window.addEventListener('offline', actualizarRed);
 actualizarRed();
 mostrarVista();
+
+// Apps Script tarda unos 3 s en cada respuesta. Al abrir la app, después de la pantalla actual, se descargan
+// Recetas y Progreso en segundo plano para que esas pestañas se vean al momento y ya actualizadas.
+function precargar() {
+  const { url, token } = leerConexion();
+  if (!url || !token || !navigator.onLine) return;
+  if (vistaActual() !== 'recetas') precargarRecetas();
+  if (vistaActual() !== 'progreso') precargarProgreso();
+}
+setTimeout(precargar, 2500);
 
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(() => {
