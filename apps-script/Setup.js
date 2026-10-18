@@ -1,12 +1,7 @@
 // Funciones para ejecutar a mano desde el editor de Apps Script (menú «Ejecutar»).
 // No son accesibles desde la PWA.
 
-// Tolerancias en % (docs/NUTRICION.md). P_margen_g: el día nunca puede quedar más de 10 g de
-// proteína por debajo del objetivo.
-const TOLERANCIAS_INICIALES = {
-  dia: { kcal: 5, P: 5, C: 10, G: 10, P_margen_g: 10 },
-  comida: { kcal: 12, P: 15, C: 15, G: 20 },
-};
+// TOLERANCIAS_INICIALES está en web/motor/Perfil.js (también las usa el alta de la PWA).
 
 // 1) Crea las pestañas que falten con sus cabeceras y carga los datos iniciales si están vacías.
 //    Se puede ejecutar varias veces: nunca borra ni duplica datos.

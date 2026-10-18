@@ -75,8 +75,8 @@ const ACCIONES = {
     return resultado;
   },
 
-  // Genera un plan de 14 días que empieza el lunes siguiente (o al acabar el activo) y lo guarda como
-  // borrador, sustituyendo al borrador anterior si lo había.
+  // Genera un plan de 14 días que empieza el lunes siguiente (o al acabar el activo; el primero, mañana)
+  // y lo guarda como borrador, sustituyendo al borrador anterior si lo había.
   generarPlan: function () {
     return conBloqueo_(() => {
       const config = leerConfig_();
@@ -89,7 +89,9 @@ const ACCIONES = {
       const recetasPorId = leerRecetasPorId_();
 
       const generado = generarPlan_({
-        inicio: fechaInicioPlan_(fechaIso_(new Date()), ultimoFin),
+        // El primer plan de quien se acaba de dar de alta (tiene perfil y aún no tiene planes) empieza mañana.
+        inicio: config.perfil && !planes.some(p => p.estado !== 'borrador') ? sumarDias_(fechaIso_(new Date()), 1)
+          : fechaInicioPlan_(fechaIso_(new Date()), ultimoFin),
         recetas: recetasActivas_(recetasPorId),
         alimentos: indexarAlimentos_(leerTabla_('alimentos')),
         objetivos: objetivos,
@@ -112,6 +114,28 @@ const ACCIONES = {
       vista.descartadas = generado.descartadas;
       return vista;
     });
+  },
+
+  // Guarda el perfil (alta o cambio de objetivo) y los objetivos que salen de él (Perfil.js), y el peso
+  // como pesaje de hoy. Petición: {perfil: {nombre, sexo, nacimiento, altura_cm, peso_kg, trabajo, entreno,
+  // meta}, probar?}. Con `probar` solo calcula. Los planes ya hechos no cambian; el borrador se recalcula al
+  // activarlo. A quien se da de alta se le pone también la configuración inicial (tolerancias…).
+  // Devuelve {perfil, calculo, config}.
+  guardarPerfil: function (peticion) {
+    const hoy = fechaIso_(new Date());
+    const perfil = validarPerfil_(peticion.perfil, hoy);
+    const config = leerConfig_();
+    const calculo = calcularObjetivos_(perfil, hoy, config.kcal_minimas);
+    if (peticion.probar) return { perfil: perfil, calculo: calculo, config: config };
+    conBloqueo_(() => {
+      escribirConfig_('perfil', perfil);
+      COMIDAS.forEach(c => escribirConfig_('objetivo_' + c.toLowerCase(), calculo.comidas[c]));
+      const iniciales = { kcal_minimas: calculo.kcal_minimas, tolerancias: TOLERANCIAS_INICIALES, max_rep_desayuno: 4,
+        max_rep_merienda: 4, dias_flexibles: 0, comida_libre_semanal: true };
+      Object.keys(iniciales).filter(k => config[k] === undefined).forEach(k => escribirConfig_(k, iniciales[k]));
+      if (!actualizarFilas_('pesos', f => f.fecha === hoy, { peso_kg: perfil.peso_kg })) anadirFilas_('pesos', [{ fecha: hoy, peso_kg: perfil.peso_kg }]);
+    });
+    return { perfil: perfil, calculo: calculo, config: leerConfig_() };
   },
 
   // Activa el borrador indicado. Si el plan activo aún no ha terminado, el borrador queda como «siguiente»
@@ -362,9 +386,12 @@ function balanceBloque_(planes, comidas, config, hoy) {
   const pesajes = pesos.filter(p => p.fecha >= ref.inicio && p.fecha <= hoy).length;
   const ritmo = ritmoSemanal_(pesos, hoy);
   const adherencia = adherencia_(comidas.filter(c => c.plan_id === ref.plan_id), ref.inicio, hoy, config.comida_libre_semanal !== false);
+  const perfil = config.perfil || {};
   const propuesta = proponerAjuste_({
     ritmo: ritmo, adherencia: adherencia.pct, pesajes: pesajes, objetivos: objetivosDeConfig_(config),
-    kcalMinimas: Number(config.kcal_minimas) || 1400, peso: pesos.length ? pesos[pesos.length - 1].peso : null,
+    kcalMinimas: Number(config.kcal_minimas) || 1400,
+    peso: pesos.length ? pesoReferencia_(pesos[pesos.length - 1].peso, perfil.altura_cm) : null,
+    meta: perfil.meta, proteinaMinima: proteinaMinimaGKg_(perfil.meta),
   });
   return { plan_id: ref.plan_id, bloque: numeroBloque_(planes, ref), inicio: ref.inicio, fin: ref.fin,
     pesajes: pesajes, ritmo: ritmo, adherencia: adherencia, propuesta: propuesta };

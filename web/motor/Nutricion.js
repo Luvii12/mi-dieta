@@ -5,6 +5,20 @@
 const NUTRIENTES = ['kcal', 'P', 'C', 'G'];
 const PASO_G = 5; // redondeo a 5 g (y 5 ml de aceite)
 
+// Objetivo de cada comida en el plan de Fran («Ajustes Fran. Déficit», docs/NUTRICION.md). Las cantidades
+// de las recetas (fijas, mínimas y máximas) están pensadas para estas raciones; para otros objetivos se
+// escalan (racionesReceta_). Perfil.js reparte los macros de una persona nueva con estas proporciones.
+const REFERENCIA_COMIDAS = {
+  Desayuno: { kcal: 405, P: 24.9, C: 48.3, G: 11.6 },
+  Almuerzo: { kcal: 542, P: 41.1, C: 48.0, G: 20.0 },
+  Merienda: { kcal: 335, P: 30.9, C: 33.8, G: 8.7 },
+  Cena: { kcal: 373, P: 34.9, C: 29.1, G: 12.3 },
+};
+// Qué macro decide la ración de cada grupo de alimentos.
+const MACRO_DEL_GRUPO = { proteina: 'P', lacteo: 'P', carbohidrato: 'C', fruta: 'C', grasa: 'G', verdura_condimento: 'kcal' };
+const ESCALA_MINIMA = 0.4;
+const ESCALA_MAXIMA = 3;
+
 // Filas de la pestaña `alimentos` → {id: {kcal, P, C, G, gramos_unidad, estado, grupo, nombre}} (por 100 g).
 function indexarAlimentos_(filas) {
   const indice = {};
@@ -137,10 +151,42 @@ function evaluarDia_(macros, objetivo, tol) {
   return evaluacion;
 }
 
-// Ajusta una receta a un objetivo: optimiza, redondea piezas y las fija, reoptimiza el resto,
+// La receta con sus cantidades escaladas a las raciones de `objetivo`: cada ingrediente según el macro de
+// su grupo (la proteína escala con P, los hidratos y la fruta con C, la grasa con G y la verdura con las
+// kcal), en proporción al objetivo de esa comida en el plan de Fran. Con sus objetivos, la receta no cambia.
+// Las piezas (huevos, panes…) siguen siendo enteras.
+function racionesReceta_(receta, objetivo, alimentos) {
+  const ref = REFERENCIA_COMIDAS[receta.comida];
+  if (!ref || !objetivo) return receta;
+  const factor = id => {
+    const n = MACRO_DEL_GRUPO[alimento_(id, alimentos).grupo] || 'kcal';
+    const f = Number(objetivo[n]) / ref[n];
+    return f > 0 ? Math.min(ESCALA_MAXIMA, Math.max(ESCALA_MINIMA, f)) : 1;
+  };
+  const ids = receta.ingredientes_fijos.concat(receta.ingredientes_escalables).map(i => i.alimento);
+  if (ids.every(id => factor(id) === 1)) return receta;
+  const piezas = (g, u) => Math.max(1, Math.round(g / u)) * u;
+  const fijos = receta.ingredientes_fijos.map(i => {
+    const u = alimentos[i.alimento].gramos_unidad;
+    const g = i.gramos * factor(i.alimento);
+    const gramos = u ? piezas(g, u) : g < 2 * PASO_G ? Math.max(1, Math.round(g)) : Math.round(g / PASO_G) * PASO_G;
+    return Object.assign({}, i, { gramos: gramos });
+  });
+  const escalables = receta.ingredientes_escalables.map(e => {
+    const f = factor(e.alimento);
+    const u = e.unidad ? alimentos[e.alimento].gramos_unidad : null;
+    if (!u) return Object.assign({}, e, { min_g: e.min_g * f, max_g: e.max_g * f });
+    const min = e.min_g > 0 ? piezas(e.min_g * f, u) : 0;
+    return Object.assign({}, e, { min_g: min, max_g: Math.max(min, piezas(e.max_g * f, u)) });
+  });
+  return Object.assign({}, receta, { ingredientes_fijos: fijos, ingredientes_escalables: escalables });
+}
+
+// Ajusta una receta a un objetivo: escala sus raciones, optimiza, redondea piezas y las fija, reoptimiza el resto,
 // redondea todo y recalcula los macros con los gramos finales.
 // receta: {id, nombre, comida, ingredientes_fijos: [{alimento, gramos}], ingredientes_escalables: [...]}
-function ajustarReceta_(receta, objetivo, alimentos, tolComida) {
+function ajustarReceta_(original, objetivo, alimentos, tolComida) {
+  const receta = racionesReceta_(original, objetivo, alimentos);
   const fijos = {};
   receta.ingredientes_fijos.forEach(f => { fijos[f.alimento] = f.gramos; });
   const escalables = receta.ingredientes_escalables;
@@ -180,7 +226,7 @@ function ajustarReceta_(receta, objetivo, alimentos, tolComida) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    NUTRIENTES, indexarAlimentos_, calcularMacros_, redondearMacros_, sumarMacros_, minimosCuadradosAcotados_, optimizarGramos_,
-    redondearGramos_, evaluarComida_, evaluarDia_, ajustarReceta_,
+    NUTRIENTES, REFERENCIA_COMIDAS, indexarAlimentos_, calcularMacros_, redondearMacros_, sumarMacros_, minimosCuadradosAcotados_, optimizarGramos_,
+    redondearGramos_, evaluarComida_, evaluarDia_, racionesReceta_, ajustarReceta_,
   };
 }

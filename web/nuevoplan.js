@@ -14,6 +14,10 @@ const TITULOS = {
   rapido: 'Subir calorías: pierdes demasiado rápido',
   adherencia: 'Mantener calorías: primero, constancia',
   sin_datos: 'Mantener calorías: faltan pesajes',
+  bajando: 'Subir calorías: estás perdiendo peso',
+  subiendo: 'Bajar calorías: el peso tiende a subir',
+  ganar_lento: 'Subir calorías: el peso no sube',
+  ganar_rapido: 'Bajar calorías: ganas peso demasiado rápido',
 };
 
 const signo = n => (n > 0 ? '+' : '') + numero(n, 1);

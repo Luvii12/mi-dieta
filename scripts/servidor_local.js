@@ -1,6 +1,7 @@
 // Servidor local para probar la PWA: sirve web/ y, en el puerto siguiente, una Supabase falsa en memoria
 // (tests/supabase_falso.js; se pierde al cerrar) con la biblioteca de recetas y un usuario de prueba que
-// tiene un plan activo generado como si hoy fuera hace una semana, así «hoy» siempre cae dentro del plan.
+// tiene un plan activo generado como si hoy fuera hace una semana, así «hoy» siempre cae dentro del plan,
+// y otro sin datos propios para probar el alta.
 // La base va en otro origen, como la de verdad (el service worker solo intercepta los archivos de la app).
 // Uso: npm run servidor
 //   node scripts/servidor_local.js borrador  → además pesajes de 3 semanas, las comidas pasadas marcadas y un
@@ -17,6 +18,8 @@ const { crearSupabaseFalso } = require('../tests/supabase_falso.js');
 const MODO = process.argv[2] || '';
 const PUERTO = Number(process.env.PUERTO || 8099);
 const USUARIO = { id: '00000000-0000-4000-8000-000000000001', email: 'prueba@mi-dieta.test', password: 'prueba' };
+// Cuenta sin nada propio: al entrar sale el alta (fase M4).
+const NUEVO = { id: '00000000-0000-4000-8000-000000000002', email: 'nuevo@mi-dieta.test', password: 'prueba' };
 const CLAVE = 'clave-local';
 const ORDEN = ['alimentos', 'recetas', 'config', 'planes', 'plan_comidas', 'pesos', 'valoraciones', 'preferencias', 'ajustes_historial'];
 
@@ -46,7 +49,7 @@ function tablasDePrueba() {
 
 async function crearBase() {
   const { aBase } = await import('../web/supabase.js');
-  const falso = crearSupabaseFalso({ clave: CLAVE, usuarios: [USUARIO] });
+  const falso = crearSupabaseFalso({ clave: CLAVE, usuarios: [USUARIO, NUEVO] });
   const tablas = tablasDePrueba();
   ORDEN.forEach(n => falso.cargar(n, tablas[n].map(f => aBase(n, f, USUARIO.id)), USUARIO.id));
   return falso;
@@ -95,7 +98,7 @@ async function main() {
     });
   }).listen(PUERTO, () => {
     console.log('App: http://localhost:' + PUERTO + '/');
-    if (falso) console.log(`Base falsa en memoria. Entra con ${USUARIO.email} / ${USUARIO.password}`);
+    if (falso) console.log(`Base falsa en memoria. Entra con ${USUARIO.email} / ${USUARIO.password} (o, para el alta, ${NUEVO.email} / ${NUEVO.password})`);
     else console.log('Con el Supabase de verdad (web/conexion.js): entra con tu cuenta.');
   });
 }

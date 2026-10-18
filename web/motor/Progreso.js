@@ -4,7 +4,10 @@
 const AJUSTE_KCAL = 120;          // tamaño del ajuste propuesto (la regla dice 100–150)
 const ADHERENCIA_MINIMA = 80;     // % por debajo del cual no se tocan las calorías
 const PESAJES_MINIMOS = 4;        // pesajes en el bloque para poder proponer
-const PROTEINA_MINIMA_G_KG = 1.6; // límite de seguridad
+const PROTEINA_MINIMA_G_KG = 1.6; // límite de seguridad (sin perfil; con perfil, según el objetivo)
+const RITMO_MANTENER = 0.25;      // % semanal que se tolera arriba o abajo al mantener
+const GANAR_MINIMO = 0.1;         // ganar músculo: ventana de % semanal
+const GANAR_MAXIMO = 0.5;
 
 const redondear_ = (n, decimales) => Math.round(n * Math.pow(10, decimales)) / Math.pow(10, decimales);
 
@@ -125,13 +128,16 @@ function ajustarObjetivos_(objetivos, deltaKcal) {
   return nuevos;
 }
 
-// Regla de ajuste quincenal. datos: {ritmo (de ritmoSemanal_ o null), adherencia (%), pesajes (en el
-// bloque), objetivos (por comida), kcalMinimas, peso (último, kg)}.
+// Regla de ajuste quincenal según el objetivo de la persona (datos.meta; sin perfil, «perder»).
+// datos: {ritmo (de ritmoSemanal_ o null), adherencia (%), pesajes (en el bloque), objetivos (por comida),
+// kcalMinimas, peso (último, kg; con obesidad, el de referencia de pesoReferencia_), proteinaMinima (g/kg), meta}.
 // Devuelve {motivo, explicacion, ritmo_pct, adherencia_pct, opciones: [2 opciones]}. Cada opción:
 // {delta, kcal, P, C, G, titulo, nota, recomendada, bloqueada (texto o null)}.
 function proponerAjuste_(datos) {
+  const meta = datos.meta || 'perder';
   const ritmo = datos.ritmo ? datos.ritmo.ritmo_pct : null;
   const perdida = ritmo === null ? null : -ritmo;
+  const proteinaMinima = datos.proteinaMinima || PROTEINA_MINIMA_G_KG;
   let delta = 0;
   let motivo;
   let explicacion;
@@ -143,6 +149,32 @@ function proponerAjuste_(datos) {
   } else if (datos.adherencia !== null && datos.adherencia < ADHERENCIA_MINIMA) {
     motivo = 'adherencia';
     explicacion = `Has seguido el ${datos.adherencia} % de las comidas. Por debajo del ${ADHERENCIA_MINIMA} % no se tocan las calorías: mejor platos más sencillos o una comida libre semanal.`;
+  } else if (meta === 'mantener') {
+    if (perdida > RITMO_MANTENER) {
+      motivo = 'bajando';
+      delta = AJUSTE_KCAL;
+      explicacion = `Pierdes un ${fmt_(perdida)} % de tu peso por semana y tu objetivo es mantenerlo. Subir ${AJUSTE_KCAL} kcal frena la bajada.`;
+    } else if (ritmo > RITMO_MANTENER) {
+      motivo = 'subiendo';
+      delta = -AJUSTE_KCAL;
+      explicacion = `Ganas un ${fmt_(ritmo)} % de tu peso por semana y tu objetivo es mantenerlo. Bajar ${AJUSTE_KCAL} kcal (de carbohidratos y grasa) frena la subida.`;
+    } else {
+      motivo = 'en_ritmo';
+      explicacion = `Tu peso se mantiene estable (${fmt_(ritmo)} % semanal). No hace falta cambiar las calorías.`;
+    }
+  } else if (meta === 'ganar') {
+    if (ritmo < GANAR_MINIMO) {
+      motivo = 'ganar_lento';
+      delta = AJUSTE_KCAL;
+      explicacion = `Tu peso cambia un ${fmt_(ritmo)} % semanal, por debajo del ${fmt_(GANAR_MINIMO)} % que hace falta para ganar músculo. Subir ${AJUSTE_KCAL} kcal (de carbohidratos y grasa) da el empujón.`;
+    } else if (ritmo > GANAR_MAXIMO) {
+      motivo = 'ganar_rapido';
+      delta = -AJUSTE_KCAL;
+      explicacion = `Ganas un ${fmt_(ritmo)} % de tu peso por semana, más del ${fmt_(GANAR_MAXIMO)} % recomendado: el resto sería grasa. Bajar ${AJUSTE_KCAL} kcal lo modera.`;
+    } else {
+      motivo = 'en_ritmo';
+      explicacion = `Ganas un ${fmt_(ritmo)} % semanal, dentro de la ventana para ganar músculo (${fmt_(GANAR_MINIMO)}–${fmt_(GANAR_MAXIMO)} %). No hace falta cambiar las calorías.`;
+    }
   } else if (perdida > 1) {
     motivo = 'rapido';
     delta = AJUSTE_KCAL;
@@ -162,18 +194,19 @@ function proponerAjuste_(datos) {
     let titulo = 'Mantener calorías actuales';
     let nota = 'Mismos objetivos que este bloque.';
     if (d < 0) {
-      titulo = recomendada ? `Bajar ${AJUSTE_KCAL} kcal` : `Acelerar déficit (−${AJUSTE_KCAL} kcal)`;
-      nota = recomendada ? 'Se quitan de carbohidratos y grasa; la proteína se mantiene.' : 'Para acelerar un poco la pérdida si notas estancamiento.';
+      titulo = recomendada || meta !== 'perder' ? `Bajar ${AJUSTE_KCAL} kcal` : `Acelerar déficit (−${AJUSTE_KCAL} kcal)`;
+      nota = recomendada ? 'Se quitan de carbohidratos y grasa; la proteína se mantiene.'
+        : meta === 'perder' ? 'Para acelerar un poco la pérdida si notas estancamiento.' : 'Si notas que el peso tiende a subir.';
     }
     if (d > 0) {
-      titulo = `Subir ${AJUSTE_KCAL} kcal`;
-      nota = 'Se añaden a carbohidratos y grasa; la proteína se mantiene.';
+      titulo = !recomendada && meta === 'ganar' ? `Acelerar ganancia (+${AJUSTE_KCAL} kcal)` : `Subir ${AJUSTE_KCAL} kcal`;
+      nota = recomendada ? 'Se añaden a carbohidratos y grasa; la proteína se mantiene.' : 'Si te cuesta ganar peso o rindes peor al entrenar.';
     }
     let bloqueada = null;
     if (d < 0 && m.kcal < datos.kcalMinimas) bloqueada = `Quedaría por debajo de ${fmtEntero_(datos.kcalMinimas)} kcal/día.`;
     if (d < 0 && perdida !== null && perdida >= 1) bloqueada = 'Ya pierdes más del 1 % semanal.';
-    if (d < 0 && datos.peso && m.P < PROTEINA_MINIMA_G_KG * datos.peso) {
-      bloqueada = `La proteína quedaría por debajo de ${fmt_(PROTEINA_MINIMA_G_KG)} g por kg.`;
+    if (d < 0 && datos.peso && m.P < proteinaMinima * datos.peso) {
+      bloqueada = `La proteína quedaría por debajo de ${fmt_(proteinaMinima)} g por kg.`;
     }
     return { delta: d, kcal: Math.round(m.kcal), P: redondear_(m.P, 1), C: redondear_(m.C, 1), G: redondear_(m.G, 1),
       titulo: titulo, nota: nota, recomendada: recomendada, bloqueada: bloqueada };
@@ -185,7 +218,8 @@ function proponerAjuste_(datos) {
     delta = 0;
     recomendada = opcion(0, true);
   }
-  const alternativa = opcion(delta === 0 ? -AJUSTE_KCAL : 0, false);
+  // Alternativa: mantener si la regla propone cambiar; si no, acelerar hacia el objetivo (ganar: subir).
+  const alternativa = opcion(delta !== 0 ? 0 : meta === 'ganar' ? AJUSTE_KCAL : -AJUSTE_KCAL, false);
   return { motivo: motivo, explicacion: explicacion, ritmo_pct: ritmo, adherencia_pct: datos.adherencia,
     opciones: [recomendada, alternativa] };
 }

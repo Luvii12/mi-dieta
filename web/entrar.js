@@ -33,7 +33,7 @@ export function pintarEntrar(contenedor, alEntrar) {
       estado.textContent = '';
       try {
         await entrar(email.value, clave.value);
-        alEntrar();
+        await alEntrar();
       } catch (err) {
         estado.textContent = err.message;
         clave.focus();

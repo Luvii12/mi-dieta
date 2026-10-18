@@ -56,6 +56,7 @@ Cada fase acaba en algo que se prueba en el móvil. Parar al final de cada una.
 - Límites de seguridad por persona (los de `NUTRICION.md` pasan a depender del perfil; ver preguntas abiertas).
 - Aviso de que la app no sustituye a un dietista-nutricionista.
 - **Hecho cuando**: un usuario nuevo invitado entra, se da de alta, genera su plan y no ve nada de Fran salvo las recetas.
+- Hecho así (2026-10-18, sin publicar): el alta pregunta objetivo (perder grasa / mantener / ganar músculo), días de entrenamiento, tipo de trabajo, sexo, nacimiento, altura y peso; **Ajustes › Mi objetivo** permite cambiar de objetivo cuando se quiera (Fran pasará a ganar músculo) y recalcula. Fórmulas en `docs/NUTRICION.md` › «Objetivos según el perfil»; el ajuste quincenal depende del objetivo. Las raciones de las recetas se escalan a cada persona. Proteína por g/kg según la persona (no forzada a lo que dan las recetas): la biblioteca la ampliará el agente de Fran. El perfil va en `config.perfil` (la tabla `perfiles` no se usa). Primer plan: mañana. Propuestas de IA y «Nombres de alimentos», solo para quien las creó.
 
 ### M5 · Recetas con IA y automatización
 - `scripts/recetas_ia.js` contra Supabase con el login de Fran (en `.conexion.local.json`). `pedido` acepta para quién es (sus excluidos y valoraciones); las propuestas se ven en Recetas de quien las pidió y, al aceptarlas, pasan a la biblioteca común.
@@ -69,6 +70,4 @@ Cada fase acaba en algo que se prueba en el móvil. Parar al final de cada una.
 - **Hecho cuando**: los tres usan la app una semana sin incidencias.
 
 ## Preguntas abiertas (decidir en su fase)
-- M4: mínimo de kcal por persona (propuesta: 1.200 mujeres / 1.500 hombres, o el de `NUTRICION.md` si es mayor) y proteína por kg según la meta.
-- M4: ¿todos con 4 comidas o cada uno elige cuántas? (Propuesta: 4 de momento.)
-- M4: ¿quién puede editar los macros de un alimento común? (Propuesta: cualquiera puede añadir; editar, solo Fran.)
+- Decidido en M4 (2026-10-18): mínimo 1.200 kcal mujeres / 1.500 hombres (Fran mantiene 1.400); proteína según la persona (objetivo y entrenamiento); 4 comidas para todos; alimentos comunes: añadir cualquiera, cambiar solo Fran.

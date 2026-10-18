@@ -3,7 +3,7 @@
 // <script> en index.html) en el navegador, sobre los datos de Supabase (ver supabase.js).
 
 import { SUPABASE } from './conexion.js';
-import { entrar as entrarSupabase, renovar, salir, ejecutar, ErrorSesion, ErrorToken } from './supabase.js';
+import { entrar as entrarSupabase, renovar, salir, ejecutar, editaAlimentos, ErrorSesion, ErrorToken } from './supabase.js';
 
 const CLAVE_SESION = 'dieta.sesion';
 const RENOVAR_ANTES = 5 * 60000; // la sesión dura 1 hora: se renueva si le quedan menos de 5 minutos
@@ -106,4 +106,9 @@ async function llamarYa(peticion) {
       throw otro;
     }
   }
+}
+
+// ¿Puede esta cuenta cambiar los nombres de los alimentos comunes? (ver supabase.js)
+export async function puedoEditarAlimentos() {
+  return editaAlimentos(conexion(), await sesionValida(false));
 }

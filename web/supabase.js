@@ -127,11 +127,22 @@ async function leerTabla(con, sesion, nombre) {
   }
 }
 
+// Recetas de la IA pendientes o descartadas: solo las ve quien las pidió (las demás son de la biblioteca).
+const ESTADOS_PROPUESTA = ['propuesta', 'descartada'];
+const visible = (nombre, fila, userId) => nombre !== 'recetas' || !ESTADOS_PROPUESTA.includes(fila.activa) || fila.creado_por === userId;
+
 // Todas las tablas a la vez: {nombre: [filas de la base]}. Las personales solo traen las del usuario (RLS).
 export async function leerTablas(con, sesion) {
   const nombres = Object.keys(TABLAS);
   const filas = await Promise.all(nombres.map(n => leerTabla(con, sesion, n)));
-  return Object.fromEntries(nombres.map((n, i) => [n, filas[i]]));
+  return Object.fromEntries(nombres.map((n, i) => [n, filas[i].filter(f => visible(n, f, sesion.usuario.id))]));
+}
+
+// ¿Puede cambiar los nombres de los alimentos comunes? Solo quien añadió alimentos a la biblioteca (Fran):
+// la base no deja cambiar los de otra persona.
+export async function editaAlimentos(con, sesion) {
+  const filas = await rest(con, sesion, 'GET', `alimentos?select=id&creado_por=eq.${sesion.usuario.id}&limit=1`);
+  return filas.length > 0;
 }
 
 // ---------- Filas de la base ↔ filas del motor ----------

@@ -94,7 +94,7 @@ function boton(texto, clase, accion) {
 function pintar(contenedor, datos) {
   contenedor.replaceChildren(h('p', { id: 'plan-mensaje', class: 'mensaje', role: 'status' }));
   if (!datos.activo && !datos.borrador && !datos.siguiente) {
-    const caja = vacio('Todavía no tienes ningún plan. Se generan 14 días a partir del lunes que viene, con tus recetas y tus objetivos.');
+    const caja = vacio('Todavía no tienes ningún plan. Se generan 14 días con tus recetas y tus objetivos.');
     caja.append(boton('Generar plan', 'boton-primario', () => generarPlan(datos)));
     contenedor.prepend(caja);
     return;

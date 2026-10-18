@@ -1,11 +1,13 @@
-// Pantalla «Ajustes»: objetivos por comida, alimentos que no como, comida libre semanal, peso objetivo,
-// nombres de alimentos y cuenta (design/mi_dieta_ajustes).
+// Pantalla «Ajustes»: mi objetivo (perfil.js), objetivos por comida, alimentos que no como, comida libre
+// semanal, peso objetivo, nombres de alimentos (solo quien creó la biblioteca) y cuenta (design/mi_dieta_ajustes).
 
-import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion } from './api.js';
+import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion, puedoEditarAlimentos } from './api.js';
 import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';
+import { METAS, ENTRENOS } from './perfil.js';
 
 const CACHE_CONFIG = 'dieta.config';
 const CACHE_ALIMENTOS = 'dieta.alimentos';
+const CACHE_EDITA = 'dieta.editaAlimentos';
 const COLOR_COMIDA = { Desayuno: 'texto-primario', Almuerzo: 'texto-secundario', Merienda: 'texto-terciario', Cena: 'texto-primario-contenedor' };
 const KCAL_MINIMAS = 1400;
 
@@ -18,7 +20,16 @@ export function kcalDia(cfg) {
 
 // ---------- Objetivos y preferencias ----------
 
+function pintarPerfil() {
+  const p = config.perfil;
+  $('perfil-icono').textContent = p ? METAS[p.meta].icono : 'person';
+  $('perfil-meta').textContent = p ? METAS[p.meta].nombre : 'Completa tu perfil';
+  const entreno = p && (p.entreno === 'no' ? 'Sin entrenar' : `Entrenas ${ENTRENOS[p.entreno]}`);
+  $('perfil-detalle').textContent = p ? `${entreno} · ${numero(p.peso_kg, 1)} kg` : 'La app calcula tus objetivos según tu meta';
+}
+
 function pintarObjetivos() {
+  pintarPerfil();
   const total = kcalDia(config);
   $('objetivos-total').textContent = `Total: ${numero(total)} kcal`;
   $('objetivos-total').hidden = !total;
@@ -236,11 +247,15 @@ export async function cargarAjustes() {
   if (config) pintarObjetivos();
   pintarExcluidos();
   pintarCuenta();
+  $('seccion-nombres').hidden = leerLocal(CACHE_EDITA) !== true;
   try {
     config = await llamar('config');
     guardarLocal(CACHE_CONFIG, config);
     pintarObjetivos();
     await cargarAlimentos();
+    const edita = await puedoEditarAlimentos();
+    guardarLocal(CACHE_EDITA, edita);
+    $('seccion-nombres').hidden = !edita;
   } catch (err) {
     pintarCuenta(err.message);
   }

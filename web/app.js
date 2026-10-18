@@ -1,7 +1,7 @@
-// Arranque y navegación entre pantallas (#hoy, #plan, #recetas, #receta/…, #progreso, #ajustes). Sin sesión,
-// solo la pantalla de entrada.
+// Arranque y navegación entre pantallas (#hoy, #plan, #recetas, #receta/…, #progreso, #ajustes, #perfil). Sin
+// sesión, solo la pantalla de entrada; con una cuenta que aún no tiene objetivos, solo el alta.
 
-import { haySesion } from './api.js';
+import { haySesion, llamar, leerLocal, guardarLocal } from './api.js';
 import { $ } from './comun.js';
 import { cargarHoy, pintarHoy } from './hoy.js';
 import { cargarPlan, pintarPlan } from './plan.js';
@@ -11,13 +11,15 @@ import { cargarAjustes, prepararAjustes } from './ajustes.js';
 import { cargarProgreso, prepararProgreso, precargarProgreso } from './progreso.js';
 import { prepararPanel } from './cambiar.js';
 import { pintarEntrar } from './entrar.js';
+import { pintarPerfil, CLAVE_ALTA } from './perfil.js';
 
-const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'progreso', 'ajustes', 'entrar'];
+const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'progreso', 'ajustes', 'perfil', 'entrar', 'alta'];
 
 const vistaActual = () => {
   if (!haySesion()) return 'entrar';
+  if (leerLocal(CLAVE_ALTA) === true) return 'alta';
   const nombre = location.hash.slice(1).split('/')[0];
-  return VISTAS.includes(nombre) && nombre !== 'entrar' ? nombre : 'hoy';
+  return VISTAS.includes(nombre) && nombre !== 'entrar' && nombre !== 'alta' ? nombre : 'hoy';
 };
 
 let hashAnterior = null;
@@ -37,6 +39,10 @@ function mostrarVista() {
 
   if (vista === 'entrar') {
     pintarEntrar($('vista-entrar'), alEntrar);
+    return;
+  }
+  if (vista === 'alta' || vista === 'perfil') {
+    pintarPerfil($('vista-' + vista), vista === 'alta', irA);
     return;
   }
   if (vista === 'hoy') cargarHoy($('vista-hoy'));
@@ -66,10 +72,27 @@ function actualizarRed() {
   $('estado-red').hidden = navigator.onLine;
 }
 
-// Tras entrar: a Hoy, y después se precarga lo demás.
-function alEntrar() {
-  if (location.hash && location.hash !== '#hoy') location.hash = '#hoy';
-  else mostrarVista();
+// A otra pantalla (también si ya se estaba en ella: tras el alta, #plan se vuelve a pintar).
+function irA(hash) {
+  if (location.hash === hash) mostrarVista();
+  else location.hash = hash;
+}
+
+// ¿Tiene la cuenta objetivos? Si no, toca el alta. Sin conexión no se sabe: se deja como estaba.
+async function comprobarAlta() {
+  try {
+    const config = await llamar('config');
+    guardarLocal('dieta.config', config);
+    guardarLocal(CLAVE_ALTA, !config.objetivo_desayuno);
+  } catch (err) {
+    // Se comprobará la próxima vez.
+  }
+}
+
+// Tras entrar: al alta si la cuenta es nueva; si no, a Hoy, y después se precarga lo demás.
+async function alEntrar() {
+  await comprobarAlta();
+  irA('#hoy');
   setTimeout(precargar, 2500);
 }
 
@@ -83,11 +106,13 @@ window.addEventListener('online', actualizarRed);
 window.addEventListener('offline', actualizarRed);
 actualizarRed();
 mostrarVista();
+// Sesión abierta pero sin la configuración guardada (p. ej. entró antes de que existiera el alta).
+if (haySesion() && !leerLocal('dieta.config')) comprobarAlta().then(() => { if (vistaActual() === 'alta') mostrarVista(); });
 
 // Al abrir la app, después de la pantalla actual, se descargan Recetas y Progreso en segundo plano para que
 // esas pestañas se vean al momento y ya actualizadas.
 function precargar() {
-  if (!haySesion() || !navigator.onLine) return;
+  if (!haySesion() || !navigator.onLine || vistaActual() === 'alta') return;
   if (vistaActual() !== 'recetas') precargarRecetas();
   if (vistaActual() !== 'progreso') precargarProgreso();
 }

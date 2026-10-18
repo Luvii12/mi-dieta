@@ -827,6 +827,7 @@ body[data-vista="receta"] .vista { padding-top: 0; }
 /* ---------- Ajustes ---------- */
 
 .ajustes-seccion { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.ajustes-seccion[hidden] { display: none; }
 
 .lista-objetivos { overflow: hidden; border-color: var(--borde-suave); }
 .objetivo { display: flex; align-items: center; gap: 12px; padding: 14px; border-top: 1px solid var(--superficie-media); }
@@ -1127,3 +1128,20 @@ button.fila-alimento:hover { background: var(--superficie-baja); }
 }
 .form-formulario .campo select:focus { outline: none; border: 1.5px solid var(--primario); }
 .form-formulario .campo input:not([inputmode]) { font-variant-numeric: normal; padding-right: 12px; }
+
+/* ---------- Perfil (M4): alta (#alta) y «Mi objetivo» (#perfil) ---------- */
+
+body[data-vista="alta"] .navegacion, body[data-vista="alta"] .barra-superior .boton-icono { display: none; }
+.form-perfil { display: flex; flex-direction: column; gap: 16px; }
+.form-perfil .campo input { padding-left: 12px; font-family: inherit; font-size: 16px; line-height: 22px; }
+.form-perfil .campo input[inputmode] { font-variant-numeric: tabular-nums; }
+a.objetivo-boton { color: inherit; text-decoration: none; }
+.opcion-meta .circulo { flex-shrink: 0; }
+.opcion-meta[aria-pressed="true"] { background: var(--primario-suave); }
+.opcion-meta[aria-pressed="true"]:hover { background: var(--primario-suave); }
+.opcion-meta[aria-pressed="true"] .circulo { background: var(--primario); border-color: var(--primario); color: var(--sobre-primario); }
+.perfil-resultado { display: flex; flex-direction: column; gap: 16px; margin-top: 8px; }
+.perfil-resultado:empty { display: none; }
+.perfil-resultado .ajustes-seccion { gap: 12px; }
+.perfil-resultado h2:focus { outline: none; }
+.perfil-resultado h2:focus-visible { outline: 2px solid var(--primario); outline-offset: 2px; }
