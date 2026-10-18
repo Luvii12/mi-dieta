@@ -74,7 +74,7 @@ Cuando Fran pida recetas nuevas («propón 3 cenas mexicanas»), las escribe Cla
 4. Enseñar a Fran las recetas (nombre, idea, macros) y, con su visto bueno, `enviar`: quedan como propuestas en la pestaña Recetas para que las acepte o descarte en el móvil (y meta los macros de los alimentos nuevos).
 
 ## Skill «dietista» (fuera del repo)
-Agente dietista de Fran como skill de claude.ai (móvil, web y Claude Code): fuente en `~/Escritorio/claude/dietista/dietista/`, se sube como `dietista.zip`. Copia `NUTRICION.md`, las instrucciones de `web/motor/RecetasIA.js` y los ids de `data/alimentos.csv`: si cambian objetivos, reglas de ajuste, tolerancias o el formato de recetas, actualizar también la skill, regenerar el zip y avisar a Fran de que lo vuelva a subir.
+Agente dietista de Fran como skill de claude.ai (móvil, web y Claude Code): fuente en `~/Escritorio/claude/dietista/dietista/`, se sube como `dietista.zip` con `SKILL.md` y `references/` en la **raíz** del zip (`cd …/dietista/dietista && zip -r ../dietista.zip SKILL.md references`); si van dentro de una carpeta, claude.ai lo rechaza. Copia `NUTRICION.md`, las instrucciones de `web/motor/RecetasIA.js` y los ids de `data/alimentos.csv`: si cambian objetivos, reglas de ajuste, tolerancias o el formato de recetas, actualizar también la skill, regenerar el zip y avisar a Fran de que lo vuelva a subir.
 
 ## Reglas de trabajo
 1. Trabaja **por fases** (`docs/FASES.md`) y para al terminar cada una para que el usuario pruebe en el móvil.
