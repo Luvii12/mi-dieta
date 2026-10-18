@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 Object.assign(globalThis, require('../web/motor/Util.js'), require('../web/motor/Nutricion.js'), require('../web/motor/Generador.js'));
 const P = require('../web/motor/Perfil.js');
 const Pr = require('../web/motor/Progreso.js');
-const { SEMILLA } = require('../apps-script/Semilla.js');
+const { SEMILLA } = require('../data/semilla.js');
 const { cargarMotor } = require('./motor_navegador.js');
 
 const HOY = '2026-10-18';

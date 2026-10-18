@@ -2,6 +2,8 @@
 
 Cada fase termina con algo usable en el móvil. Parar al final de cada una.
 
+> Fases 0–5: la app con Google Sheets y Apps Script (hechas). Después, la migración a Supabase y varios usuarios (M0–M6): `docs/PLAN_MULTIUSUARIO.md`.
+
 ## Fase 0 · Esqueleto
 - Repo con PWA mínima (HTML/JS o Vite) desplegada en GitHub Pages.
 - Hoja de Google Sheets con todas las pestañas de `DATOS.md`; cargar `alimentos.csv` y `recetas_semilla.json`.
@@ -30,7 +32,7 @@ Cada fase termina con algo usable en el móvil. Parar al final de cada una.
 - **Hecho cuando**: al acabar un bloque se genera solo el borrador siguiente con la propuesta de ajuste.
 
 ## Fase 5 · Recetas con IA
-- Claude Code (con la suscripción, sin API de pago) escribe recetas nuevas en JSON; Apps Script las valida con el optimizador y las guarda como propuestas que el usuario acepta o descarta en la app (`scripts/recetas_ia.js`, ver `CLAUDE.md`).
+- Claude Code (con la suscripción, sin API de pago) escribe recetas nuevas en JSON; el motor las valida con el optimizador y las guarda como propuestas que el usuario acepta o descarta en la app (`scripts/recetas_ia.js`, ver `CLAUDE.md`).
 - **Hecho cuando**: la biblioteca crece con recetas IA que pasan el optimizador.
 
 ## Fase 6 · Extras

@@ -4,7 +4,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { crearSupabaseFalso } = require('./supabase_falso.js');
-const { cargarMotor, cargarGas, todasLasTablas } = require('./motor_navegador.js');
+const { cargarMotor, nuevoMotor, todasLasTablas } = require('./motor_navegador.js');
 
 const VIERNES = '2026-10-16T09:00:00+02:00';
 const MIERCOLES = '2026-10-21T13:00:00+02:00';
@@ -19,10 +19,10 @@ const cargarSb = () => import('../web/supabase.js');
 // Plan generado el viernes y activado; la base falsa tiene esas tablas como datos de u1.
 async function preparar() {
   const sb = await cargarSb();
-  const gas = cargarGas(VIERNES);
-  const p = gas.llamar('generarPlan').datos;
-  gas.llamar('activarPlan', { plan_id: p.plan_id });
-  const tablas = todasLasTablas(gas.contexto);
+  const inicio = nuevoMotor(VIERNES);
+  const p = inicio.llamar('generarPlan').datos;
+  inicio.llamar('activarPlan', { plan_id: p.plan_id });
+  const tablas = todasLasTablas(inicio.contexto);
   const falso = crearSupabaseFalso({ usuarios: USUARIOS, ahora: () => new Date(MIERCOLES) });
   ORDEN.forEach(nombre => {
     falso.cargar(nombre, tablas[nombre].map(f => {
@@ -249,4 +249,41 @@ test('cambiosDeTabla: con clave por fila; sin clave, filas repetidas una a una',
   assert.deepEqual(s.nuevas, [{ ...v, receta_id: 'A2' }]);
 
   assert.throws(() => sb.cambiosDeTabla('pesos', [], [{ fecha: '2026-10-01' }, { fecha: '2026-10-01' }]), /Fila repetida/);
+});
+
+test('alta con contraseña temporal (scripts/invitar.js): entra, la cambia y se da de alta', async () => {
+  const { sb, falso, con } = await preparar();
+  const { invitar, claveTemporal } = require('../scripts/invitar.js');
+  assert.match(claveTemporal(), /^[a-km-np-z2-9]{4}-[a-km-np-z2-9]{4}-[a-km-np-z2-9]{4}$/);
+  const archivo = { url: con.url, clave: con.clave, clave_secreta: 'clave-secreta-falsa' };
+  const opciones = { fetch: falso.fetch };
+
+  await assert.rejects(invitar({ ...archivo, clave_secreta: undefined }, 'novia@mi-dieta.test', opciones), /clave_secreta/);
+  await assert.rejects(invitar(archivo, 'sin-arroba', opciones), /email válido/);
+  await assert.rejects(invitar({ ...archivo, clave_secreta: 'mala' }, 'novia@mi-dieta.test', opciones), /La clave secreta no vale/);
+  await assert.rejects(invitar(archivo, 'Prueba1@mi-dieta.test', opciones), /Ya hay una cuenta/);
+  await assert.rejects(invitar(archivo, 'nadie@mi-dieta.test', { ...opciones, nuevaClave: true }), /No hay ninguna cuenta/);
+
+  const alta = await invitar(archivo, ' Novia@Mi-Dieta.test ', opciones);
+  assert.deepEqual([alta.email, alta.nueva], ['novia@mi-dieta.test', true]);
+  const sesion = await sb.entrar(con, 'novia@mi-dieta.test', alta.password);
+  const navegador = cargarMotor(MIERCOLES, {});
+  const nube = enNube(sb, con, sesion, navegador.motor);
+  assert.match((await nube('hoy')).datos.mensaje, /no hay un plan activo/, 'no ve nada de Fran');
+
+  // Cambia la contraseña desde Ajustes: la sesión sigue valiendo y la temporal ya no.
+  await assert.rejects(sb.cambiarClave(con, sesion, alta.password), /distinta de la actual/);
+  await assert.rejects(sb.cambiarClave(con, sesion, '123'), /demasiado débil/);
+  await sb.cambiarClave(con, sesion, 'una-clave-suya');
+  assert.equal((await nube('registrarPeso', { peso_kg: 60 })).ok, true);
+  await assert.rejects(sb.entrar(con, 'novia@mi-dieta.test', alta.password), /incorrectos/);
+  await sb.entrar(con, 'novia@mi-dieta.test', 'una-clave-suya');
+  falso.caducarAccesos();
+  await assert.rejects(sb.cambiarClave(con, sesion, 'otra-clave-mas'), sb.ErrorToken);
+
+  // Si la olvida: otra temporal.
+  const otra = await invitar(archivo, 'novia@mi-dieta.test', { ...opciones, nuevaClave: true });
+  assert.equal(otra.nueva, false);
+  await assert.rejects(sb.entrar(con, 'novia@mi-dieta.test', 'una-clave-suya'), /incorrectos/);
+  assert.equal((await sb.entrar(con, 'novia@mi-dieta.test', otra.password)).usuario.email, 'novia@mi-dieta.test');
 });

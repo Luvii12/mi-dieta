@@ -14,26 +14,27 @@ El usuario venía de un entrenador personal que le daba dietas en PDF. La app la
 | Tema | Decisión |
 | --- | --- |
 | Plataforma | PWA en **GitHub Pages**, interfaz en **español**, pensada para móvil |
-| Independencia | **App separada**: su propio repositorio, hoja de Google y Apps Script. No tocar, integrar ni reutilizar la app de fitness/rutinas que el usuario ya tiene |
+| Independencia | **App separada**: su propio repositorio y su propio Supabase. No tocar, integrar ni reutilizar la app de fitness/rutinas que el usuario ya tiene |
 | Datos | **Supabase gratis** desde M3 (2026-10-18; `docs/PLAN_MULTIUSUARIO.md`, `docs/SUPABASE.md`). La hoja de Google queda como copia de seguridad: no se escribe en ella |
-| Servidor | Ninguno propio: la PWA habla con Supabase por `fetch` y ejecuta el motor en el navegador (también la generación automática del siguiente plan, al abrirla). Apps Script sigue publicado (solo para leer la hoja) hasta M6 |
-| Acceso | Email y contraseña (Supabase Auth), registro cerrado; reglas por fila (RLS) |
+| Servidor | Ninguno propio: la PWA habla con Supabase por `fetch` y ejecuta el motor en el navegador (también la generación automática del siguiente plan, al abrirla). Apps Script retirado en M6 (en el historial de git) |
+| Acceso | Email y contraseña (Supabase Auth), registro cerrado: altas con `npm run invitar` (contraseña temporal que se cambia en Ajustes); reglas por fila (RLS) |
 | Secretos | La clave de la API de Claude **nunca** va en el repo ni en el frontend (GitHub Pages es público) |
 | Generación | **Híbrida**: platos de una biblioteca de recetas (más adelante propuestos por IA) + **gramos calculados por código** con un optimizador. La IA nunca da valores nutricionales |
-| Macros | Siempre calculados en código a partir de la pestaña `alimentos` |
+| Macros | Siempre calculados en código a partir de la tabla `alimentos` |
 | Referencia | Dieta «Ajustes Fran. Déficit»: ~1.655 kcal/día (ver `docs/NUTRICION.md`). Es provisional y configurable |
 
 ## Documentación
 - `docs/PROGRESO.md` — estado del proyecto y decisiones: **leer primero en cada sesión**.
 - `docs/SPEC.md` — funcionalidades, pantallas y flujo de generación.
 - `docs/NUTRICION.md` — objetivos, tolerancias, reglas de ajuste quincenal, intercambios.
-- `docs/DATOS.md` — esquema de Google Sheets (pestañas y columnas) y endpoints de Apps Script.
+- `docs/DATOS.md` — tablas (columnas) y acciones del motor.
+- `docs/SUPABASE.md` — proyecto Supabase, cuentas, clave secreta y altas. `docs/DESPLIEGUE.md` — publicar y probar. `docs/INSTALAR.md` — guía para quien empieza a usar la app.
 - `docs/RECETAS.md` — modelo de receta (ingredientes fijos y escalables) y criterios de los platos.
 - `docs/FASES.md` — orden de desarrollo y criterios de «terminado».
 - `data/alimentos.csv` — tabla de alimentos inicial (valores **aproximados**, `verificado = no`).
-- `data/recetas_semilla.json` — 22 recetas probadas con el optimizador y sus macros de prueba.
+- `data/recetas_semilla.json` — 22 recetas probadas con el optimizador y sus macros de prueba. `data/semilla.js` se genera de los dos con `npm run semilla` (lo usan los tests y los scripts).
 - `web/` — PWA sin build: `app.js` (navegación), `comun.js` (utilidades), `datos.js` (copia local + acciones), `api.js` (sesión y `llamar(accion)`), `supabase.js` (Auth y REST por `fetch`, guarda solo las filas cambiadas), `conexion.js` (URL y clave pública de Supabase), una pantalla por archivo (`entrar.js`, `perfil.js` (alta y Mi objetivo), `hoy.js`, `plan.js`, `recetas.js`, `receta.js`, `cambiar.js`, `ajustes.js`). Al cambiar algo de `web/`, subir `VERSION` en `sw.js` y añadir archivos nuevos a su lista. `web/package.json` (`type: module`) y `web/motor/package.json` (`commonjs`) solo sirven para Node.
-- `web/motor/` — motor compartido (desde M1): `Acciones.js` (lo que hace cada petición), `Nutricion` (incluye el escalado de raciones), `Perfil` (objetivos según el perfil), `Generador`, `Planes`, `Progreso`, `RecetasIA`, `Util`. Sin APIs de Google: usa las funciones de almacén que pone `apps-script/Hoja.js` (Sheets) o `Memoria.js` (navegador). clasp lo sube junto a `apps-script/` (`rootDir` = raíz, ver `.claspignore`). `tests/motor.test.js` exige que memoria y Apps Script den lo mismo. Desde M2 la PWA lo carga con `<script>` y ejecuta las acciones en el navegador sobre Supabase; `tests/supabase.test.js` exige que den lo mismo que el motor solo.
+- `web/motor/` — motor (desde M1): `Acciones.js` (lo que hace cada petición), `Nutricion` (incluye el escalado de raciones), `Perfil` (objetivos según el perfil), `Generador`, `Planes`, `Progreso`, `RecetasIA`, `Util` y `Memoria.js` (el almacén: las tablas del usuario en memoria). Solo JavaScript estándar. La PWA lo carga con `<script>` y ejecuta las acciones en el navegador sobre Supabase; `tests/acciones.test.js` prueba las acciones, `tests/supabase.test.js` exige que con Supabase den lo mismo que el motor solo, y `tests/motor_navegador.js` lo carga en Node (también para los scripts y `npm run servidor`).
 - `prototipo/` — prototipo en Python que ya funciona: `semana.py` (optimizador de gramos con mínimos cuadrados acotados) y `dietas_entrenador.py` (cálculo de macros de las dietas originales). Úsalo como referencia y para tests de regresión: el port a JS debe dar resultados equivalentes.
 
 ## Diseño de la interfaz (desde la Fase 3)
@@ -67,7 +68,7 @@ Decidido (2026-10-16): sin fotos de platos hasta la Fase 6 (en su hueco, tesela 
 `awesome-design-md` (VoltAgent) **no se usa**: es un catálogo de estilos de otras marcas y esta app ya tiene su propio `DESIGN.md`.
 
 ## Recetas nuevas con IA (Fase 5): las escribe Claude Code
-Cuando Fran pida recetas nuevas («propón 3 cenas mexicanas»), las escribe Claude Code dentro de su suscripción; **no se usa la API de Claude** (se paga aparte; la versión con API está en git, commit `3fb63e7`, y se quitó para que Apps Script no pida permiso de servicios externos). Pasos:
+Cuando Fran pida recetas nuevas («propón 3 cenas mexicanas»), las escribe Claude Code dentro de su suscripción; **no se usa la API de Claude** (se paga aparte; la versión con API está en git, commit `3fb63e7`). Pasos:
 1. `node scripts/recetas_ia.js pedido <Comida> [cantidad] [idea]` → instrucciones, tabla de alimentos, objetivo, recetas existentes y valoraciones (lo da Supabase con la cuenta real de Fran: `"cuenta"` en `.supabase.local.json`, fuera del repo). Si son para otra persona (su hermano, su novia), añadir `--para <email>` en los tres pasos: entra como ella con `"clave_secreta"` (`docs/SUPABASE.md` §9) y usa su objetivo, sus excluidos y sus valoraciones.
 2. Escribir las recetas en un JSON del scratchpad con el formato del esquema (`nombre`, `preparacion`, `ingredientes_fijos`, `ingredientes_escalables`, `alimentos_nuevos`) siguiendo esas instrucciones. Nunca macros.
 3. `node scripts/recetas_ia.js probar <Comida> <archivo>` → gramos y macros, o por qué se descarta. Corregir y repetir hasta que valgan.

@@ -1,56 +1,22 @@
-// Prueba el código de Apps Script completo (Main, Hoja, Setup…) sobre una hoja simulada.
+// Las acciones de la app (web/motor/Acciones.js) de principio a fin, con el almacén en memoria y las tablas de
+// partida (biblioteca semilla y configuración inicial).
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { cargarAppsScript, formatDate } = require('./simulador_gas.js');
-const SEMILLA_RECETAS = require('../apps-script/Semilla.js').SEMILLA.recetas;
+const { nuevoMotor, enFecha } = require('./motor_navegador.js');
+const SEMILLA_RECETAS = require('../data/semilla.js').SEMILLA.recetas;
 
 // Viernes 16 de octubre de 2026 por la mañana (hora de Madrid).
 const VIERNES = '2026-10-16T09:00:00+02:00';
 
-function preparar(ahora = VIERNES) {
-  const gas = cargarAppsScript(ahora);
-  gas.contexto.configurarHoja();
-  gas.contexto.crearToken();
-  return gas;
-}
+const preparar = (ahora = VIERNES) => nuevoMotor(ahora);
 
-const filas = (gas, nombre) => {
-  const valores = gas.libro.getSheetByName(nombre).getDataRange().getValues();
-  return valores.slice(1).filter(f => f.some(v => v !== '')).map(f => Object.fromEntries(valores[0].map((c, i) => [c, f[i]])));
-};
+const filas = (gas, nombre) => JSON.parse(JSON.stringify(gas.contexto.leerTabla_(nombre)));
 
-test('simulador: formato de fechas tipo Apps Script', () => {
-  const f = new Date('2026-10-16T07:05:09Z');
-  assert.equal(formatDate(f, 'Europe/Madrid', "yyyy-MM-dd'T'HH:mm"), '2026-10-16T09:05');
-  assert.equal(formatDate(f, 'Europe/Madrid', 'yyyyMMdd-HHmmss'), '20261016-090509');
-});
-
-test('configurarHoja: 9 pestañas, datos iniciales y es repetible', () => {
+test('tablas de partida: biblioteca semilla y configuración', () => {
   const gas = preparar();
-  assert.equal(gas.libro.getSheets().length, 9);
   assert.equal(filas(gas, 'alimentos').length, 95);
   assert.equal(filas(gas, 'recetas').length, 22);
-  gas.contexto.configurarHoja();
-  assert.equal(filas(gas, 'alimentos').length, 95, 'no duplica');
-  assert.match(gas.propiedades.APP_TOKEN, /^[0-9a-f]{64}$/);
-});
-
-test('token: sin token correcto no se ejecuta nada', () => {
-  const gas = preparar();
-  const salida = gas.contexto.doPost({ postData: { contents: JSON.stringify({ accion: 'plan', token: 'malo' }) } });
-  assert.deepEqual(JSON.parse(salida.texto), { ok: false, error: 'Token no válido' });
-});
-
-test('exportar: devuelve todas las pestañas sin cambiar nada', () => {
-  const gas = preparar();
-  gas.llamar('generarPlan');
-  const r = gas.llamar('exportar');
-  assert.equal(r.ok, true);
-  assert.deepEqual(Object.keys(r.datos).sort(), ['ajustes_historial', 'alimentos', 'config', 'pesos', 'plan_comidas', 'planes', 'preferencias', 'recetas', 'valoraciones']);
-  assert.equal(r.datos.alimentos.length, 95);
-  assert.equal(r.datos.planes.length, 1);
-  assert.equal(r.datos.plan_comidas.length, 56);
-  assert.deepEqual(r.datos.planes, JSON.parse(JSON.stringify(gas.contexto.leerTabla_('planes'))));
+  assert.equal(gas.llamar('config').datos.kcal_minimas, 1400);
 });
 
 test('config: escribe y lee una fila sin convertir textos en fechas', () => {
@@ -68,7 +34,7 @@ test('recetas: las 22 calculadas sin errores', () => {
   assert.ok(r.datos.every(x => x.ajuste && !x.error));
 });
 
-test('generarPlan: borrador de 14 días desde el lunes, guardado en la hoja', () => {
+test('generarPlan: borrador de 14 días desde el lunes, guardado en las tablas', () => {
   const gas = preparar();
   const r = gas.llamar('generarPlan');
   assert.equal(r.ok, true, r.error);
@@ -110,10 +76,8 @@ test('plan → activar → hoy: el día a día del plan activo', () => {
   assert.match(hoy.mensaje, /empieza el 2026-10-19/);
   assert.equal(hoy.inicio, '2026-10-19');
 
-  // El miércoles siguiente, con el mismo libro: hoy devuelve las 4 comidas de ese día.
-  const miercoles = cargarAppsScript('2026-10-21T13:00:00+02:00');
-  miercoles.libro.hojas.splice(0, miercoles.libro.hojas.length, ...gas.libro.hojas);
-  Object.assign(miercoles.propiedades, gas.propiedades);
+  // El miércoles siguiente, con las mismas tablas: hoy devuelve las 4 comidas de ese día.
+  const miercoles = enFecha(gas, '2026-10-21T13:00:00+02:00');
   hoy = miercoles.llamar('hoy').datos;
   assert.equal(hoy.fecha, '2026-10-21');
   assert.equal(hoy.comidas.length, 4);
@@ -121,14 +85,6 @@ test('plan → activar → hoy: el día a día del plan activo', () => {
   assert.deepEqual(hoy.comidas.map(c => c.receta_id), delPlan.comidas.map(c => c.receta_id));
   assert.equal(hoy.evaluacion.ok, true);
 });
-
-// Mismo libro y token, con otro «ahora».
-function enFecha(gas, ahoraIso) {
-  const otro = cargarAppsScript(ahoraIso);
-  otro.libro.hojas.splice(0, otro.libro.hojas.length, ...gas.libro.hojas);
-  Object.assign(otro.propiedades, gas.propiedades);
-  return otro;
-}
 
 test('activarPlan: si el activo no ha acabado, el nuevo queda como siguiente y pasa a activo al empezar', () => {
   const gas = preparar();
@@ -139,8 +95,8 @@ test('activarPlan: si el activo no ha acabado, el nuevo queda como siguiente y p
   const r = gas.llamar('activarPlan', { plan_id: segundo.plan_id });
   assert.equal(r.ok, true, r.error);
   assert.equal(r.datos.estado, 'siguiente');
-  const estados = () => Object.fromEntries(filas(gas, 'planes').map(p => [p.plan_id, p.estado]));
-  assert.deepEqual(estados(), { [primero.plan_id]: 'activo', [segundo.plan_id]: 'siguiente' });
+  const estados = m => Object.fromEntries(filas(m, 'planes').map(p => [p.plan_id, p.estado]));
+  assert.deepEqual(estados(gas), { [primero.plan_id]: 'activo', [segundo.plan_id]: 'siguiente' });
   const vista = gas.llamar('plan').datos;
   assert.equal(vista.activo.plan_id, primero.plan_id);
   assert.equal(vista.siguiente.plan_id, segundo.plan_id);
@@ -149,8 +105,8 @@ test('activarPlan: si el activo no ha acabado, el nuevo queda como siguiente y p
 
   const lunes = enFecha(gas, '2026-11-02T08:00:00+01:00');
   assert.equal(lunes.llamar('hoy').datos.plan_id, segundo.plan_id);
-  assert.deepEqual(estados(), { [primero.plan_id]: 'archivado', [segundo.plan_id]: 'activo', [filas(gas, 'planes')[2].plan_id]: 'borrador' });
-  assert.equal(filas(gas, 'plan_comidas').length, 168, 'las comidas del archivado se conservan');
+  assert.deepEqual(estados(lunes), { [primero.plan_id]: 'archivado', [segundo.plan_id]: 'activo', [filas(lunes, 'planes')[2].plan_id]: 'borrador' });
+  assert.equal(filas(lunes, 'plan_comidas').length, 168, 'las comidas del archivado se conservan');
 });
 
 test('activarPlan: con el activo ya terminado, lo archiva', () => {
@@ -161,7 +117,7 @@ test('activarPlan: con el activo ya terminado, lo archiva', () => {
   const segundo = despues.llamar('generarPlan').datos;
   assert.equal(segundo.inicio, '2026-11-09');
   assert.equal(despues.llamar('activarPlan', { plan_id: segundo.plan_id }).datos.estado, 'activo');
-  assert.equal(filas(gas, 'planes').find(p => p.plan_id === primero.plan_id).estado, 'archivado');
+  assert.equal(filas(despues, 'planes').find(p => p.plan_id === primero.plan_id).estado, 'archivado');
 });
 
 test('activarPlan: errores claros', () => {
@@ -172,7 +128,7 @@ test('activarPlan: errores claros', () => {
   assert.match(gas.llamar('activarPlan', { plan_id: p.plan_id }).error, /borrador/);
 });
 
-test('generarPlan: respeta exclusiones de la pestaña preferencias', () => {
+test('generarPlan: respeta exclusiones de la tabla preferencias', () => {
   const gas = preparar();
   gas.contexto.anadirFilas_('preferencias', [{ tipo: 'excluido', alimento_id: 'salmon', nota: '' }]);
   const p = gas.llamar('generarPlan').datos;
@@ -187,10 +143,7 @@ function planActivoEnMiercoles() {
   const gas = preparar();
   const plan = gas.llamar('generarPlan').datos;
   gas.llamar('activarPlan', { plan_id: plan.plan_id });
-  const miercoles = cargarAppsScript('2026-10-21T13:00:00+02:00');
-  miercoles.libro.hojas.splice(0, miercoles.libro.hojas.length, ...gas.libro.hojas);
-  Object.assign(miercoles.propiedades, gas.propiedades);
-  return { gas: miercoles, plan };
+  return { gas: enFecha(gas, '2026-10-21T13:00:00+02:00'), plan };
 }
 
 test('marcarComida: si, libre y no se guardan y se ven en hoy y plan', () => {
@@ -358,13 +311,13 @@ function bloqueCompleto(ahoraIso, porDia) {
 
 test('revisarFinDePlan: genera el borrador 2 días antes del fin, con balance y propuesta', () => {
   const { gas: antes } = bloqueCompleto('2026-10-29T07:00:00+01:00', 0.01);
-  antes.contexto.revisarFinDePlan();
+  antes.llamar('revisarFinDePlan');
   assert.equal(filas(antes, 'planes').length, 1, '3 días antes todavía no');
 
   const { gas, plan } = bloqueCompleto('2026-10-30T07:00:00+01:00', 0.01);
-  gas.contexto.revisarFinDePlan();
+  gas.llamar('revisarFinDePlan');
   assert.equal(filas(gas, 'planes').length, 2);
-  gas.contexto.revisarFinDePlan();
+  gas.llamar('revisarFinDePlan');
   assert.equal(filas(gas, 'planes').length, 2, 'no genera otro si ya hay borrador');
 
   const vista = gas.llamar('plan').datos;
@@ -381,7 +334,7 @@ test('revisarFinDePlan: genera el borrador 2 días antes del fin, con balance y 
   assert.equal(gas.llamar('hoy').datos.nuevo_plan, true);
 });
 
-test('revisarFinDePlan (acción de la PWA): también si el plan ya terminó; sin plan activo no hace nada', () => {
+test('revisarFinDePlan: también si el plan ya terminó; sin plan activo no hace nada', () => {
   const { gas } = bloqueCompleto('2026-11-04T10:00:00+01:00', 0.01);
   const r = gas.llamar('revisarFinDePlan');
   assert.equal(r.ok, true, r.error);

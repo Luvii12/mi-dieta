@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const N = require('../web/motor/Nutricion.js');
-const { SEMILLA } = require('../apps-script/Semilla.js');
+const { SEMILLA } = require('../data/semilla.js');
 const recetasJson = require('../data/recetas_semilla.json');
 
 const alimentos = N.indexarAlimentos_(SEMILLA.alimentos);

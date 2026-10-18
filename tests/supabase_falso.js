@@ -1,7 +1,7 @@
 // Supabase falsa en memoria, para los tests y para `npm run servidor`. Imita lo que usa la app:
-//   · Auth: entrar con email y contraseña, renovar la sesión (cada renovación se puede usar una vez) y salir.
-//     Con la clave secreta, lo que usan los scripts para entrar como otra persona: listar usuarios y generar un
-//     enlace mágico (admin), que se canjea por una sesión (verify).
+//   · Auth: entrar con email y contraseña, renovar la sesión (cada renovación se puede usar una vez), cambiar
+//     la contraseña y salir. Con la clave secreta, lo que usan los scripts (admin): listar, crear y cambiar la
+//     contraseña de usuarios, y generar un enlace mágico, que se canjea por una sesión (verify).
 //   · REST: leer (order, offset, limit), añadir, añadir o actualizar (merge-duplicates), cambiar y borrar con
 //     los filtros que genera web/supabase.js (col=eq., col=in.(…), or=(and(…),…)).
 // Con las reglas de supabase/esquema.sql: columnas y valores permitidos, claves, valores por defecto,
@@ -111,6 +111,7 @@ function filtroDe(params) {
 }
 
 function crearSupabaseFalso({ clave = 'clave-falsa', claveSecreta = 'clave-secreta-falsa', usuarios = [], administradores = [], ahora = () => new Date() } = {}) {
+  usuarios = usuarios.map(u => Object.assign({}, u)); // las altas y los cambios de contraseña no tocan los del test
   const tablas = Object.fromEntries(Object.keys(ESQUEMA).map(n => [n, []]));
   const accesos = new Map(); // token de acceso → user_id
   const renovaciones = new Map(); // token de renovación → user_id
@@ -291,6 +292,18 @@ function crearSupabaseFalso({ clave = 'clave-falsa', claveSecreta = 'clave-secre
     return borradas;
   }
 
+  // Como Supabase: al menos 6 caracteres y, al cambiarla, distinta de la anterior. Devuelve el error o null.
+  function claveNueva(u, password) {
+    if (typeof password !== 'string' || password.length < 6) {
+      return [422, { code: 422, error_code: 'weak_password', msg: 'Password should be at least 6 characters.' }];
+    }
+    if (password === u.password) {
+      return [422, { code: 422, error_code: 'same_password', msg: 'New password should be different from the old password.' }];
+    }
+    u.password = password;
+    return null;
+  }
+
   function auth(metodo, url, cuerpo, cabeceras) {
     const tipo = url.searchParams.get('grant_type');
     if (metodo === 'POST' && url.pathname === '/auth/v1/token' && tipo === 'password') {
@@ -312,11 +325,35 @@ function crearSupabaseFalso({ clave = 'clave-falsa', claveSecreta = 'clave-secre
       }
       return [204, null];
     }
+    if (metodo === 'PUT' && url.pathname === '/auth/v1/user') {
+      const u = usuarios.find(x => x.id === accesos.get(String(cabeceras.authorization || '').replace(/^Bearer /, '')));
+      if (!u) return [401, { code: 401, error_code: 'bad_jwt', msg: 'invalid JWT' }];
+      const r = claveNueva(u, (cuerpo || {}).password);
+      if (r) return r;
+      return [200, { id: u.id, email: u.email }];
+    }
     if (url.pathname.startsWith('/auth/v1/admin/') && cabeceras.apikey !== claveSecreta) {
       return [403, { code: 403, error_code: 'not_admin', msg: 'User not allowed' }];
     }
     if (metodo === 'GET' && url.pathname === '/auth/v1/admin/users') {
       return [200, { aud: 'authenticated', users: usuarios.map(u => ({ id: u.id, email: u.email })) }];
+    }
+    if (metodo === 'POST' && url.pathname === '/auth/v1/admin/users') {
+      const email = String((cuerpo || {}).email || '');
+      if (usuarios.some(x => x.email === email)) return [422, { code: 422, error_code: 'email_exists', msg: 'A user with this email address has already been registered' }];
+      const u = { id: `00000000-0000-4000-8000-${String(900 + usuarios.length).padStart(12, '0')}`, email };
+      const r = claveNueva(u, cuerpo.password);
+      if (r) return r;
+      usuarios.push(u);
+      return [200, { id: u.id, email: u.email, email_confirmed_at: cuerpo.email_confirm ? ahora().toISOString() : null }];
+    }
+    const editar = url.pathname.match(/^\/auth\/v1\/admin\/users\/([^/]+)$/);
+    if (metodo === 'PUT' && editar) {
+      const u = usuarios.find(x => x.id === editar[1]);
+      if (!u) return [404, { code: 404, error_code: 'user_not_found', msg: 'User not found' }];
+      const r = claveNueva(u, (cuerpo || {}).password);
+      if (r) return r;
+      return [200, { id: u.id, email: u.email }];
     }
     if (metodo === 'POST' && url.pathname === '/auth/v1/admin/generate_link') {
       const u = usuarios.find(x => x.email === (cuerpo || {}).email);

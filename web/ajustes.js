@@ -1,7 +1,7 @@
 // Pantalla «Ajustes»: mi objetivo (perfil.js), objetivos por comida, alimentos que no como, comida libre
 // semanal, peso objetivo, nombres de alimentos (solo quien creó la biblioteca) y cuenta (design/mi_dieta_ajustes).
 
-import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion, puedoEditarAlimentos } from './api.js';
+import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion, cambiarContrasena, puedoEditarAlimentos } from './api.js';
 import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';
 import { METAS, ENTRENOS } from './perfil.js';
 
@@ -261,6 +261,24 @@ export async function cargarAjustes() {
   }
 }
 
+function editarContrasena() {
+  abrirFormulario({
+    titulo: 'Cambiar contraseña',
+    nota: 'Al menos 8 caracteres. La sesión de este móvil sigue abierta.',
+    campos: [
+      { clave: 'nueva', etiqueta: 'Contraseña nueva', tipo: 'clave', ancho: true },
+      { clave: 'repetida', etiqueta: 'Repítela', tipo: 'clave', ancho: true },
+    ],
+    foco: 'boton-contrasena',
+    guardar: async ({ nueva, repetida }) => {
+      if (nueva.length < 8) throw new Error('La contraseña tiene que tener al menos 8 caracteres.');
+      if (nueva !== repetida) throw new Error('Las dos contraseñas no coinciden.');
+      await cambiarContrasena(nueva);
+      avisar('Contraseña cambiada.');
+    },
+  });
+}
+
 async function salirDeLaCuenta() {
   if (!confirm('¿Cerrar sesión? Se borrará la copia de tus datos guardada en este móvil. Tu plan y tu progreso siguen en tu cuenta.')) return;
   $('boton-salir').disabled = true;
@@ -279,6 +297,7 @@ const conConfig = accion => () => {
 };
 
 export function prepararAjustes() {
+  $('boton-contrasena').addEventListener('click', editarContrasena);
   $('boton-salir').addEventListener('click', salirDeLaCuenta);
   $('interruptor-libre').addEventListener('click', conConfig(alternarLibre));
   $('fila-meta').addEventListener('click', conConfig(editarMeta));

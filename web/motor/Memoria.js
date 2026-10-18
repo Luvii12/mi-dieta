@@ -1,9 +1,8 @@
-// Almacén en memoria para ejecutar las acciones en el navegador. Pone las mismas funciones que
-// apps-script/Hoja.js (leerTabla_, anadirFilas_, reescribirTabla_, actualizarFilas_, escribirConfig_ y
-// conBloqueo_) y guarda los valores igual que una celda de Sheets: '' si no hay valor y los objetos como
-// JSON. Así las acciones dan exactamente lo mismo con las dos.
+// Almacén en memoria para ejecutar las acciones en el navegador: leerTabla_, anadirFilas_, reescribirTabla_,
+// actualizarFilas_, escribirConfig_ y conBloqueo_. Guarda los valores como las celdas de la antigua hoja de
+// Google (con la que empezó la app): '' si no hay valor y los objetos como JSON.
 // La PWA carga aquí las tablas del usuario (cargarTablas_), ejecuta la acción y después guarda en la base
-// de datos las tablas que han cambiado (tablasCambiadas_). No lo usa Apps Script (.claspignore).
+// de datos las tablas que han cambiado (tablasCambiadas_).
 
 let TABLAS_ = {};
 let CAMBIADAS_ = new Set();

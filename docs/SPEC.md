@@ -25,7 +25,7 @@ Generar cada 14 días un plan con 4 comidas diarias (desayuno, almuerzo, meriend
 6. Guardar como **borrador**; el usuario lo revisa y lo activa.
 
 ## Automatización
-- Activador temporal de Apps Script: 2 días antes de terminar el plan activo, calcula el progreso, propone el ajuste y genera el borrador.
+- Al abrir la app (una vez al día): si al plan activo le quedan 2 días o menos, calcula el progreso, propone el ajuste y genera el borrador.
 - Botón manual «Generar nuevo plan» en cualquier momento.
 
 ## Fases posteriores (no ahora)

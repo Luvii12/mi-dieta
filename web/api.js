@@ -1,9 +1,9 @@
 // Sesión con Supabase, acciones y datos guardados en el móvil.
-// Las acciones son las mismas que tenía Apps Script, pero las ejecuta el motor (web/motor/, cargado con
-// <script> en index.html) en el navegador, sobre los datos de Supabase (ver supabase.js).
+// Las acciones las ejecuta el motor (web/motor/, cargado con <script> en index.html) en el navegador, sobre
+// los datos de Supabase (ver supabase.js).
 
 import { SUPABASE } from './conexion.js';
-import { entrar as entrarSupabase, renovar, salir, ejecutar, editaAlimentos, ErrorSesion, ErrorToken } from './supabase.js';
+import { entrar as entrarSupabase, renovar, salir, cambiarClave, ejecutar, editaAlimentos, ErrorSesion, ErrorToken } from './supabase.js';
 
 const CLAVE_SESION = 'dieta.sesion';
 const RENOVAR_ANTES = 5 * 60000; // la sesión dura 1 hora: se renueva si le quedan menos de 5 minutos
@@ -50,6 +50,16 @@ export async function entrar(email, password) {
   const anterior = leerSesion();
   if (!anterior || anterior.usuario.id !== sesion.usuario.id) borrarCopiaLocal();
   guardarLocal(CLAVE_SESION, sesion);
+}
+
+// Contraseña nueva para la cuenta con la sesión abierta. Si la base no acepta la sesión, la renueva y repite.
+export async function cambiarContrasena(nueva) {
+  try {
+    await cambiarClave(conexion(), await sesionValida(false), nueva);
+  } catch (err) {
+    if (!(err instanceof ErrorToken)) throw err;
+    await cambiarClave(conexion(), await sesionValida(true), nueva);
+  }
 }
 
 export async function cerrarSesion() {

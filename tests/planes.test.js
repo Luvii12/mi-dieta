@@ -1,9 +1,9 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-// En Apps Script todos los archivos comparten ámbito global; en Node se imita así.
+// En el navegador los archivos del motor comparten ámbito global; en Node se imita así.
 Object.assign(globalThis, require('../web/motor/Util.js'), require('../web/motor/Nutricion.js'), require('../web/motor/Generador.js'));
 const P = require('../web/motor/Planes.js');
-const { SEMILLA } = require('../apps-script/Semilla.js');
+const { SEMILLA } = require('../data/semilla.js');
 
 const alimentos = indexarAlimentos_(SEMILLA.alimentos);
 const TOL = { dia: { kcal: 5, P: 5, C: 10, G: 10, P_margen_g: 10 }, comida: { kcal: 12, P: 15, C: 15, G: 20 } };

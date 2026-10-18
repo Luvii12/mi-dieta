@@ -2,10 +2,8 @@ node_modules/
 __pycache__/
 *.pyc
 .DS_Store
-# clasp guarda aquí las credenciales si se usa login local al proyecto
+# Del antiguo Apps Script (retirado en M6): credenciales de clasp y URL + token. Se pueden borrar.
 .clasprc.json
-
-# Conexión con Apps Script para scripts/recetas_ia.js (lleva el token: nunca al repo)
 .conexion.local.json
 
 # Conexión con Supabase para los scripts (URL, clave pública, cuentas y clave secreta: nunca al repo)

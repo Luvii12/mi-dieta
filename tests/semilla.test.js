@@ -4,13 +4,13 @@ const fs = require('fs');
 const path = require('path');
 const { construirSemilla, nombreDesdeId } = require('../scripts/generar_semilla.js');
 const { PESTANAS } = require('../web/motor/Util.js');
-const { SEMILLA } = require('../apps-script/Semilla.js');
+const { SEMILLA } = require('../data/semilla.js');
 
 const raiz = path.join(__dirname, '..');
 const csv = fs.readFileSync(path.join(raiz, 'data/alimentos.csv'), 'utf8');
 const recetasJson = JSON.parse(fs.readFileSync(path.join(raiz, 'data/recetas_semilla.json'), 'utf8'));
 
-test('Semilla.js está al día con data/ (si falla: node scripts/generar_semilla.js)', () => {
+test('data/semilla.js está al día con data/ (si falla: node scripts/generar_semilla.js)', () => {
   assert.deepEqual(SEMILLA, construirSemilla(csv, recetasJson));
 });
 

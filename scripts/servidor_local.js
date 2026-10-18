@@ -14,7 +14,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const RAIZ = path.join(__dirname, '..');
-const { cargarAppsScript } = require('../tests/simulador_gas.js');
+const { nuevoMotor, enFecha } = require('../tests/motor_navegador.js');
 const { crearSupabaseFalso } = require('../tests/supabase_falso.js');
 
 const MODO = process.argv[2] || '';
@@ -25,12 +25,10 @@ const NUEVO = { id: '00000000-0000-4000-8000-000000000002', email: 'nuevo@mi-die
 const CLAVE = 'clave-local';
 const ORDEN = ['alimentos', 'recetas', 'config', 'planes', 'plan_comidas', 'pesos', 'valoraciones', 'preferencias', 'ajustes_historial'];
 
-// Las tablas de prueba se preparan con el Apps Script de siempre (sobre una hoja en memoria).
+// Las tablas de prueba se preparan con el motor, como si hoy fuera hace una semana.
 function tablasDePrueba() {
   const haceUnaSemana = new Date(Date.now() - 7 * 86400000).toISOString();
-  const prep = cargarAppsScript(haceUnaSemana);
-  prep.contexto.configurarHoja();
-  prep.contexto.crearToken();
+  let prep = nuevoMotor(haceUnaSemana);
   const p = prep.llamar('generarPlan').datos;
   prep.llamar('activarPlan', { plan_id: p.plan_id });
   if (MODO === 'borrador') {
@@ -41,10 +39,8 @@ function tablasDePrueba() {
     const comidas = prep.contexto.leerTabla_('plan_comidas')
       .map((f, i) => Object.assign(f, { hecha: f.fecha < hoy ? (i % 9 === 0 ? 'no' : 'si') : f.hecha }));
     prep.contexto.reescribirTabla_('plan_comidas', comidas);
-    const p2 = cargarAppsScript(new Date().toISOString());
-    p2.libro.hojas.splice(0, p2.libro.hojas.length, ...prep.libro.hojas);
-    Object.assign(p2.propiedades, prep.propiedades);
-    p2.llamar('generarPlan');
+    prep = enFecha(prep, new Date().toISOString());
+    prep.llamar('generarPlan');
   }
   if (MODO === 'fin') {
     const c = prep.contexto;
@@ -68,7 +64,7 @@ const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/cs
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'apikey, authorization, content-type, prefer',
 };
 

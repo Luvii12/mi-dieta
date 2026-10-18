@@ -1,4 +1,4 @@
-// Conversión entre planes generados, filas de Sheets (`planes`, `plan_comidas`) y lo que ve la PWA.
+// Conversión entre planes generados, filas de las tablas `planes` y `plan_comidas` y lo que ve la PWA.
 // Funciones puras.
 
 // Plan generado → {plan: fila de `planes`, comidas: filas de `plan_comidas`}.

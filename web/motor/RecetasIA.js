@@ -1,12 +1,12 @@
-// Recetas propuestas por la IA (Fase 5). Claude propone platos en JSON usando los alimentos de la hoja;
+// Recetas propuestas por la IA (Fase 5). Claude propone platos en JSON usando los alimentos de la tabla;
 // el código los valida y calcula los gramos. La IA nunca da valores nutricionales.
 // Las escribe Claude Code con la suscripción del usuario (sin API de pago): pide `pedidoRecetas`, escribe las
-// recetas y las manda con `importarPropuestas` (scripts/recetas_ia.js). La versión que llamaba a la API desde
-// Apps Script está en el historial de git (commit 3fb63e7); se quitó para no pedir permiso de servicios externos.
+// recetas y las manda con `importarPropuestas` (scripts/recetas_ia.js). La versión que llamaba a la API (desde
+// el antiguo Apps Script) está en el historial de git, commit 3fb63e7.
 //
 // Una receta propuesta se guarda en `recetas` con origen = ia y activa = propuesta hasta que el usuario la
 // añade a la biblioteca (activa = si) o la descarta (activa = descartada). Si necesita un alimento que no
-// está en la hoja, el ingrediente lleva `nuevo: {nombre, grupo, estado}` y la receta espera a que el
+// está en `alimentos`, el ingrediente lleva `nuevo: {nombre, grupo, estado}` y la receta espera a que el
 // usuario añada ese alimento con los valores de la etiqueta o de BEDCA.
 
 const RECETAS_POR_PETICION = 3;
@@ -227,7 +227,7 @@ function filaAlimentoNuevo_(datos, idsExistentes) {
     fuente: 'usuario (etiqueta/BEDCA)', verificado: 'si', codigo_barras: '' };
 }
 
-// ---------- Con Google (hoja) ----------
+// ---------- Con el almacén ----------
 
 // Datos comunes para pedir y evaluar recetas de IA.
 function contextoIA_() {

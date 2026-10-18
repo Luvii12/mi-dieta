@@ -27,7 +27,6 @@ const ORDEN_GUARDAR = ['alimentos', 'recetas', 'config', 'planes', 'plan_comidas
 
 const PAGINA = 1000; // Supabase devuelve como mucho 1.000 filas por petición
 const LOTE_BORRAR = 50; // filas por petición al borrar (van en la URL)
-const TOKEN_MOTOR = 'navegador'; // manejar_ pide un token; aquí la seguridad la pone la sesión
 
 // La sesión ya no vale (o no hay): hay que volver a entrar.
 export class ErrorSesion extends Error {}
@@ -100,22 +99,16 @@ export async function renovar(con, sesion) {
   throw new Error(mensajeDe(r));
 }
 
-// Sesión de otra persona sin su contraseña, con la clave secreta del proyecto (service_role). Solo la usan los
-// scripts de Fran (scripts/cuenta_supabase.js): la clave secreta nunca va en la PWA. Comprueba que la cuenta
-// existe (el enlace mágico no debe crear cuentas) y canjea un enlace mágico generado por el administrador,
-// sin enviar ningún correo.
-export async function entrarComo(con, claveSecreta, email) {
-  const admin = { url: con.url, clave: claveSecreta, fetch: con.fetch };
-  const usuarios = await pedir(admin, 'GET', '/auth/v1/admin/users?page=1&per_page=1000', { token: claveSecreta });
-  if (!usuarios.ok) throw new Error('La clave secreta no vale: ' + mensajeDe(usuarios));
-  const buscado = String(email).trim().toLowerCase();
-  if (!(usuarios.datos.users || []).some(u => String(u.email).toLowerCase() === buscado)) throw new Error(`No hay ninguna cuenta con el email ${email}.`);
-  const enlace = await pedir(admin, 'POST', '/auth/v1/admin/generate_link', { token: claveSecreta, cuerpo: { type: 'magiclink', email: buscado } });
-  if (!enlace.ok) throw new Error(mensajeDe(enlace));
-  const datos = enlace.datos.properties || enlace.datos;
-  const r = await pedir(con, 'POST', '/auth/v1/verify', { cuerpo: { type: 'magiclink', token_hash: datos.hashed_token } });
-  if (!r.ok) throw new Error(mensajeDe(r));
-  return aSesion(r.datos);
+// Cambia la contraseña de quien tiene la sesión abierta (Ajustes › Cuenta). La sesión sigue valiendo.
+export async function cambiarClave(con, sesion, password) {
+  const r = await pedir(con, 'PUT', '/auth/v1/user', { token: sesion.access_token, cuerpo: { password } });
+  if (r.ok) return;
+  const codigo = r.datos && (r.datos.error_code || r.datos.code);
+  if (r.estado === 401) throw new ErrorToken('Tu sesión ha caducado: vuelve a entrar.');
+  if (codigo === 'same_password') throw new Error('La contraseña nueva tiene que ser distinta de la actual.');
+  if (codigo === 'weak_password') throw new Error('Esa contraseña es demasiado débil: prueba con una más larga.');
+  if (codigo === 'reauthentication_needed') throw new Error('Por seguridad, cierra sesión, vuelve a entrar y cámbiala enseguida.');
+  throw new Error(mensajeDe(r));
 }
 
 // Cierra la sesión en el servidor. Si falla (sin conexión), da igual: el móvil la olvida de todos modos.
@@ -125,6 +118,55 @@ export async function salir(con, sesion) {
   } catch (err) {
     // Nada que hacer.
   }
+}
+
+// ---------- Administración (solo scripts de Fran) ----------
+// Con la clave secreta del proyecto (service_role), que nunca va en la PWA: la usan scripts/cuenta_supabase.js
+// y scripts/invitar.js, con la clave de .supabase.local.json.
+
+// La cuenta con ese email ({id, email}) o null. Lanza un Error si la clave secreta no vale.
+async function buscarCuenta(con, claveSecreta, email) {
+  const admin = { url: con.url, clave: claveSecreta, fetch: con.fetch };
+  const usuarios = await pedir(admin, 'GET', '/auth/v1/admin/users?page=1&per_page=1000', { token: claveSecreta });
+  if (!usuarios.ok) throw new Error('La clave secreta no vale: ' + mensajeDe(usuarios));
+  const buscado = String(email).trim().toLowerCase();
+  return (usuarios.datos.users || []).find(u => String(u.email).toLowerCase() === buscado) || null;
+}
+
+// Cuenta nueva ya confirmada (el registro libre está cerrado y la app no recoge enlaces de invitación).
+// Devuelve {id, email}.
+export async function crearCuenta(con, claveSecreta, email, password) {
+  if (await buscarCuenta(con, claveSecreta, email)) throw new Error(`Ya hay una cuenta con el email ${email}.`);
+  const admin = { url: con.url, clave: claveSecreta, fetch: con.fetch };
+  const r = await pedir(admin, 'POST', '/auth/v1/admin/users', { token: claveSecreta,
+    cuerpo: { email: String(email).trim().toLowerCase(), password, email_confirm: true } });
+  if (!r.ok) throw new Error(mensajeDe(r));
+  return { id: r.datos.id, email: r.datos.email };
+}
+
+// Pone otra contraseña a una cuenta que ya existe (si la persona la ha olvidado).
+export async function cambiarClaveDe(con, claveSecreta, email, password) {
+  const cuenta = await buscarCuenta(con, claveSecreta, email);
+  if (!cuenta) throw new Error(`No hay ninguna cuenta con el email ${email}.`);
+  const admin = { url: con.url, clave: claveSecreta, fetch: con.fetch };
+  const r = await pedir(admin, 'PUT', '/auth/v1/admin/users/' + cuenta.id, { token: claveSecreta, cuerpo: { password } });
+  if (!r.ok) throw new Error(mensajeDe(r));
+  return { id: cuenta.id, email: cuenta.email };
+}
+
+// Sesión de otra persona sin su contraseña (scripts/recetas_ia.js --para). Comprueba que la cuenta existe
+// (el enlace mágico no debe crear cuentas) y canjea un enlace mágico generado por el administrador, sin
+// enviar ningún correo.
+export async function entrarComo(con, claveSecreta, email) {
+  const admin = { url: con.url, clave: claveSecreta, fetch: con.fetch };
+  const cuenta = await buscarCuenta(con, claveSecreta, email);
+  if (!cuenta) throw new Error(`No hay ninguna cuenta con el email ${email}.`);
+  const enlace = await pedir(admin, 'POST', '/auth/v1/admin/generate_link', { token: claveSecreta, cuerpo: { type: 'magiclink', email: cuenta.email } });
+  if (!enlace.ok) throw new Error(mensajeDe(enlace));
+  const datos = enlace.datos.properties || enlace.datos;
+  const r = await pedir(con, 'POST', '/auth/v1/verify', { cuerpo: { type: 'magiclink', token_hash: datos.hashed_token } });
+  if (!r.ok) throw new Error(mensajeDe(r));
+  return aSesion(r.datos);
 }
 
 // ---------- API REST ----------
@@ -298,7 +340,7 @@ export async function guardarCambios(con, sesion, antes, cambiadas) {
 // ---------- Ejecutar una acción ----------
 
 // motor: {PESTANAS, ACCIONES, cargarTablas_, tablasCambiadas_, aCeldas_, manejar_, fechaHora_} (web/motor/).
-// peticion: {accion, ...} como las que recibía Apps Script. Devuelve los datos o lanza un Error.
+// peticion: {accion, ...}. Devuelve los datos o lanza un Error.
 // Si la acción falla no se guarda nada.
 export async function ejecutar(con, sesion, motor, peticion) {
   const filas = await leerTablas(con, sesion);
@@ -309,7 +351,7 @@ export async function ejecutar(con, sesion, motor, peticion) {
     celdas[nombre] = antes[nombre].map(a => a.celdas);
   });
   motor.cargarTablas_(celdas);
-  const respuesta = motor.manejar_(Object.assign({}, peticion, { token: TOKEN_MOTOR }), TOKEN_MOTOR, motor.ACCIONES);
+  const respuesta = motor.manejar_(peticion, motor.ACCIONES);
   const cambiadas = motor.tablasCambiadas_();
   if (!respuesta.ok) throw new Error(respuesta.error);
   await guardarCambios(con, sesion, antes, cambiadas);

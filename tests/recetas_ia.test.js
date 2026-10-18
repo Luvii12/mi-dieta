@@ -1,16 +1,11 @@
 // Recetas con IA (Fase 5): validación de lo que propone Claude y flujo completo con la API simulada.
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { cargarAppsScript } = require('./simulador_gas.js');
+const { nuevoMotor } = require('./motor_navegador.js');
 
 const VIERNES = '2026-10-16T09:00:00+02:00';
 
-function preparar() {
-  const gas = cargarAppsScript(VIERNES);
-  gas.contexto.configurarHoja();
-  gas.contexto.crearToken();
-  return gas;
-}
+const preparar = () => nuevoMotor(VIERNES);
 
 const filas = (gas, nombre) => gas.contexto.leerTabla_(nombre);
 

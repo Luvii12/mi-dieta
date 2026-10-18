@@ -55,22 +55,20 @@ npm run servidor -- real     # la PWA en http://localhost:8099 contra el Supabas
 ```
 Sin red: `npm run servidor` (base falsa en memoria; entra con `prueba@mi-dieta.test` / `prueba`).
 
-## 8. Cuenta real y migración de la hoja (fase M3)
+## 8. Cuenta real (fase M3)
 En `.supabase.local.json`, la cuenta real va aparte de las de pruebas (los scripts de Claude Code entran con ella):
 ```json
   "cuenta": {"email": "franluvi2015@gmail.com", "password": "…"},
 ```
 ```
-npm run migrar -- --probar     # qué cambiaría en Supabase, sin escribir nada
-npm run migrar                 # copia la hoja (Apps Script, acción exportar) a la cuenta real y lo comprueba
-npm run migrar -- --comprobar  # solo compara: tablas y acciones de lectura, hoja frente a Supabase
 npm run cambiar-contrasena     # en una terminal propia: nueva contraseña de la cuenta real (la guarda en el archivo)
 ```
-La migración no borra nada de la biblioteca común; los datos personales quedan igual que en la hoja (si la cuenta ya tenía otros, pide `--sustituir`). `npm run probar-supabase` se niega a usar la cuenta real (borra los datos del usuario con el que prueba).
+Tu contraseña cámbiala así y no desde la app: los scripts entran con la que hay en el archivo.
+Los datos de la hoja de Google se copiaron a esta cuenta el 18-10-2026 (`scripts/migrar_sheets.js`, retirado en M6 junto con Apps Script; está en el historial de git). `npm run probar-supabase` se niega a usar la cuenta real (borra los datos del usuario con el que prueba).
 
 **Administrador** (para cambiar alimentos y recetas que haya añadido otra persona): en el SQL Editor,
 `insert into public.administradores (user_id) select id from auth.users where email = 'franluvi2015@gmail.com';`
-- **Invitar** a tu hermano y a tu novia (fase M6): *Authentication → Users → Invite user*.
+- **Altas** (fase M6): con `npm run invitar` (§10), no con *Invite user* del panel: la app no sabe recoger el enlace de la invitación y el correo gratis de Supabase solo llega a los miembros del proyecto.
 - Si el proyecto se pausa por no usarse en 7 días: *Restore project* en el panel; no se pierde nada.
 
 ## 9. Recetas para otra persona (fase M5)
@@ -79,3 +77,10 @@ La migración no borra nada de la biblioteca común; los datos personales quedan
   "clave_secreta": "sb_secret_…",
 ```
 Esta clave se salta todas las reglas por fila: **solo** en ese archivo (está en `.gitignore`), nunca en el repo, en la PWA ni en un chat. Si se filtra, en el mismo sitio del panel se borra y se crea otra. El script solo la usa para comprobar que la cuenta existe y abrir una sesión como ella (un enlace mágico que canjea él mismo, sin enviar correos); todo lo demás va con esa sesión, con las mismas reglas que en su móvil.
+
+## 10. Dar de alta a alguien (fase M6)
+```
+npm run invitar -- email@de.la.persona                # cuenta nueva, ya confirmada, con una contraseña temporal
+npm run invitar -- email@de.la.persona --nueva-clave  # otra temporal, si ha olvidado la suya
+```
+Usa la clave secreta (§9). La contraseña temporal solo sale en tu terminal, dentro de un mensaje listo para mandar por un canal privado (con el enlace de la app y la guía `docs/INSTALAR.md`). Al entrar, la persona la cambia en **Ajustes › Cuenta › Cambiar contraseña** y se da de alta (perfil y objetivo). Si quieres que deje de entrar: *Authentication → Users →* su cuenta *→ Delete user* (se borran también sus datos personales).

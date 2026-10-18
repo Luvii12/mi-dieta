@@ -2,33 +2,14 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const U = require('../web/motor/Util.js');
 
-test('token: sin token guardado se rechaza todo', () => {
-  assert.equal(U.tokenValido_('abc', null), false);
-  assert.equal(U.tokenValido_('', ''), false);
-});
-
-test('token: solo acepta el token exacto', () => {
-  assert.equal(U.tokenValido_('abc123', 'abc123'), true);
-  assert.equal(U.tokenValido_('abc124', 'abc123'), false);
-  assert.equal(U.tokenValido_('abc12', 'abc123'), false);
-  assert.equal(U.tokenValido_(undefined, 'abc123'), false);
-});
-
-test('manejar_: rechaza token incorrecto sin ejecutar la acción', () => {
-  let ejecutada = false;
-  const r = U.manejar_({ accion: 'hoy', token: 'malo' }, 'bueno', { hoy: () => { ejecutada = true; } });
-  assert.deepEqual(r, { ok: false, error: 'Token no válido' });
-  assert.equal(ejecutada, false);
-});
-
 test('manejar_: acción desconocida y errores se devuelven como ok:false', () => {
   const acciones = { falla: () => { throw new Error('se rompió'); } };
-  assert.equal(U.manejar_({ accion: 'nada', token: 't' }, 't', acciones).ok, false);
-  assert.deepEqual(U.manejar_({ accion: 'falla', token: 't' }, 't', acciones), { ok: false, error: 'se rompió' });
+  assert.equal(U.manejar_({ accion: 'nada' }, acciones).ok, false);
+  assert.deepEqual(U.manejar_({ accion: 'falla' }, acciones), { ok: false, error: 'se rompió' });
 });
 
 test('manejar_: acción correcta devuelve sus datos', () => {
-  const r = U.manejar_({ accion: 'eco', token: 't', x: 2 }, 't', { eco: p => p.x * 2 });
+  const r = U.manejar_({ accion: 'eco', x: 2 }, { eco: p => p.x * 2 });
   assert.deepEqual(r, { ok: true, datos: 4 });
 });
 

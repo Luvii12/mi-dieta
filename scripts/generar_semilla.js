@@ -1,5 +1,5 @@
-// Convierte data/alimentos.csv y data/recetas_semilla.json en apps-script/Semilla.js,
-// que Setup.js usa para cargar la hoja la primera vez.
+// Convierte data/alimentos.csv y data/recetas_semilla.json en data/semilla.js: la biblioteca de partida
+// (y los objetivos iniciales) que usan los tests, el servidor local y scripts/supabase_semilla.js.
 // Uso: node scripts/generar_semilla.js
 
 const fs = require('fs');
@@ -73,8 +73,8 @@ function main() {
     '// GENERADO por scripts/generar_semilla.js a partir de data/. No editar a mano.\n\n' +
     'const SEMILLA = ' + JSON.stringify(semilla, null, 1) + ';\n\n' +
     "if (typeof module !== 'undefined') module.exports = { SEMILLA };\n";
-  fs.writeFileSync(path.join(raiz, 'apps-script/Semilla.js'), salida);
-  console.log(`Semilla.js: ${semilla.alimentos.length} alimentos, ${semilla.recetas.length} recetas`);
+  fs.writeFileSync(path.join(raiz, 'data/semilla.js'), salida);
+  console.log(`semilla.js: ${semilla.alimentos.length} alimentos, ${semilla.recetas.length} recetas`);
 }
 
 if (require.main === module) main();

@@ -1,5 +1,5 @@
-// Funciones puras (sin SpreadsheetApp ni PropertiesService).
-// Funcionan en Apps Script y en Node, así los tests prueban este mismo código.
+// Funciones puras, solo con JavaScript estándar.
+// Funcionan en el navegador y en Node, así los tests prueban este mismo código.
 
 const ZONA_HORARIA = 'Europe/Madrid';
 
@@ -22,17 +22,8 @@ const PESTANAS = {
 // Columnas que se guardan como texto para que Sheets no convierta '2026-10-16' en fecha.
 const COLUMNAS_FECHA = ['fecha', 'inicio', 'fin', 'creado'];
 
-// Compara el token recibido con el guardado. Sin token guardado, se rechaza todo.
-function tokenValido_(recibido, guardado) {
-  if (!guardado || typeof recibido !== 'string' || recibido.length !== guardado.length) return false;
-  let diferencia = 0;
-  for (let i = 0; i < guardado.length; i++) diferencia |= recibido.charCodeAt(i) ^ guardado.charCodeAt(i);
-  return diferencia === 0;
-}
-
-// Procesa una petición: comprueba el token y llama a la acción. Nunca lanza: devuelve {ok, datos|error}.
-function manejar_(peticion, tokenGuardado, acciones) {
-  if (!tokenValido_(peticion.token, tokenGuardado)) return { ok: false, error: 'Token no válido' };
+// Procesa una petición llamando a su acción. Nunca lanza: devuelve {ok, datos|error}.
+function manejar_(peticion, acciones) {
   const accion = acciones[peticion.accion];
   if (!accion) return { ok: false, error: 'Acción desconocida: ' + peticion.accion };
   try {
@@ -48,7 +39,6 @@ function fechaIso_(fecha) {
 }
 
 // Fecha → texto con formato tipo 'yyyyMMdd-HHmmss' (yyyy, MM, dd, HH, mm, ss y 'literal') en hora de Madrid.
-// Hace lo mismo que Utilities.formatDate de Apps Script, pero funciona también en el navegador.
 function fechaHora_(fecha, formato) {
   const partes = {};
   new Intl.DateTimeFormat('en-GB', {
@@ -138,7 +128,7 @@ function filaAReceta_(fila) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    PESTANAS, COLUMNAS_FECHA, tokenValido_, manejar_, fechaIso_, normalizarCelda_, filasAObjetos_,
+    PESTANAS, COLUMNAS_FECHA, manejar_, fechaIso_, normalizarCelda_, filasAObjetos_,
     objetoAFila_, parsearValor_, serializarValor_, configAObjeto_, filaAReceta_, idUnico_,
   };
 }

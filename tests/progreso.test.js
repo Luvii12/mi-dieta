@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 Object.assign(globalThis, require('../web/motor/Util.js'), require('../web/motor/Nutricion.js'), require('../web/motor/Generador.js'));
 const P = require('../web/motor/Progreso.js');
 const { promoverPlanes_, numeroBloque_ } = require('../web/motor/Planes.js');
-const { SEMILLA } = require('../apps-script/Semilla.js');
+const { SEMILLA } = require('../data/semilla.js');
 
 const OBJ = SEMILLA.objetivos;
 const HOY = '2026-11-01';

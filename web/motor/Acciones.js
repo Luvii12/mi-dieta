@@ -1,6 +1,6 @@
-// Acciones de la app: lo que hace cada petición de la PWA. Sin APIs de Google: trabajan con las funciones
-// de almacén leerTabla_, anadirFilas_, reescribirTabla_, actualizarFilas_, escribirConfig_ y conBloqueo_,
-// que pone Apps Script (apps-script/Hoja.js, sobre Google Sheets) o el navegador (Memoria.js, en memoria).
+// Acciones de la app: lo que hace cada petición de la PWA. Trabajan con las funciones de almacén
+// leerTabla_, anadirFilas_, reescribirTabla_, actualizarFilas_, escribirConfig_ y conBloqueo_, que pone
+// Memoria.js (las tablas del usuario en memoria; web/supabase.js las baja y guarda lo que cambie).
 // Cada acción recibe la petición ({accion, ...}) y devuelve sus datos o lanza un Error con el mensaje.
 
 const ACCIONES = {

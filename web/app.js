@@ -110,7 +110,7 @@ mostrarVista();
 // Sesión abierta pero sin la configuración guardada (p. ej. entró antes de que existiera el alta).
 if (haySesion() && !leerLocal('dieta.config')) comprobarAlta().then(() => { if (vistaActual() === 'alta') mostrarVista(); });
 
-// Generación automática (sustituye al activador de Apps Script): una vez al día, al abrir la app, el motor
+// Generación automática: una vez al día, al abrir la app, el motor
 // genera el borrador del siguiente plan si al activo le quedan 2 días o menos. Hoy enseña entonces su aviso.
 const CLAVE_REVISADO = 'dieta.planRevisado';
 async function revisarPlan() {

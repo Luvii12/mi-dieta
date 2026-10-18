@@ -8,7 +8,7 @@
 // Uso: npm run supabase-semilla [-- <nº de usuario de pruebas para la configuración: 1 o 2>]
 const fs = require('fs');
 const path = require('path');
-const { cargarAppsScript } = require('../tests/simulador_gas.js');
+const { tablasIniciales } = require('../tests/motor_navegador.js');
 
 const ARCHIVO = process.env.SUPABASE || path.join(__dirname, '..', '.supabase.local.json');
 
@@ -25,10 +25,8 @@ async function main() {
   const sb = await import('../web/supabase.js');
   const con = { url: c.url.replace(/\/+$/, ''), clave: c.clave, fetch };
 
-  // Las mismas filas que configurarHoja() pone en una hoja nueva.
-  const gas = cargarAppsScript();
-  gas.contexto.configurarHoja();
-  const filas = nombre => gas.contexto.leerTabla_(nombre);
+  const tablas = tablasIniciales();
+  const filas = nombre => tablas[nombre];
 
   async function anadir(sesion, nombre, lista) {
     const r = await con.fetch(`${con.url}/rest/v1/${nombre}`, {

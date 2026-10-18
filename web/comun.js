@@ -92,11 +92,12 @@ function controlFormulario(c) {
     return h('select', { name: c.clave }, c.opciones.map(([valor, texto]) => h('option', { value: valor, selected: valor === c.valor }, texto)));
   }
   if (c.tipo === 'texto') return h('input', { type: 'text', autocomplete: 'off', maxlength: 60, name: c.clave, value: c.valor || '' });
+  if (c.tipo === 'clave') return h('input', { type: 'password', autocomplete: 'new-password', maxlength: 72, name: c.clave });
   return h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', name: c.clave,
     value: c.valor === null || c.valor === undefined ? '' : numero(c.valor, c.decimales || 0).replace(/\./g, '') });
 }
 
-// Panel con campos. campos: [{clave, etiqueta, unidad, valor, decimales, tipo ('numero' | 'texto' | 'opciones'),
+// Panel con campos. campos: [{clave, etiqueta, unidad, valor, decimales, tipo ('numero' | 'texto' | 'opciones' | 'clave'),
 // opciones: [[valor, texto]], ancho (ocupa toda la fila)}]. Los números llegan como número (NaN si están vacíos).
 // guardar(valores) lanza un Error con el mensaje si algo no vale. foco: data-foco o id al que volver al cerrar.
 export function abrirFormulario({ titulo, nota, campos, guardar, foco, textoGuardar }) {
@@ -113,7 +114,7 @@ export function abrirFormulario({ titulo, nota, campos, guardar, foco, textoGuar
     const valores = {};
     campos.forEach(c => {
       const valor = panel.querySelector(`[name="${c.clave}"]`).value;
-      valores[c.clave] = c.tipo === 'texto' || c.tipo === 'opciones' ? valor.trim() : leerNumero(valor);
+      valores[c.clave] = c.tipo === 'clave' ? valor : c.tipo === 'texto' || c.tipo === 'opciones' ? valor.trim() : leerNumero(valor);
     });
     const boton = $('formulario-guardar');
     boton.disabled = true;
