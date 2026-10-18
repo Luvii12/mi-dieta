@@ -32,15 +32,18 @@ function filasDesdePlan_(generado, planId, objetivos, tolerancias, creado) {
 }
 
 // Ingredientes de una comida guardada, con nombre, crudo/cocinado, grupo, si es escalable y piezas.
+// Orden: el de la receta, primero los escalables (no el de las claves de `gramos`, que Postgres reordena).
 function ingredientesDeComida_(gramos, receta, alimentos) {
   const escalables = {};
   ((receta && receta.ingredientes_escalables) || []).forEach(e => { escalables[e.alimento] = e; });
+  const orden = Object.keys(escalables).concat(((receta && receta.ingredientes_fijos) || []).map(f => f.alimento));
+  const posicion = id => (orden.indexOf(id) < 0 ? orden.length : orden.indexOf(id));
   return Object.keys(gramos).map(id => {
     const a = alimentos[id] || { nombre: id, estado: '', grupo: '' };
     const ing = { alimento: id, nombre: a.nombre, estado: a.estado, grupo: a.grupo, gramos: gramos[id], escalable: Boolean(escalables[id]) };
     if (escalables[id] && escalables[id].unidad && a.gramos_unidad) ing.piezas = Math.round(gramos[id] / a.gramos_unidad);
     return ing;
-  }).sort((x, y) => Number(y.escalable) - Number(x.escalable));
+  }).sort((x, y) => posicion(x.alimento) - posicion(y.alimento));
 }
 
 // Receta que se come en una fila de `plan_comidas`: la cambiada si se cambió el plato; si no, la original.

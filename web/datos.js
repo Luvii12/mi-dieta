@@ -1,4 +1,4 @@
-// Datos guardados en el móvil (última respuesta de «hoy» y del plan) y cambios que se envían a Apps Script.
+// Datos guardados en el móvil (última respuesta de «hoy» y del plan) y cambios que se guardan en Supabase.
 // Los cambios se aplican primero en la copia local (la pantalla responde al momento) y, si el servidor
 // falla, se deshacen.
 

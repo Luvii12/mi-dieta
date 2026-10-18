@@ -115,7 +115,7 @@ function pintar(contenedor, hoy) {
     hoy.nuevo_plan ? h('a', { class: 'tarjeta aviso-plan', href: '#plan' },
       icono('event_available', 'texto-secundario'),
       h('span', { class: 'aviso-plan-texto' }, h('strong', null, 'Tu nuevo plan está listo'), h('span', null, 'Revísalo y actívalo en Plan')),
-      icono('chevron_right', 'comida-plan-flecha')) : null,
+      icono('chevron_right', 'comida-plan-flecha')) : '', // '' y no null: append() escribiría «null»
     resumen(hoy),
     h('div', { class: 'titulo-seccion' },
       h('h2', null, 'Comidas previstas'), h('span', null, `${hechas} de ${hoy.comidas.length} completadas`)),

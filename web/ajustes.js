@@ -1,12 +1,11 @@
 // Pantalla «Ajustes»: objetivos por comida, alimentos que no como, comida libre semanal, peso objetivo,
-// nombres de alimentos y conexión con la hoja de Google (design/mi_dieta_ajustes).
+// nombres de alimentos y cuenta (design/mi_dieta_ajustes).
 
-import { llamar, leerConexion, guardarConexion, leerLocal, guardarLocal } from './api.js';
+import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion } from './api.js';
 import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';
 
 const CACHE_CONFIG = 'dieta.config';
 const CACHE_ALIMENTOS = 'dieta.alimentos';
-const ULTIMA_CONEXION = 'dieta.ultimaConexion';
 const COLOR_COMIDA = { Desayuno: 'texto-primario', Almuerzo: 'texto-secundario', Merienda: 'texto-terciario', Cena: 'texto-primario-contenedor' };
 const KCAL_MINIMAS = 1400;
 
@@ -221,81 +220,51 @@ async function cargarAlimentos() {
   pintarExcluidos();
 }
 
-// ---------- Conexión ----------
+// ---------- Cuenta ----------
 
-function pintarEstado(ok, texto) {
-  const ultima = leerLocal(ULTIMA_CONEXION);
-  $('estado-conexion').classList.toggle('estado-error', !ok);
-  $('estado-icono').textContent = ok ? 'cloud_done' : 'cloud_off';
-  $('estado-titulo').textContent = texto || (ultima ? 'Conectado con Google Sheets' : 'Sin conectar');
-  $('estado-detalle').textContent = ultima ? `Última comprobación: ${ultima}` : 'Escribe la URL y el token y pulsa «Probar conexión».';
-}
-
-function cuandoConecta(nueva) {
-  const ahora = new Date();
-  const hora = ahora.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  guardarLocal(ULTIMA_CONEXION, `${ahora.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }).replace('.', '')}, ${hora}`);
-  config = nueva;
-  guardarLocal(CACHE_CONFIG, nueva);
-  pintarObjetivos();
-  pintarEstado(true);
+function pintarCuenta(error) {
+  const sesion = leerSesion();
+  $('estado-conexion').classList.toggle('estado-error', Boolean(error));
+  $('estado-icono').textContent = error ? 'cloud_off' : 'cloud_done';
+  $('estado-titulo').textContent = error || 'Sesión iniciada';
+  $('estado-detalle').textContent = sesion ? sesion.usuario.email : '';
 }
 
 export async function cargarAjustes() {
-  const { url, token } = leerConexion();
-  $('campo-url').value = url;
-  $('campo-token').value = token;
   config = leerLocal(CACHE_CONFIG);
   alimentos = leerLocal(CACHE_ALIMENTOS);
   if (config) pintarObjetivos();
   pintarExcluidos();
-  pintarEstado(Boolean(url && token && leerLocal(ULTIMA_CONEXION)));
-  if (!url || !token) return;
+  pintarCuenta();
   try {
-    cuandoConecta(await llamar('config'));
+    config = await llamar('config');
+    guardarLocal(CACHE_CONFIG, config);
+    pintarObjetivos();
     await cargarAlimentos();
   } catch (err) {
-    pintarEstado(false, err.message);
+    pintarCuenta(err.message);
   }
 }
 
-async function probarConexion(evento) {
-  evento.preventDefault();
-  const boton = $('boton-probar');
-  guardarConexion($('campo-url').value, $('campo-token').value);
-  boton.disabled = true;
-  $('boton-probar-texto').textContent = 'Comprobando…';
-  try {
-    cuandoConecta(await llamar('config'));
-    await cargarAlimentos();
-  } catch (err) {
-    pintarEstado(false, err.message);
-  } finally {
-    boton.disabled = false;
-    $('boton-probar-texto').textContent = 'Probar conexión';
-  }
+async function salirDeLaCuenta() {
+  if (!confirm('¿Cerrar sesión? Se borrará la copia de tus datos guardada en este móvil. Tu plan y tu progreso siguen en tu cuenta.')) return;
+  $('boton-salir').disabled = true;
+  await cerrarSesion();
+  location.hash = '#hoy';
+  location.reload();
 }
 
-function alternarToken() {
-  const campo = $('campo-token');
-  const mostrar = campo.type === 'password';
-  campo.type = mostrar ? 'text' : 'password';
-  $('boton-ver-token').setAttribute('aria-label', mostrar ? 'Ocultar token' : 'Mostrar token');
-  $('boton-ver-token').querySelector('.icono').textContent = mostrar ? 'visibility_off' : 'visibility';
-}
-
-// Estos botones solo funcionan con la hoja ya conectada.
+// Estos botones necesitan la configuración, que se baja al abrir Ajustes.
 const conConfig = accion => () => {
   if (!config) {
-    avisar('Conecta primero la app con tu hoja de Google (abajo, en Conexión).');
+    avisar('Aún no se han cargado tus datos. Comprueba la conexión a internet.');
     return;
   }
   accion();
 };
 
 export function prepararAjustes() {
-  $('form-conexion').addEventListener('submit', probarConexion);
-  $('boton-ver-token').addEventListener('click', alternarToken);
+  $('boton-salir').addEventListener('click', salirDeLaCuenta);
   $('interruptor-libre').addEventListener('click', conConfig(alternarLibre));
   $('fila-meta').addEventListener('click', conConfig(editarMeta));
   $('boton-anadir-excluido').addEventListener('click', conConfig(() => abrirAlimentos('excluir')));

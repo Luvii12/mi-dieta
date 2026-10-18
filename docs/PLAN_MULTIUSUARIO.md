@@ -45,6 +45,7 @@ Cada fase acaba en algo que se prueba en el móvil. Parar al final de cada una.
 - **Hecho cuando**: en local, con un usuario de prueba, se sigue un día completo.
 
 ### M3 · Migrar los datos de Fran y cambiar
+- La biblioteca semilla ya está en Supabase desde M2 (añadida por `franluvi2015`): la migración actualiza nombres de alimentos y añade las recetas de IA y los alimentos nuevos de la hoja. Fusionar la rama `supabase` en `main`.
 - Script `scripts/migrar_sheets.js`: lee todo de la hoja (con el Apps Script actual) y lo carga en Supabase con el `user_id` de Fran. Comprueba que coinciden los recuentos y los macros del plan activo.
 - Publicar la PWA nueva. La hoja se queda como copia de seguridad (solo lectura).
 - **Hecho cuando**: Hoy, Plan, Recetas y Progreso muestran en el móvil lo mismo que antes.

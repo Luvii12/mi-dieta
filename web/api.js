@@ -1,6 +1,12 @@
-// Comunicación con Apps Script y datos guardados en el móvil.
+// Sesión con Supabase, acciones y datos guardados en el móvil.
+// Las acciones son las mismas que tenía Apps Script, pero las ejecuta el motor (web/motor/, cargado con
+// <script> en index.html) en el navegador, sobre los datos de Supabase (ver supabase.js).
 
-const CLAVE_CONEXION = 'dieta.conexion';
+import { SUPABASE } from './conexion.js';
+import { entrar as entrarSupabase, renovar, salir, ejecutar, ErrorSesion, ErrorToken } from './supabase.js';
+
+const CLAVE_SESION = 'dieta.sesion';
+const RENOVAR_ANTES = 5 * 60000; // la sesión dura 1 hora: se renueva si le quedan menos de 5 minutos
 
 // localStorage puede fallar (modo privado, datos borrados): nunca debe romper la app.
 export function leerLocal(clave) {
@@ -19,38 +25,85 @@ export function guardarLocal(clave, valor) {
   }
 }
 
-export function leerConexion() {
-  return leerLocal(CLAVE_CONEXION) || { url: '', token: '' };
+// Borra todo lo de la app guardado en el móvil (sesión y copia de los datos). Solo las claves «dieta.»:
+// el dominio luvii12.github.io lo comparte con la app del gimnasio.
+function borrarCopiaLocal() {
+  try {
+    Object.keys(localStorage).filter(k => k.startsWith('dieta.')).forEach(k => localStorage.removeItem(k));
+  } catch (err) {
+    // Nada guardado que borrar.
+  }
 }
 
-export function guardarConexion(url, token) {
-  guardarLocal(CLAVE_CONEXION, { url: url.trim(), token: token.trim() });
+const conexion = () => ({ url: SUPABASE.url, clave: SUPABASE.clave, fetch: (...args) => fetch(...args) });
+
+// Lo que web/supabase.js necesita del motor (declarado por los <script> de web/motor/).
+const motor = () => ({ PESTANAS, ACCIONES, cargarTablas_, tablasCambiadas_, aCeldas_, manejar_, fechaHora_ });
+
+// ---------- Sesión ----------
+
+export const leerSesion = () => leerLocal(CLAVE_SESION);
+export const haySesion = () => Boolean(leerSesion());
+
+export async function entrar(email, password) {
+  const sesion = await entrarSupabase(conexion(), email.trim(), password);
+  const anterior = leerSesion();
+  if (!anterior || anterior.usuario.id !== sesion.usuario.id) borrarCopiaLocal();
+  guardarLocal(CLAVE_SESION, sesion);
 }
 
-// Llama a una acción del web app. Devuelve `datos` o lanza un Error con un mensaje en español.
-// Se envía como text/plain para que el navegador no haga la comprobación CORS previa,
-// que Apps Script no admite.
-export async function llamar(accion, extra = {}) {
-  const { url, token } = leerConexion();
-  if (!url || !token) throw new Error('Falta configurar la URL y el token en Ajustes.');
+export async function cerrarSesion() {
+  const sesion = leerSesion();
+  borrarCopiaLocal();
+  if (sesion) await salir(conexion(), sesion);
+}
 
-  let respuesta;
-  try {
-    respuesta = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ ...extra, accion, token }),
-    });
-  } catch (err) {
-    throw new Error('No se puede conectar. Revisa la conexión a internet y la URL.');
-  }
+// La sesión ya no se puede renovar: se olvida y la app vuelve a la pantalla de entrada.
+function sesionCaducada() {
+  borrarCopiaLocal();
+  document.dispatchEvent(new Event('sesion-cerrada'));
+}
 
-  let cuerpo;
-  try {
-    cuerpo = await respuesta.json();
-  } catch (err) {
-    throw new Error('La URL no responde como la API de la dieta. ¿Es la URL /exec del despliegue?');
+// Sesión con tiempo por delante: la renueva si va a caducar (o si `forzar`).
+async function sesionValida(forzar) {
+  const sesion = leerSesion();
+  if (!sesion) {
+    sesionCaducada();
+    throw new ErrorSesion('Entra con tu email y tu contraseña.');
   }
-  if (!cuerpo.ok) throw new Error(cuerpo.error || 'Error desconocido del servidor.');
-  return cuerpo.datos;
+  if (!forzar && sesion.expira - Date.now() > RENOVAR_ANTES) return sesion;
+  try {
+    const nueva = await renovar(conexion(), sesion);
+    guardarLocal(CLAVE_SESION, nueva);
+    return nueva;
+  } catch (err) {
+    if (err instanceof ErrorSesion) sesionCaducada();
+    throw err;
+  }
+}
+
+// ---------- Acciones ----------
+
+// Llama a una acción (las de web/motor/Acciones.js). Devuelve sus datos o lanza un Error con un mensaje en
+// español. Las llamadas van de una en una, para que ninguna lea datos que otra está guardando.
+let cola = Promise.resolve();
+export function llamar(accion, extra = {}) {
+  const resultado = cola.then(() => llamarYa(Object.assign({}, extra, { accion })));
+  cola = resultado.catch(() => {});
+  return resultado;
+}
+
+async function llamarYa(peticion) {
+  try {
+    return await ejecutar(conexion(), await sesionValida(false), motor(), peticion);
+  } catch (err) {
+    if (!(err instanceof ErrorToken)) throw err;
+    // La base no ha aceptado la sesión (p. ej. el móvil tiene mal la hora): se renueva y se repite una vez.
+    try {
+      return await ejecutar(conexion(), await sesionValida(true), motor(), peticion);
+    } catch (otro) {
+      if (otro instanceof ErrorToken) sesionCaducada();
+      throw otro;
+    }
+  }
 }

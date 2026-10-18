@@ -1,24 +1,23 @@
-// Arranque y navegación entre pantallas (#hoy, #plan, #recetas, #receta/…, #progreso, #ajustes).
+// Arranque y navegación entre pantallas (#hoy, #plan, #recetas, #receta/…, #progreso, #ajustes). Sin sesión,
+// solo la pantalla de entrada.
 
-import { leerConexion } from './api.js';
+import { haySesion } from './api.js';
 import { $ } from './comun.js';
-import { cargarHoy, pintarHoy, vacio } from './hoy.js';
+import { cargarHoy, pintarHoy } from './hoy.js';
 import { cargarPlan, pintarPlan } from './plan.js';
 import { cargarReceta, pintarReceta, recordarAnterior } from './receta.js';
 import { cargarRecetas, pintarRecetas, precargarRecetas } from './recetas.js';
 import { cargarAjustes, prepararAjustes } from './ajustes.js';
 import { cargarProgreso, prepararProgreso, precargarProgreso } from './progreso.js';
 import { prepararPanel } from './cambiar.js';
+import { pintarEntrar } from './entrar.js';
 
-const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'progreso', 'ajustes'];
-// Pantallas que necesitan la conexión con la hoja configurada.
-const NECESITAN_CONEXION = { hoy: 'Conecta la app con tu hoja de Google para empezar.', plan: 'Conecta la app con tu hoja de Google para ver tu plan.',
-  recetas: 'Conecta la app con tu hoja de Google para ver tus recetas.',
-  progreso: 'Conecta la app con tu hoja de Google para registrar tu peso.' };
+const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'progreso', 'ajustes', 'entrar'];
 
 const vistaActual = () => {
+  if (!haySesion()) return 'entrar';
   const nombre = location.hash.slice(1).split('/')[0];
-  return VISTAS.includes(nombre) ? nombre : 'hoy';
+  return VISTAS.includes(nombre) && nombre !== 'entrar' ? nombre : 'hoy';
 };
 
 let hashAnterior = null;
@@ -36,9 +35,8 @@ function mostrarVista() {
   });
   window.scrollTo(0, 0);
 
-  const { url, token } = leerConexion();
-  if (NECESITAN_CONEXION[vista] && (!url || !token)) {
-    $('vista-' + vista).replaceChildren(vacio(NECESITAN_CONEXION[vista], 'Ir a Ajustes', '#ajustes'));
+  if (vista === 'entrar') {
+    pintarEntrar($('vista-entrar'), alEntrar);
     return;
   }
   if (vista === 'hoy') cargarHoy($('vista-hoy'));
@@ -68,21 +66,28 @@ function actualizarRed() {
   $('estado-red').hidden = navigator.onLine;
 }
 
+// Tras entrar: a Hoy, y después se precarga lo demás.
+function alEntrar() {
+  if (location.hash && location.hash !== '#hoy') location.hash = '#hoy';
+  else mostrarVista();
+  setTimeout(precargar, 2500);
+}
+
 prepararAjustes();
 prepararProgreso();
 prepararPanel();
 document.addEventListener('datos-cambiados', repintar);
+document.addEventListener('sesion-cerrada', mostrarVista);
 window.addEventListener('hashchange', mostrarVista);
 window.addEventListener('online', actualizarRed);
 window.addEventListener('offline', actualizarRed);
 actualizarRed();
 mostrarVista();
 
-// Apps Script tarda unos 3 s en cada respuesta. Al abrir la app, después de la pantalla actual, se descargan
-// Recetas y Progreso en segundo plano para que esas pestañas se vean al momento y ya actualizadas.
+// Al abrir la app, después de la pantalla actual, se descargan Recetas y Progreso en segundo plano para que
+// esas pestañas se vean al momento y ya actualizadas.
 function precargar() {
-  const { url, token } = leerConexion();
-  if (!url || !token || !navigator.onLine) return;
+  if (!haySesion() || !navigator.onLine) return;
   if (vistaActual() !== 'recetas') precargarRecetas();
   if (vistaActual() !== 'progreso') precargarProgreso();
 }

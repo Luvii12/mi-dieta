@@ -255,6 +255,7 @@ body[data-vista="receta"] .barra-superior { display: none; }
 .navegacion a[aria-current] .icono { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
 .navegacion a:active { transform: scale(0.95); }
 body[data-vista="receta"] .navegacion { display: none; }
+body[data-vista="entrar"] .navegacion, body[data-vista="entrar"] .barra-superior .boton-icono { display: none; }
 
 /* ---------- Estructura común ---------- */
 
@@ -864,6 +865,9 @@ body[data-vista="receta"] .vista { padding-top: 0; }
 .campo-boton { position: absolute; right: 0; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border: 0; background: transparent; color: var(--contorno); }
 .campo-boton:hover { color: var(--primario); }
 .campo-boton .icono { font-size: 18px; }
+
+/* Pantalla de entrada: misma tarjeta que la conexión, con letra normal (16 px: el móvil no hace zoom). */
+.form-entrar .campo input { font-family: inherit; font-size: 16px; line-height: 22px; }
 
 .estado-conexion { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-radius: var(--radio-md); background: var(--superficie-baja); border: 1px solid var(--borde-suave); }
 .estado-texto { display: flex; align-items: center; gap: 10px; min-width: 0; }

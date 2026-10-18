@@ -1,12 +1,14 @@
 {
   "name": "app-dieta",
   "private": true,
-  "description": "App personal de dieta: PWA + Google Sheets + Apps Script. Sin dependencias.",
+  "description": "App de dieta: PWA + Supabase (motor en el navegador). Sin dependencias.",
   "scripts": {
     "test": "node --test \"tests/*.test.js\"",
     "semilla": "node scripts/generar_semilla.js",
     "local": "python3 -m http.server 8080 --directory web",
     "servidor": "node scripts/servidor_local.js",
-    "probar-rls": "node scripts/probar_rls.js"
+    "probar-rls": "node scripts/probar_rls.js",
+    "supabase-semilla": "node scripts/supabase_semilla.js",
+    "probar-supabase": "node scripts/probar_supabase.js"
   }
 }

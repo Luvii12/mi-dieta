@@ -1,13 +1,16 @@
 // Service worker: guarda los archivos de la app para que abra sin conexión.
 // Al cambiar cualquier archivo de web/, sube VERSION para que el móvil descargue la nueva.
-const VERSION = 'dieta-v11';
-const FUENTES = 'dieta-fuentes-v2';
+const VERSION = 'dieta-v12';
+const FUENTES = 'dieta-fuentes-v3';
 const ARCHIVOS = [
   './',
   'index.html',
   'estilos.css',
   'app.js',
   'api.js',
+  'conexion.js',
+  'supabase.js',
+  'entrar.js',
   'comun.js',
   'datos.js',
   'hoy.js',
@@ -18,6 +21,14 @@ const ARCHIVOS = [
   'ajustes.js',
   'progreso.js',
   'nuevoplan.js',
+  'motor/Acciones.js',
+  'motor/Generador.js',
+  'motor/Memoria.js',
+  'motor/Nutricion.js',
+  'motor/Planes.js',
+  'motor/Progreso.js',
+  'motor/RecetasIA.js',
+  'motor/Util.js',
   'manifest.json',
   'iconos/icono.svg',
   'iconos/icono-192.png',
@@ -42,7 +53,7 @@ self.addEventListener('activate', evento => {
 const esFuente = url => url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com';
 
 // Archivos propios: primero la red (para ver cambios enseguida) y, si no hay conexión, la copia guardada.
-// Las peticiones a Apps Script (otro dominio) no se tocan.
+// Las peticiones a Supabase (otro dominio) no se tocan.
 self.addEventListener('fetch', evento => {
   const peticion = evento.request;
   if (peticion.method !== 'GET') return;

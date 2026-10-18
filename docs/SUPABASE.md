@@ -47,6 +47,14 @@ npm run probar-rls
 ```
 Tiene que terminar con «Todo correcto: cada usuario solo ve lo suyo». Con eso la fase M0 está hecha.
 
+## 7. Probar la app con Supabase (fase M2)
+```
+npm run supabase-semilla     # biblioteca común (alimentos y recetas semilla) y config del 2.º usuario de pruebas; no pisa nada
+npm run probar-supabase      # un día completo con el 2.º usuario de pruebas; compara con el motor solo y lo deja limpio (--dejar: no)
+npm run servidor -- real     # la PWA en http://localhost:8099 contra el Supabase de verdad (entra con un usuario de pruebas)
+```
+Sin red: `npm run servidor` (base falsa en memoria; entra con `prueba@mi-dieta.test` / `prueba`).
+
 ## Más adelante
 - **Administrador** (fase M3, cuando exista tu cuenta): en el SQL Editor,
   `insert into public.administradores (user_id) select id from auth.users where email = 'tu@email';`

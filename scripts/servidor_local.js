@@ -1,56 +1,103 @@
-// Servidor local para probar la PWA sin Google: sirve web/ y responde a /api con el código real de
-// Apps Script sobre una hoja en memoria (se pierde al cerrar). Crea un plan activo generado como si hoy
-// fuera hace una semana, así «hoy» siempre cae dentro del plan.
-// Uso: npm run servidor  (o `node scripts/servidor_local.js borrador` para tener además pesajes de 3 semanas,
-// las comidas pasadas marcadas y un borrador con su propuesta de ajuste).
+// Servidor local para probar la PWA: sirve web/ y, en el puerto siguiente, una Supabase falsa en memoria
+// (tests/supabase_falso.js; se pierde al cerrar) con la biblioteca de recetas y un usuario de prueba que
+// tiene un plan activo generado como si hoy fuera hace una semana, así «hoy» siempre cae dentro del plan.
+// La base va en otro origen, como la de verdad (el service worker solo intercepta los archivos de la app).
+// Uso: npm run servidor
+//   node scripts/servidor_local.js borrador  → además pesajes de 3 semanas, las comidas pasadas marcadas y un
+//                                              borrador con su propuesta de ajuste.
+//   node scripts/servidor_local.js real      → sin base falsa: la PWA habla con el Supabase de verdad
+//                                              (web/conexion.js), con las cuentas de verdad.
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const RAIZ = path.join(__dirname, '..');
 const { cargarAppsScript } = require('../tests/simulador_gas.js');
+const { crearSupabaseFalso } = require('../tests/supabase_falso.js');
 
-const haceUnaSemana = new Date(Date.now() - 7 * 86400000).toISOString();
-const prep = cargarAppsScript(haceUnaSemana);
-prep.contexto.configurarHoja();
-prep.contexto.crearToken();
-const p = prep.llamar('generarPlan').datos;
-prep.llamar('activarPlan', { plan_id: p.plan_id });
-if (process.argv[2] === 'borrador') {
-  const dia = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
-  prep.contexto.anadirFilas_('pesos', Array.from({ length: 20 }, (_, i) => ({
-    fecha: dia(20 - i), peso_kg: Math.round((81 - i * 0.07 + Math.sin(i) * 0.3) * 10) / 10, cintura_cm: '' })));
-  const hoy = dia(0);
-  const comidas = prep.contexto.leerTabla_('plan_comidas')
-    .map((f, i) => Object.assign(f, { hecha: f.fecha < hoy ? (i % 9 === 0 ? 'no' : 'si') : f.hecha }));
-  prep.contexto.reescribirTabla_('plan_comidas', comidas);
-  const p2 = cargarAppsScript(new Date().toISOString());
-  p2.libro.hojas.splice(0, p2.libro.hojas.length, ...prep.libro.hojas);
-  Object.assign(p2.propiedades, prep.propiedades);
-  p2.llamar('generarPlan');
-}
-const gas = cargarAppsScript(); // fecha real
-gas.libro.hojas.splice(0, gas.libro.hojas.length, ...prep.libro.hojas);
-Object.assign(gas.propiedades, prep.propiedades);
+const MODO = process.argv[2] || '';
 const PUERTO = Number(process.env.PUERTO || 8099);
+const USUARIO = { id: '00000000-0000-4000-8000-000000000001', email: 'prueba@mi-dieta.test', password: 'prueba' };
+const CLAVE = 'clave-local';
+const ORDEN = ['alimentos', 'recetas', 'config', 'planes', 'plan_comidas', 'pesos', 'valoraciones', 'preferencias', 'ajustes_historial'];
+
+// Las tablas de prueba se preparan con el Apps Script de siempre (sobre una hoja en memoria).
+function tablasDePrueba() {
+  const haceUnaSemana = new Date(Date.now() - 7 * 86400000).toISOString();
+  const prep = cargarAppsScript(haceUnaSemana);
+  prep.contexto.configurarHoja();
+  prep.contexto.crearToken();
+  const p = prep.llamar('generarPlan').datos;
+  prep.llamar('activarPlan', { plan_id: p.plan_id });
+  if (MODO === 'borrador') {
+    const dia = n => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+    prep.contexto.anadirFilas_('pesos', Array.from({ length: 20 }, (_, i) => ({
+      fecha: dia(20 - i), peso_kg: Math.round((81 - i * 0.07 + Math.sin(i) * 0.3) * 10) / 10, cintura_cm: '' })));
+    const hoy = dia(0);
+    const comidas = prep.contexto.leerTabla_('plan_comidas')
+      .map((f, i) => Object.assign(f, { hecha: f.fecha < hoy ? (i % 9 === 0 ? 'no' : 'si') : f.hecha }));
+    prep.contexto.reescribirTabla_('plan_comidas', comidas);
+    const p2 = cargarAppsScript(new Date().toISOString());
+    p2.libro.hojas.splice(0, p2.libro.hojas.length, ...prep.libro.hojas);
+    Object.assign(p2.propiedades, prep.propiedades);
+    p2.llamar('generarPlan');
+  }
+  return Object.fromEntries(ORDEN.map(n => [n, prep.contexto.leerTabla_(n)]));
+}
+
+async function crearBase() {
+  const { aBase } = await import('../web/supabase.js');
+  const falso = crearSupabaseFalso({ clave: CLAVE, usuarios: [USUARIO] });
+  const tablas = tablasDePrueba();
+  ORDEN.forEach(n => falso.cargar(n, tablas[n].map(f => aBase(n, f, USUARIO.id)), USUARIO.id));
+  return falso;
+}
 
 const TIPOS = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.svg': 'image/svg+xml', '.png': 'image/png' };
-http.createServer((req, res) => {
-  if (req.method === 'POST' && req.url.startsWith('/api')) {
+
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, PATCH, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'apikey, authorization, content-type, prefer',
+};
+
+// La Supabase falsa, en su propio puerto (otro origen), con CORS como la de verdad.
+function servirBase(falso, puerto) {
+  http.createServer((req, res) => {
+    if (req.method === 'OPTIONS') { res.writeHead(204, CORS); res.end(); return; }
     let cuerpo = '';
     req.on('data', d => { cuerpo += d; });
     req.on('end', () => {
-      const salida = gas.contexto.doPost({ postData: { contents: cuerpo } });
-      setTimeout(() => { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(salida.texto); }, 150);
+      const [estado, datos] = falso.responder(req.method, req.url, req.headers, cuerpo);
+      setTimeout(() => {
+        res.writeHead(estado, Object.assign({}, CORS, datos === null ? {} : { 'Content-Type': 'application/json' }));
+        res.end(datos === null ? undefined : JSON.stringify(datos));
+      }, 80);
     });
-    return;
-  }
-  const archivo = path.join(RAIZ, 'web', decodeURIComponent(req.url.split('?')[0]).replace(/\/$/, '/index.html'));
-  fs.readFile(archivo, (err, datos) => {
-    if (err) { res.writeHead(404); res.end(); return; }
-    res.writeHead(200, { 'Content-Type': TIPOS[path.extname(archivo)] || 'application/octet-stream' });
-    res.end(datos);
+  }).listen(puerto);
+}
+
+async function main() {
+  const falso = MODO === 'real' ? null : await crearBase();
+  if (falso) servirBase(falso, PUERTO + 1);
+  http.createServer((req, res) => {
+    const ruta = decodeURIComponent(req.url.split('?')[0]);
+    if (falso && ruta === '/conexion.js') {
+      res.writeHead(200, { 'Content-Type': 'text/javascript' });
+      res.end(`export const SUPABASE = { url: 'http://' + location.hostname + ':${PUERTO + 1}', clave: ${JSON.stringify(CLAVE)} };\n`);
+      return;
+    }
+    const archivo = path.join(RAIZ, 'web', ruta.replace(/\/$/, '/index.html'));
+    if (!archivo.startsWith(path.join(RAIZ, 'web'))) { res.writeHead(404); res.end(); return; }
+    fs.readFile(archivo, (err, datos) => {
+      if (err) { res.writeHead(404); res.end(); return; }
+      res.writeHead(200, { 'Content-Type': TIPOS[path.extname(archivo)] || 'application/octet-stream' });
+      res.end(datos);
+    });
+  }).listen(PUERTO, () => {
+    console.log('App: http://localhost:' + PUERTO + '/');
+    if (falso) console.log(`Base falsa en memoria. Entra con ${USUARIO.email} / ${USUARIO.password}`);
+    else console.log('Con el Supabase de verdad (web/conexion.js): entra con tu cuenta.');
   });
-}).listen(PUERTO, () => {
-  console.log('App: http://localhost:' + PUERTO + '/');
-  console.log('En Ajustes → URL: http://localhost:' + PUERTO + '/api  ·  Token: ' + gas.propiedades.APP_TOKEN);
-});
+}
+
+main().catch(err => { console.error(err); process.exit(1); });
