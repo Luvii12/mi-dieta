@@ -22,7 +22,15 @@ function doPost(e) {
   } catch (err) {
     return responder_({ ok: false, error: 'Petición no válida' });
   }
-  return responder_(manejar_(peticion, tokenGuardado_(), ACCIONES));
+  return responder_(manejar_(peticion, tokenGuardado_(), Object.assign({ exportar: exportar_ }, ACCIONES)));
+}
+
+// Todas las pestañas tal cual, para migrarlas a Supabase (scripts/migrar_sheets.js). Solo lee. No está en
+// el motor compartido: en el navegador no tiene sentido.
+function exportar_() {
+  const tablas = {};
+  Object.keys(PESTANAS).forEach(nombre => { tablas[nombre] = leerTabla_(nombre); });
+  return tablas;
 }
 
 // Solo para comprobar desde el navegador que el despliegue responde. No devuelve datos:

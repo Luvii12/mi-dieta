@@ -1,5 +1,5 @@
-// Recetas nuevas escritas por Claude Code (con la suscripción, sin API de pago) y validadas por Apps Script.
-// La conexión se lee de .conexion.local.json ({"url": ".../exec", "token": "..."}), que no se sube al repo.
+// Recetas nuevas escritas por Claude Code (con la suscripción, sin API de pago) y validadas por el motor.
+// Van a Supabase con la cuenta real de Fran ("cuenta" en .supabase.local.json, que no se sube al repo).
 //
 // Uso:
 //   node scripts/recetas_ia.js pedido <Comida> [cantidad] [idea…]   → instrucciones y datos para escribirlas
@@ -8,53 +8,20 @@
 // <recetas.json>: {"recetas": [...]} con el formato del esquema (nombre, preparacion, ingredientes_fijos,
 // ingredientes_escalables, alimentos_nuevos).
 const fs = require('fs');
-const path = require('path');
+const { conectar, salir } = require('./cuenta_supabase.js');
 
-const ARCHIVO_CONEXION = process.env.CONEXION || path.join(__dirname, '..', '.conexion.local.json');
 const COMIDAS = ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'];
 
-function salir(mensaje) {
-  console.error(mensaje);
-  process.exit(1);
-}
-
-function conexion() {
-  if (!fs.existsSync(ARCHIVO_CONEXION)) {
-    salir('Falta .conexion.local.json con {"url": "<URL /exec del despliegue>", "token": "<APP_TOKEN>"}.');
-  }
-  const c = JSON.parse(fs.readFileSync(ARCHIVO_CONEXION, 'utf8'));
-  if (!c.url || !c.token) salir('.conexion.local.json necesita "url" y "token".');
-  return c;
-}
-
-// Las cabeceras Sec-Fetch-* las pone el navegador; sin ellas Google no entrega la respuesta.
-const CABECERAS = { 'Content-Type': 'text/plain;charset=utf-8', 'Sec-Fetch-Mode': 'cors', 'Sec-Fetch-Site': 'cross-site', 'Sec-Fetch-Dest': 'empty' };
-const esperar = ms => new Promise(r => setTimeout(r, ms));
-let reintentos = 0;
-
-// Igual que la PWA: POST text/plain con el token en el cuerpo. A veces Google ejecuta la acción pero devuelve
-// una página de error en lugar del resultado; entonces se repite la llamada. Es seguro: pedir y probar no
-// cambian nada, y al enviar el servidor descarta las recetas cuyo nombre ya existe (no se duplican).
+// Ejecuta la acción con el motor, igual que el móvil. Pedir y probar no cambian nada; al enviar, el motor
+// descarta las recetas cuyo nombre ya existe (no se duplican).
+let cuenta = null;
 async function llamar(accion, extra) {
-  const { url, token } = conexion();
-  for (let intento = 1; intento <= 3; intento++) {
-    if (intento > 1) {
-      reintentos++;
-      await esperar(2000);
-    }
-    const respuesta = await fetch(url, { method: 'POST', headers: CABECERAS, body: JSON.stringify(Object.assign({}, extra, { accion, token })) });
-    const texto = await respuesta.text();
-    let cuerpo;
-    try {
-      cuerpo = JSON.parse(texto);
-    } catch (err) {
-      continue;
-    }
-    if (!cuerpo.ok) salir('Error del servidor: ' + cuerpo.error);
-    return cuerpo.datos;
+  if (!cuenta) cuenta = await conectar();
+  try {
+    return await cuenta.ejecutar(accion, extra);
+  } catch (err) {
+    salir('Error: ' + err.message);
   }
-  salir(`Google no ha devuelto el resultado de «${accion}» tras 3 intentos.` +
-    (accion === 'importarPropuestas' ? ' Mira en la app si las recetas ya están en Propuestas antes de repetir.' : ''));
 }
 
 function leerRecetas(archivo) {
@@ -78,8 +45,7 @@ function informe(r) {
       console.log(`… ${v.nombre}\n    falta alimento: ${v.faltan.map(f => `${f.nombre} (${f.id})`).join(', ')}`);
     }
   });
-  (r.descartadas || []).forEach(d => console.log(`✘ ${d.nombre}\n    ${d.motivo}` +
-    (reintentos && /Ya hay una receta/.test(d.motivo) ? ' (seguramente se guardó en el intento anterior: míralo en la app)' : '')));
+  (r.descartadas || []).forEach(d => console.log(`✘ ${d.nombre}\n    ${d.motivo}`));
 }
 
 async function main() {

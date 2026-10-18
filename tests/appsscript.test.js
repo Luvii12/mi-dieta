@@ -41,6 +41,18 @@ test('token: sin token correcto no se ejecuta nada', () => {
   assert.deepEqual(JSON.parse(salida.texto), { ok: false, error: 'Token no válido' });
 });
 
+test('exportar: devuelve todas las pestañas sin cambiar nada', () => {
+  const gas = preparar();
+  gas.llamar('generarPlan');
+  const r = gas.llamar('exportar');
+  assert.equal(r.ok, true);
+  assert.deepEqual(Object.keys(r.datos).sort(), ['ajustes_historial', 'alimentos', 'config', 'pesos', 'plan_comidas', 'planes', 'preferencias', 'recetas', 'valoraciones']);
+  assert.equal(r.datos.alimentos.length, 95);
+  assert.equal(r.datos.planes.length, 1);
+  assert.equal(r.datos.plan_comidas.length, 56);
+  assert.deepEqual(r.datos.planes, JSON.parse(JSON.stringify(gas.contexto.leerTabla_('planes'))));
+});
+
 test('config: escribe y lee una fila sin convertir textos en fechas', () => {
   const gas = preparar();
   const r = gas.llamar('config', { cambios: { ultima_prueba: '16/10/2026, 10:22:04' } });

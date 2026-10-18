@@ -44,11 +44,12 @@ Cada fase acaba en algo que se prueba en el móvil. Parar al final de cada una.
 - Pruebas sin red con una base falsa en memoria (como el `servidor_local.js` actual).
 - **Hecho cuando**: en local, con un usuario de prueba, se sigue un día completo.
 
-### M3 · Migrar los datos de Fran y cambiar
+### M3 · Migrar los datos de Fran y cambiar — hecha (2026-10-18)
 - La biblioteca semilla ya está en Supabase desde M2 (añadida por `franluvi2015`): la migración actualiza nombres de alimentos y añade las recetas de IA y los alimentos nuevos de la hoja. Fusionar la rama `supabase` en `main`.
 - Script `scripts/migrar_sheets.js`: lee todo de la hoja (con el Apps Script actual) y lo carga en Supabase con el `user_id` de Fran. Comprueba que coinciden los recuentos y los macros del plan activo.
 - Publicar la PWA nueva. La hoja se queda como copia de seguridad (solo lectura).
 - **Hecho cuando**: Hoy, Plan, Recetas y Progreso muestran en el móvil lo mismo que antes.
+- Hecho así: se migró el domingo 18-10, la víspera del primer día del bloque (nada a medias). Cuenta real `franluvi2015`. La hoja se lee con una acción `exportar` (solo en Apps Script, versión 10). `scripts/recetas_ia.js` ya va contra Supabase con la cuenta real (adelantado de M5, sin la parte de «para quién»).
 
 ### M4 · Alta de usuarios y objetivos calculados
 - Alta: nombre, sexo, edad, altura, peso, actividad y meta (perder / mantener / ganar) → kcal, proteína (g/kg), grasa (% kcal) e hidratos, repartidos por comidas con las proporciones del plan de Fran. Con tests (regla 3).
@@ -71,4 +72,3 @@ Cada fase acaba en algo que se prueba en el móvil. Parar al final de cada una.
 - M4: mínimo de kcal por persona (propuesta: 1.200 mujeres / 1.500 hombres, o el de `NUTRICION.md` si es mayor) y proteína por kg según la meta.
 - M4: ¿todos con 4 comidas o cada uno elige cuántas? (Propuesta: 4 de momento.)
 - M4: ¿quién puede editar los macros de un alimento común? (Propuesta: cualquiera puede añadir; editar, solo Fran.)
-- M3: ¿se cambia cuando acabe el plan activo, para no migrar a mitad de un bloque?

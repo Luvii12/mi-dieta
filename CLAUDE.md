@@ -15,9 +15,9 @@ El usuario venía de un entrenador personal que le daba dietas en PDF. La app la
 | --- | --- |
 | Plataforma | PWA en **GitHub Pages**, interfaz en **español**, pensada para móvil |
 | Independencia | **App separada**: su propio repositorio, hoja de Google y Apps Script. No tocar, integrar ni reutilizar la app de fitness/rutinas que el usuario ya tiene |
-| Datos | **Google Sheets** (una pestaña por tabla), sin base de datos de pago. **En migración a Supabase gratis** (`docs/PLAN_MULTIUSUARIO.md`) |
-| Servidor | **Google Apps Script** publicado como web app; la PWA solo habla con él |
-| Acceso | Sin login: token secreto en cada petición, guardado en las propiedades del script |
+| Datos | **Supabase gratis** desde M3 (2026-10-18; `docs/PLAN_MULTIUSUARIO.md`, `docs/SUPABASE.md`). La hoja de Google queda como copia de seguridad: no se escribe en ella |
+| Servidor | Ninguno propio: la PWA habla con Supabase por `fetch` y ejecuta el motor en el navegador. Apps Script sigue publicado (solo para leer la hoja) hasta M6 |
+| Acceso | Email y contraseña (Supabase Auth), registro cerrado; reglas por fila (RLS) |
 | Secretos | La clave de la API de Claude **nunca** va en el repo ni en el frontend (GitHub Pages es público) |
 | Generación | **Híbrida**: platos de una biblioteca de recetas (más adelante propuestos por IA) + **gramos calculados por código** con un optimizador. La IA nunca da valores nutricionales |
 | Macros | Siempre calculados en código a partir de la pestaña `alimentos` |
@@ -68,7 +68,7 @@ Decidido (2026-10-16): sin fotos de platos hasta la Fase 6 (en su hueco, tesela 
 
 ## Recetas nuevas con IA (Fase 5): las escribe Claude Code
 Cuando Fran pida recetas nuevas («propón 3 cenas mexicanas»), las escribe Claude Code dentro de su suscripción; **no se usa la API de Claude** (se paga aparte; la versión con API está en git, commit `3fb63e7`, y se quitó para que Apps Script no pida permiso de servicios externos). Pasos:
-1. `node scripts/recetas_ia.js pedido <Comida> [cantidad] [idea]` → instrucciones, tabla de alimentos, objetivo, recetas existentes y valoraciones (lo da la hoja real; conexión en `.conexion.local.json`, fuera del repo).
+1. `node scripts/recetas_ia.js pedido <Comida> [cantidad] [idea]` → instrucciones, tabla de alimentos, objetivo, recetas existentes y valoraciones (lo da Supabase con la cuenta real de Fran: `"cuenta"` en `.supabase.local.json`, fuera del repo).
 2. Escribir las recetas en un JSON del scratchpad con el formato del esquema (`nombre`, `preparacion`, `ingredientes_fijos`, `ingredientes_escalables`, `alimentos_nuevos`) siguiendo esas instrucciones. Nunca macros.
 3. `node scripts/recetas_ia.js probar <Comida> <archivo>` → gramos y macros, o por qué se descarta. Corregir y repetir hasta que valgan.
 4. Enseñar a Fran las recetas (nombre, idea, macros) y, con su visto bueno, `enviar`: quedan como propuestas en la pestaña Recetas para que las acepte o descarte en el móvil (y meta los macros de los alimentos nuevos).

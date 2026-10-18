@@ -9,6 +9,8 @@
     "servidor": "node scripts/servidor_local.js",
     "probar-rls": "node scripts/probar_rls.js",
     "supabase-semilla": "node scripts/supabase_semilla.js",
-    "probar-supabase": "node scripts/probar_supabase.js"
+    "probar-supabase": "node scripts/probar_supabase.js",
+    "migrar": "node scripts/migrar_sheets.js",
+    "cambiar-contrasena": "node scripts/cambiar_contrasena.js"
   }
 }

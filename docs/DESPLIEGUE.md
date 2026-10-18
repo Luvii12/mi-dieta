@@ -1,5 +1,7 @@
 # Puesta en marcha (Fase 0)
 
+> Desde M3 (2026-10-18) los datos están en **Supabase** (`docs/SUPABASE.md`) y la PWA solo habla con Supabase. Para publicar basta con hacer push a `main` (apartado 2). La hoja y el Apps Script de abajo quedan como copia de seguridad hasta M6: no hace falta desplegarlos más (salvo `exportar`, para `npm run migrar -- --comprobar`).
+
 Pasos que hace el usuario a mano. Claude Code puede ejecutar los comandos de clasp y git una vez hecho el login.
 
 ## 1. Google: hoja + Apps Script

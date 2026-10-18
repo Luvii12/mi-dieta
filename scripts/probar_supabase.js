@@ -37,6 +37,7 @@ async function main() {
   const dejar = process.argv.includes('--dejar');
   const prueba = (c.pruebas || [])[n - 1];
   if (!prueba) salir('.supabase.local.json no tiene ese usuario en "pruebas".');
+  if (c.cuenta && c.cuenta.email === prueba.email) salir(`${prueba.email} es tu cuenta de verdad: esta prueba borra sus datos. Usa el otro usuario de pruebas.`);
   const sb = await import('../web/supabase.js');
   const con = { url: c.url.replace(/\/+$/, ''), clave: c.clave, fetch };
   const sesion = await sb.entrar(con, prueba.email, prueba.password);

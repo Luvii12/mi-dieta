@@ -24,7 +24,7 @@ Pasos que hace Fran en el panel de Supabase, una sola vez. Ningún dato secreto 
 - `prueba1@mi-dieta.test` y `prueba2@mi-dieta.test`, cada uno con una contraseña inventada.
 - Marca **Auto Confirm User**.
 
-Tu cuenta de verdad se crea más adelante (fase M3), no ahora.
+Tu cuenta de verdad se crea más adelante (fase M3), no ahora. (Al final, en M3, la cuenta real es `franluvi2015@gmail.com`, que era uno de los usuarios de pruebas.)
 
 ## 5. Conexión para los scripts
 **Project Settings → API Keys** (o *Data API*): copia la **URL del proyecto** (`https://xxxx.supabase.co`) y la clave **publishable** (`sb_publishable_…`; si solo aparece la antigua, la **anon public**). **Nunca** copies la `secret` ni la `service_role`.
@@ -55,8 +55,20 @@ npm run servidor -- real     # la PWA en http://localhost:8099 contra el Supabas
 ```
 Sin red: `npm run servidor` (base falsa en memoria; entra con `prueba@mi-dieta.test` / `prueba`).
 
-## Más adelante
-- **Administrador** (fase M3, cuando exista tu cuenta): en el SQL Editor,
-  `insert into public.administradores (user_id) select id from auth.users where email = 'tu@email';`
+## 8. Cuenta real y migración de la hoja (fase M3)
+En `.supabase.local.json`, la cuenta real va aparte de las de pruebas (los scripts de Claude Code entran con ella):
+```json
+  "cuenta": {"email": "franluvi2015@gmail.com", "password": "…"},
+```
+```
+npm run migrar -- --probar     # qué cambiaría en Supabase, sin escribir nada
+npm run migrar                 # copia la hoja (Apps Script, acción exportar) a la cuenta real y lo comprueba
+npm run migrar -- --comprobar  # solo compara: tablas y acciones de lectura, hoja frente a Supabase
+npm run cambiar-contrasena     # en una terminal propia: nueva contraseña de la cuenta real (la guarda en el archivo)
+```
+La migración no borra nada de la biblioteca común; los datos personales quedan igual que en la hoja (si la cuenta ya tenía otros, pide `--sustituir`). `npm run probar-supabase` se niega a usar la cuenta real (borra los datos del usuario con el que prueba).
+
+**Administrador** (para cambiar alimentos y recetas que haya añadido otra persona): en el SQL Editor,
+`insert into public.administradores (user_id) select id from auth.users where email = 'franluvi2015@gmail.com';`
 - **Invitar** a tu hermano y a tu novia (fase M6): *Authentication → Users → Invite user*.
 - Si el proyecto se pausa por no usarse en 7 días: *Restore project* en el panel; no se pierde nada.
