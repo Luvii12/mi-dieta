@@ -133,7 +133,7 @@ function pintar(contenedor, p) {
         h('p', { class: 'subtitulo' }, b ? `Bloque ${b.numero} · Semana ${b.dia > 7 ? 2 : 1} de ${Math.ceil(b.dias / 7)}` : 'Sin plan activo')),
       b ? h('span', { class: 'insignia insignia-activo-suave' }, h('span', { class: 'punto-activo' }), 'Activo') : null),
     tarjetaPeso(p),
-    b ? tarjetaAdherencia(p) : null,
+    b ? tarjetaAdherencia(p) : '', // '' y no null: replaceChildren() escribiría «null»
     h('button', { type: 'button', class: 'boton boton-primario boton-grande', 'data-foco': 'registrar-peso', onclick: () => abrirPeso(p) },
       icono('scale'), p.ultimo && p.ultimo.fecha === p.fecha ? 'Cambiar el peso de hoy' : 'Registrar peso de hoy'));
 }
