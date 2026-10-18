@@ -132,6 +132,68 @@ test('cada usuario solo ve y cambia lo suyo', async () => {
   assert.notEqual(falso.tablas.alimentos.find(a => a.id === 'aceite_oliva').nombre, 'Otro nombre');
 });
 
+// Receta de cena como la escribiría Claude Code (cuadra con los objetivos de la semilla).
+const TACOS = {
+  nombre: 'Tacos de pollo al pastor con piña',
+  preparacion: 'Marina el pollo; dóralo con la piña; sirve en las tortillas',
+  ingredientes_fijos: [{ alimento: 'pimiento_cebolla', gramos: 60 }, { alimento: 'pina', gramos: 20 }],
+  ingredientes_escalables: [
+    { alimento: 'pechuga_pollo', min_g: 100, max_g: 200, unidad: false },
+    { alimento: 'fajita_pequena', min_g: 25, max_g: 100, unidad: true },
+    { alimento: 'aceite_oliva', min_g: 3, max_g: 15, unidad: false },
+    { alimento: 'mozzarella_light', min_g: 0, max_g: 40, unidad: false },
+  ],
+  alimentos_nuevos: [],
+};
+
+test('recetas para otra persona: el script entra como ella y sus propuestas solo las ve ella', async () => {
+  const { sb, falso, con, tablas } = await preparar();
+  const { conectarCon } = require('../scripts/cuenta_supabase.js');
+  const navegador = cargarMotor(MIERCOLES, {});
+  const fran = enNube(sb, con, await sb.entrar(con, 'prueba1@mi-dieta.test', 'secreta1'), navegador.motor);
+  const hermano = enNube(sb, con, await sb.entrar(con, 'prueba2@mi-dieta.test', 'secreta2'), navegador.motor);
+  // El hermano, con los mismos objetivos que Fran, su nombre y el pollo excluido no; excluye el salmón.
+  const cambios = Object.fromEntries(tablas.config.map(f => [f.clave, JSON.parse(f.valor)]));
+  cambios.perfil = { nombre: 'Hermano' };
+  assert.equal((await hermano('config', { cambios })).ok, true);
+  assert.equal((await hermano('guardarExcluidos', { alimentos: ['salmon'] })).ok, true);
+  assert.deepEqual((await fran('importarPropuestas', { comida: 'Cena', recetas: [TACOS] })).datos.nuevas, ['IA1']);
+
+  // Clave secreta mala o cuenta que no existe: no entra.
+  await assert.rejects(sb.entrarComo(con, 'otra', 'prueba2@mi-dieta.test'), /La clave secreta no vale/);
+  await assert.rejects(sb.entrarComo(con, 'clave-secreta-falsa', 'nadie@mi-dieta.test'), /No hay ninguna cuenta/);
+
+  const archivo = { url: con.url, clave: con.clave, clave_secreta: 'clave-secreta-falsa',
+    cuenta: { email: 'prueba1@mi-dieta.test', password: 'secreta1' } };
+  const cuenta = await conectarCon(archivo, { para: 'Prueba2@mi-dieta.test', fetch: falso.fetch });
+  assert.equal(cuenta.sesion.usuario.id, 'u2');
+  const pedido = await cuenta.ejecutar('pedidoRecetas', { comida: 'Cena' });
+  assert.equal(pedido.para, 'Hermano');
+  assert.match(pedido.mensaje, /para Hermano\./);
+  assert.match(pedido.mensaje, /Alimentos excluidos .*Salmon/i, 'con sus excluidos');
+  assert.match(pedido.mensaje, /Tacos de pollo al pastor/, 'la propuesta de Fran cuenta para no repetirla');
+
+  const otra = Object.assign({}, TACOS, { nombre: 'Tacos de pollo con guacamole' });
+  // (JSON: lo que devuelve el motor viene de otro contexto de vm y deepEqual no lo da por igual)
+  const r = JSON.parse(JSON.stringify(await cuenta.ejecutar('importarPropuestas', { comida: 'Cena', recetas: [TACOS, otra] })));
+  assert.deepEqual(r.descartadas.map(d => d.motivo), ['Ya hay una receta con ese nombre.']);
+  assert.deepEqual(r.nuevas, ['IA2'], 'no repite el id de la propuesta de Fran');
+  assert.equal(falso.tablas.recetas.find(f => f.id === 'IA2').creado_por, 'u2');
+  assert.deepEqual((await fran('propuestas')).datos.map(p => p.id), ['IA1']);
+  assert.deepEqual((await hermano('propuestas')).datos.map(p => p.id), ['IA2']);
+  assert.match((await hermano('aceptarPropuesta', { receta_id: 'IA1' })).error, /No hay ninguna propuesta IA1/);
+
+  // Con la cuenta de Fran (sin --para, o con su propio email) entra con su contraseña.
+  assert.equal((await conectarCon(archivo, { para: 'prueba1@mi-dieta.test', fetch: falso.fetch })).sesion.usuario.id, 'u1');
+
+  // El hermano la acepta en su móvil: pasa a la biblioteca común y entra en su siguiente plan.
+  assert.equal((await hermano('aceptarPropuesta', { receta_id: 'IA2' })).ok, true);
+  assert.ok((await fran('recetas')).datos.some(x => x.id === 'IA2'), 'Fran también la tiene');
+  const plan = (await hermano('generarPlan')).datos;
+  assert.equal(plan.dias.length, 14);
+  assert.ok(falso.tablas.plan_comidas.some(c => c.user_id === 'u2' && c.receta_id === 'IA2'), 'su plan la usa');
+});
+
 test('sesión: contraseña mala, token caducado y renovación de un solo uso', async () => {
   const { sb, falso, con } = await preparar();
   await assert.rejects(sb.entrar(con, 'prueba1@mi-dieta.test', 'mala'), /Email o contraseña incorrectos/);

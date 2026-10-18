@@ -45,9 +45,9 @@ const ESQUEMA_RECETAS_IA = {
 };
 
 const SISTEMA_RECETAS_IA = [
-  'Eres un cocinero que diseña recetas para la app de dieta personal de Fran (España). Los gramos los calcula',
-  'después un optimizador a partir de una tabla de alimentos: tú eliges los platos, los ingredientes y sus límites,',
-  'nunca valores nutricionales.',
+  'Eres un cocinero que diseña recetas para «Mi dieta», la app de dieta de Fran y su familia (España). Las recetas',
+  'van a una biblioteca común; los gramos de cada persona los calcula después un optimizador a partir de una tabla',
+  'de alimentos: tú eliges los platos, los ingredientes y sus límites, nunca valores nutricionales.',
   '',
   'Cómo es una buena receta:',
   '- Que apetezca: platos reconocibles de cocina española o de otros países (fajitas, poke, boloñesa, pulpo a la',
@@ -75,7 +75,8 @@ const SISTEMA_RECETAS_IA = [
 
 // Mensaje para Claude con todo lo que necesita: comida, objetivo, tabla de alimentos y recetas que ya hay.
 // ctx: {comida, cantidad, idea, objetivo, alimentosFilas, excluidos: Set, recetas: [{comida, nombre}],
-//       favoritas: [nombres], noGustan: [nombres], descartadas: [{nombre, motivo}] (del intento anterior)}
+//       favoritas: [nombres], noGustan: [nombres], descartadas: [{nombre, motivo}] (del intento anterior),
+//       para: nombre de la persona (opcional)}
 function mensajeRecetasIA_(ctx) {
   const tabla = ctx.alimentosFilas
     .filter(a => !ctx.excluidos.has(a.id))
@@ -85,8 +86,8 @@ function mensajeRecetasIA_(ctx) {
   const deLaComida = ctx.recetas.filter(r => r.comida === ctx.comida).map(r => r.nombre);
   const o = ctx.objetivo;
   const partes = [
-    `Propón ${ctx.cantidad} ${ctx.cantidad === 1 ? 'receta' : 'recetas'} de ${ctx.comida.toLowerCase()}, distintas entre sí.`,
-    ctx.idea ? `Idea de Fran para esta tanda: ${ctx.idea}` : '',
+    `Propón ${ctx.cantidad} ${ctx.cantidad === 1 ? 'receta' : 'recetas'} de ${ctx.comida.toLowerCase()}${ctx.cantidad === 1 ? '' : ', distintas entre sí'}${ctx.para ? `, para ${ctx.para}` : ''}.`,
+    ctx.idea ? `Idea para esta tanda: ${ctx.idea}` : '',
     `Objetivo de una ración: ${o.kcal} kcal, ${o.P} g de proteína, ${o.C} g de hidratos y ${o.G} g de grasa. Los límites de los escalables tienen que permitir llegar a él.`,
     `Tabla de alimentos (id | nombre | grupo | estado | gramos por unidad):\n${tabla}`,
     excluidos.length ? `Alimentos excluidos (no los uses nunca): ${excluidos.join(', ')}.` : '',
@@ -281,7 +282,7 @@ function datosPedidoIA_(peticion, extra) {
     idea: String(peticion.idea || '').trim().slice(0, 200),
   };
   const mensaje = otras => mensajeRecetasIA_(Object.assign({ objetivo: ctx.objetivos[comida], alimentosFilas: ctx.alimentosFilas,
-    excluidos: ctx.excluidos, favoritas: conValor('me_encanta'), noGustan: conValor('no_repetir'), descartadas: [] }, pedido,
+    excluidos: ctx.excluidos, favoritas: conValor('me_encanta'), noGustan: conValor('no_repetir'), descartadas: [], para: nombrePersona_(ctx.config) }, pedido,
   { recetas: filasRecetas }, otras || {}));
   return { pedido: pedido, ctx: ctx, filasRecetas: filasRecetas, mensaje: mensaje };
 }
@@ -318,10 +319,16 @@ function guardarPropuestasIA_(recetas) {
   return ids;
 }
 
-// Pedido para escribir recetas fuera de la app (Claude Code, con la suscripción): instrucciones, mensaje y esquema.
+// Nombre de quien pide las recetas (del alta), o '' si no lo tiene.
+function nombrePersona_(config) {
+  return String((config.perfil || {}).nombre || '').trim();
+}
+
+// Pedido para escribir recetas fuera de la app (Claude Code, con la suscripción): para quién, instrucciones,
+// mensaje y esquema.
 function pedidoRecetasIA_(peticion) {
   const datos = datosPedidoIA_(peticion);
-  return { pedido: datos.pedido, sistema: SISTEMA_RECETAS_IA, mensaje: datos.mensaje(), esquema: ESQUEMA_RECETAS_IA };
+  return { pedido: datos.pedido, para: nombrePersona_(datos.ctx.config), sistema: SISTEMA_RECETAS_IA, mensaje: datos.mensaje(), esquema: ESQUEMA_RECETAS_IA };
 }
 
 // Recetas escritas fuera de la app (Claude Code). Petición: {comida, recetas: [formato ESQUEMA_RECETAS_IA], probar}.

@@ -116,6 +116,18 @@ const ACCIONES = {
     });
   },
 
+  // Generación automática (la PWA la pide al abrirse, una vez al día): si al plan activo le quedan 2 días o
+  // menos (o ya terminó) y aún no hay borrador ni siguiente, genera el borrador. La propuesta de ajuste se
+  // calcula al abrirlo. Devuelve {generado: null} o {generado: {plan_id, inicio, fin}}.
+  revisarFinDePlan: function () {
+    const planes = planesAlDia_();
+    const activo = planes.find(p => p.estado === 'activo');
+    if (!activo || planes.some(p => p.estado === 'borrador' || p.estado === 'siguiente')) return { generado: null };
+    if (diasEntre_(fechaIso_(new Date()), activo.fin) > DIAS_AVISO_FIN) return { generado: null };
+    const borrador = ACCIONES.generarPlan();
+    return { generado: { plan_id: borrador.plan_id, inicio: borrador.inicio, fin: borrador.fin } };
+  },
+
   // Guarda el perfil (alta o cambio de objetivo) y los objetivos que salen de él (Perfil.js), y el peso
   // como pesaje de hoy. Petición: {perfil: {nombre, sexo, nacimiento, altura_cm, peso_kg, trabajo, entreno,
   // meta}, probar?}. Con `probar` solo calcula. Los planes ya hechos no cambian; el borrador se recalcula al
@@ -398,6 +410,7 @@ function balanceBloque_(planes, comidas, config, hoy) {
 }
 
 const ESTADOS_COMIDA = ['si', 'no', 'libre'];
+const DIAS_AVISO_FIN = 2; // el borrador del siguiente plan se genera cuando al activo le quedan estos días
 
 function mismosObjetivos_(a, b) {
   return Boolean(a) && COMIDAS.every(c => a[c] && ['kcal', 'P', 'C', 'G'].every(n => Number(a[c][n]) === Number(b[c][n])));

@@ -381,6 +381,18 @@ test('revisarFinDePlan: genera el borrador 2 días antes del fin, con balance y 
   assert.equal(gas.llamar('hoy').datos.nuevo_plan, true);
 });
 
+test('revisarFinDePlan (acción de la PWA): también si el plan ya terminó; sin plan activo no hace nada', () => {
+  const { gas } = bloqueCompleto('2026-11-04T10:00:00+01:00', 0.01);
+  const r = gas.llamar('revisarFinDePlan');
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.datos.generado.inicio, '2026-11-09', 'el lunes siguiente');
+  assert.equal(gas.llamar('revisarFinDePlan').datos.generado, null, 'ya hay borrador');
+
+  const nuevo = enFecha(preparar(), '2026-11-04T10:00:00+01:00');
+  assert.equal(nuevo.llamar('revisarFinDePlan').datos.generado, null);
+  assert.equal(filas(nuevo, 'planes').length, 0);
+});
+
 test('activarPlan con ajuste: cambia objetivos, recalcula gramos del borrador y lo apunta en el historial', () => {
   const { gas } = bloqueCompleto('2026-10-31T09:00:00+01:00', 0.01);
   const borrador = gas.llamar('generarPlan').datos;

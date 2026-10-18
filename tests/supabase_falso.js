@@ -1,5 +1,7 @@
 // Supabase falsa en memoria, para los tests y para `npm run servidor`. Imita lo que usa la app:
 //   · Auth: entrar con email y contraseña, renovar la sesión (cada renovación se puede usar una vez) y salir.
+//     Con la clave secreta, lo que usan los scripts para entrar como otra persona: listar usuarios y generar un
+//     enlace mágico (admin), que se canjea por una sesión (verify).
 //   · REST: leer (order, offset, limit), añadir, añadir o actualizar (merge-duplicates), cambiar y borrar con
 //     los filtros que genera web/supabase.js (col=eq., col=in.(…), or=(and(…),…)).
 // Con las reglas de supabase/esquema.sql: columnas y valores permitidos, claves, valores por defecto,
@@ -108,12 +110,13 @@ function filtroDe(params) {
   return f => condiciones.every(c => c(f));
 }
 
-function crearSupabaseFalso({ clave = 'clave-falsa', usuarios = [], administradores = [], ahora = () => new Date() } = {}) {
+function crearSupabaseFalso({ clave = 'clave-falsa', claveSecreta = 'clave-secreta-falsa', usuarios = [], administradores = [], ahora = () => new Date() } = {}) {
   const tablas = Object.fromEntries(Object.keys(ESQUEMA).map(n => [n, []]));
   const accesos = new Map(); // token de acceso → user_id
   const renovaciones = new Map(); // token de renovación → user_id
   let siguienteId = 1;
   let siguienteToken = 1;
+  const enlaces = new Map(); // token de un enlace mágico → user_id (se canjea una vez)
   let creadoExtra = 0; // para que las filas cargadas a la vez guarden su orden por `creado`
 
   const marcaDeTiempo = () => new Date(ahora().getTime() + creadoExtra++).toISOString().replace('Z', '+00:00');
@@ -309,6 +312,26 @@ function crearSupabaseFalso({ clave = 'clave-falsa', usuarios = [], administrado
       }
       return [204, null];
     }
+    if (url.pathname.startsWith('/auth/v1/admin/') && cabeceras.apikey !== claveSecreta) {
+      return [403, { code: 403, error_code: 'not_admin', msg: 'User not allowed' }];
+    }
+    if (metodo === 'GET' && url.pathname === '/auth/v1/admin/users') {
+      return [200, { aud: 'authenticated', users: usuarios.map(u => ({ id: u.id, email: u.email })) }];
+    }
+    if (metodo === 'POST' && url.pathname === '/auth/v1/admin/generate_link') {
+      const u = usuarios.find(x => x.email === (cuerpo || {}).email);
+      if (!u) return [404, { code: 404, error_code: 'user_not_found', msg: 'User with this email not found' }];
+      const token = `enlace-${siguienteToken++}`;
+      enlaces.set(token, u.id);
+      return [200, { id: u.id, email: u.email, action_link: 'http://supabase.falso/auth/v1/verify?token=' + token,
+        hashed_token: token, verification_type: cuerpo.type }];
+    }
+    if (metodo === 'POST' && url.pathname === '/auth/v1/verify') {
+      const id = enlaces.get((cuerpo || {}).token_hash);
+      if (!id) return [403, { code: 403, error_code: 'otp_expired', msg: 'Email link is invalid or has expired' }];
+      enlaces.delete(cuerpo.token_hash);
+      return [200, sesionPara(usuarios.find(x => x.id === id))];
+    }
     return [404, { msg: 'No existe ' + url.pathname }];
   }
 
@@ -316,7 +339,7 @@ function crearSupabaseFalso({ clave = 'clave-falsa', usuarios = [], administrado
   function responder(metodo, direccion, cabeceras, texto) {
     const url = new URL(direccion, 'http://localhost');
     const h = Object.fromEntries(Object.entries(cabeceras || {}).map(([k, v]) => [k.toLowerCase(), v]));
-    if (h.apikey !== clave) return [401, { message: 'Invalid API key' }];
+    if (h.apikey !== clave && h.apikey !== claveSecreta) return [401, { message: 'Invalid API key' }];
     let cuerpo;
     try {
       cuerpo = texto ? JSON.parse(texto) : undefined;

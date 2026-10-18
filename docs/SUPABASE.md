@@ -27,7 +27,7 @@ Pasos que hace Fran en el panel de Supabase, una sola vez. Ningún dato secreto 
 Tu cuenta de verdad se crea más adelante (fase M3), no ahora. (Al final, en M3, la cuenta real es `franluvi2015@gmail.com`, que era uno de los usuarios de pruebas.)
 
 ## 5. Conexión para los scripts
-**Project Settings → API Keys** (o *Data API*): copia la **URL del proyecto** (`https://xxxx.supabase.co`) y la clave **publishable** (`sb_publishable_…`; si solo aparece la antigua, la **anon public**). **Nunca** copies la `secret` ni la `service_role`.
+**Project Settings → API Keys** (o *Data API*): copia la **URL del proyecto** (`https://xxxx.supabase.co`) y la clave **publishable** (`sb_publishable_…`; si solo aparece la antigua, la **anon public**). Aquí **no** copies la `secret` ni la `service_role` (solo hace falta para pedir recetas para otra persona, §9, y nunca va en la PWA).
 
 Crea en la raíz del repo el archivo `.supabase.local.json` (está en `.gitignore`):
 ```json
@@ -72,3 +72,10 @@ La migración no borra nada de la biblioteca común; los datos personales quedan
 `insert into public.administradores (user_id) select id from auth.users where email = 'franluvi2015@gmail.com';`
 - **Invitar** a tu hermano y a tu novia (fase M6): *Authentication → Users → Invite user*.
 - Si el proyecto se pausa por no usarse en 7 días: *Restore project* en el panel; no se pierde nada.
+
+## 9. Recetas para otra persona (fase M5)
+`node scripts/recetas_ia.js pedido Cena 3 --para email@de.la.persona` (igual con `probar` y `enviar`) entra **como esa persona** sin su contraseña: usa su objetivo, sus excluidos y sus valoraciones, y las propuestas salen en *su* pestaña Recetas. Para eso necesita la clave secreta del proyecto: **Project Settings → API Keys → Secret keys** (`sb_secret_…`; si solo aparece la antigua, la **service_role**). Añádela a `.supabase.local.json`:
+```json
+  "clave_secreta": "sb_secret_…",
+```
+Esta clave se salta todas las reglas por fila: **solo** en ese archivo (está en `.gitignore`), nunca en el repo, en la PWA ni en un chat. Si se filtra, en el mismo sitio del panel se borra y se crea otra. El script solo la usa para comprobar que la cuenta existe y abrir una sesión como ella (un enlace mágico que canjea él mismo, sin enviar correos); todo lo demás va con esa sesión, con las mismas reglas que en su móvil.

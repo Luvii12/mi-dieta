@@ -2,7 +2,8 @@
 // sesión, solo la pantalla de entrada; con una cuenta que aún no tiene objetivos, solo el alta.
 
 import { haySesion, llamar, leerLocal, guardarLocal } from './api.js';
-import { $ } from './comun.js';
+import { $, hoyIso } from './comun.js';
+import { olvidarHoy } from './datos.js';
 import { cargarHoy, pintarHoy } from './hoy.js';
 import { cargarPlan, pintarPlan } from './plan.js';
 import { cargarReceta, pintarReceta, recordarAnterior } from './receta.js';
@@ -109,10 +110,28 @@ mostrarVista();
 // Sesión abierta pero sin la configuración guardada (p. ej. entró antes de que existiera el alta).
 if (haySesion() && !leerLocal('dieta.config')) comprobarAlta().then(() => { if (vistaActual() === 'alta') mostrarVista(); });
 
-// Al abrir la app, después de la pantalla actual, se descargan Recetas y Progreso en segundo plano para que
-// esas pestañas se vean al momento y ya actualizadas.
+// Generación automática (sustituye al activador de Apps Script): una vez al día, al abrir la app, el motor
+// genera el borrador del siguiente plan si al activo le quedan 2 días o menos. Hoy enseña entonces su aviso.
+const CLAVE_REVISADO = 'dieta.planRevisado';
+async function revisarPlan() {
+  if (leerLocal(CLAVE_REVISADO) === hoyIso()) return;
+  try {
+    const r = await llamar('revisarFinDePlan');
+    guardarLocal(CLAVE_REVISADO, hoyIso());
+    if (!r.generado) return;
+    olvidarHoy();
+    if (vistaActual() === 'hoy') cargarHoy($('vista-hoy'));
+    if (vistaActual() === 'plan') cargarPlan($('vista-plan'));
+  } catch (err) {
+    // Sin conexión o con un error: se vuelve a intentar la próxima vez que se abra.
+  }
+}
+
+// Al abrir la app, después de la pantalla actual, se revisa si toca generar el siguiente plan y se descargan
+// Recetas y Progreso en segundo plano para que esas pestañas se vean al momento y ya actualizadas.
 function precargar() {
   if (!haySesion() || !navigator.onLine || vistaActual() === 'alta') return;
+  revisarPlan();
   if (vistaActual() !== 'recetas') precargarRecetas();
   if (vistaActual() !== 'progreso') precargarProgreso();
 }

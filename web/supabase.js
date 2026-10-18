@@ -100,6 +100,24 @@ export async function renovar(con, sesion) {
   throw new Error(mensajeDe(r));
 }
 
+// Sesión de otra persona sin su contraseña, con la clave secreta del proyecto (service_role). Solo la usan los
+// scripts de Fran (scripts/cuenta_supabase.js): la clave secreta nunca va en la PWA. Comprueba que la cuenta
+// existe (el enlace mágico no debe crear cuentas) y canjea un enlace mágico generado por el administrador,
+// sin enviar ningún correo.
+export async function entrarComo(con, claveSecreta, email) {
+  const admin = { url: con.url, clave: claveSecreta, fetch: con.fetch };
+  const usuarios = await pedir(admin, 'GET', '/auth/v1/admin/users?page=1&per_page=1000', { token: claveSecreta });
+  if (!usuarios.ok) throw new Error('La clave secreta no vale: ' + mensajeDe(usuarios));
+  const buscado = String(email).trim().toLowerCase();
+  if (!(usuarios.datos.users || []).some(u => String(u.email).toLowerCase() === buscado)) throw new Error(`No hay ninguna cuenta con el email ${email}.`);
+  const enlace = await pedir(admin, 'POST', '/auth/v1/admin/generate_link', { token: claveSecreta, cuerpo: { type: 'magiclink', email: buscado } });
+  if (!enlace.ok) throw new Error(mensajeDe(enlace));
+  const datos = enlace.datos.properties || enlace.datos;
+  const r = await pedir(con, 'POST', '/auth/v1/verify', { cuerpo: { type: 'magiclink', token_hash: datos.hashed_token } });
+  if (!r.ok) throw new Error(mensajeDe(r));
+  return aSesion(r.datos);
+}
+
 // Cierra la sesión en el servidor. Si falla (sin conexión), da igual: el móvil la olvida de todos modos.
 export async function salir(con, sesion) {
   try {
@@ -127,15 +145,15 @@ async function leerTabla(con, sesion, nombre) {
   }
 }
 
-// Recetas de la IA pendientes o descartadas: solo las ve quien las pidió (las demás son de la biblioteca).
-const ESTADOS_PROPUESTA = ['propuesta', 'descartada'];
-const visible = (nombre, fila, userId) => nombre !== 'recetas' || !ESTADOS_PROPUESTA.includes(fila.activa) || fila.creado_por === userId;
+// Las propuestas de la IA solo las ve, acepta o descarta quien las pidió. Las de otra persona llegan al motor
+// como descartadas: no salen en su lista, pero cuentan para no repetir su nombre ni su id (IA1, IA2…).
+const ajena = (nombre, fila, userId) => nombre === 'recetas' && fila.activa === 'propuesta' && fila.creado_por !== userId;
 
 // Todas las tablas a la vez: {nombre: [filas de la base]}. Las personales solo traen las del usuario (RLS).
 export async function leerTablas(con, sesion) {
   const nombres = Object.keys(TABLAS);
   const filas = await Promise.all(nombres.map(n => leerTabla(con, sesion, n)));
-  return Object.fromEntries(nombres.map((n, i) => [n, filas[i].filter(f => visible(n, f, sesion.usuario.id))]));
+  return Object.fromEntries(nombres.map((n, i) => [n, filas[i].map(f => (ajena(n, f, sesion.usuario.id) ? Object.assign({}, f, { activa: 'descartada' }) : f))]));
 }
 
 // ¿Puede cambiar los nombres de los alimentos comunes? Solo quien añadió alimentos a la biblioteca (Fran):

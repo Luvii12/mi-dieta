@@ -58,11 +58,12 @@ Cada fase acaba en algo que se prueba en el móvil. Parar al final de cada una.
 - **Hecho cuando**: un usuario nuevo invitado entra, se da de alta, genera su plan y no ve nada de Fran salvo las recetas.
 - Hecho así (2026-10-18, sin publicar): el alta pregunta objetivo (perder grasa / mantener / ganar músculo), días de entrenamiento, tipo de trabajo, sexo, nacimiento, altura y peso; **Ajustes › Mi objetivo** permite cambiar de objetivo cuando se quiera (Fran pasará a ganar músculo) y recalcula. Fórmulas en `docs/NUTRICION.md` › «Objetivos según el perfil»; el ajuste quincenal depende del objetivo. Las raciones de las recetas se escalan a cada persona. Proteína por g/kg según la persona (no forzada a lo que dan las recetas): la biblioteca la ampliará el agente de Fran. El perfil va en `config.perfil` (la tabla `perfiles` no se usa). Primer plan: mañana. Propuestas de IA y «Nombres de alimentos», solo para quien las creó.
 
-### M5 · Recetas con IA y automatización
-- `scripts/recetas_ia.js` contra Supabase con el login de Fran (en `.conexion.local.json`). `pedido` acepta para quién es (sus excluidos y valoraciones); las propuestas se ven en Recetas de quien las pidió y, al aceptarlas, pasan a la biblioteca común.
+### M5 · Recetas con IA y automatización — hecha en local (2026-10-18)
+- `scripts/recetas_ia.js` contra Supabase con el login de Fran (en `.supabase.local.json`). `pedido` acepta para quién es (sus excluidos y valoraciones); las propuestas se ven en Recetas de quien las pidió y, al aceptarlas, pasan a la biblioteca común.
 - Generación automática al abrir la app (sustituye a `revisarFinDePlan`).
 - Actualizar la skill `dietista` (datos de Supabase, varias personas).
 - **Hecho cuando**: una receta pedida para el hermano llega a su móvil y entra en su siguiente plan.
+- Hecho así (2026-10-18, sin publicar): `recetas_ia.js … --para <email>` entra como esa persona con la **clave secreta** del proyecto (`"clave_secreta"` en `.supabase.local.json`, decidido por Fran): comprueba que la cuenta existe y canjea un enlace mágico de administrador (`entrarComo` en `web/supabase.js`), sin contraseñas ni cambios en la base. Las propuestas de otra persona llegan al motor como descartadas (no se ven, pero cuentan para no repetir nombre ni id `IA…`). Generación automática: acción `revisarFinDePlan` en el motor; la PWA la pide una vez al día al abrirse (Apps Script la usa desde ahí hasta M6). Skill dietista actualizada. Probado con la Supabase falsa (`tests/supabase.test.js`) y en el navegador (`npm run servidor -- fin`); el «entrar como» probado también contra el Supabase real (pedido para `franluvi2022`).
 
 ### M6 · Entrega y limpieza
 - Invitar al hermano y a la novia; guía corta para instalar la PWA en su móvil.

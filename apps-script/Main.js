@@ -3,16 +3,11 @@
 // Respuesta siempre JSON: {"ok": true, "datos": ...} o {"ok": false, "error": "..."}.
 // Las acciones están en web/motor/Acciones.js (se suben a Apps Script con clasp junto a este archivo).
 
-// Lo ejecuta el activador diario (ver instalarActivador en Setup.js): si al plan activo le quedan 2 días
-// o menos y aún no hay siguiente plan, genera el borrador. La propuesta de ajuste se calcula al abrirlo.
+// Lo ejecuta el activador diario (ver instalarActivador en Setup.js), hasta que se retire Apps Script (M6):
+// si al plan activo le quedan 2 días o menos y aún no hay siguiente plan, genera el borrador.
 function revisarFinDePlan() {
-  const hoy = fechaIso_(new Date());
-  const planes = planesAlDia_();
-  const activo = planes.find(p => p.estado === 'activo');
-  if (!activo || planes.some(p => p.estado === 'borrador' || p.estado === 'siguiente')) return;
-  if (diasEntre_(hoy, activo.fin) > 2) return;
-  const borrador = ACCIONES.generarPlan();
-  Logger.log('Borrador %s generado (%s a %s).', borrador.plan_id, borrador.inicio, borrador.fin);
+  const r = ACCIONES.revisarFinDePlan();
+  if (r.generado) Logger.log('Borrador %s generado (%s a %s).', r.generado.plan_id, r.generado.inicio, r.generado.fin);
 }
 
 function doPost(e) {

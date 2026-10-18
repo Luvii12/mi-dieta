@@ -6,6 +6,8 @@
 // Uso: npm run servidor
 //   node scripts/servidor_local.js borrador  → además pesajes de 3 semanas, las comidas pasadas marcadas y un
 //                                              borrador con su propuesta de ajuste.
+//   node scripts/servidor_local.js fin       → el plan activo acaba mañana y no hay borrador: al abrir la app
+//                                              se genera el siguiente (generación automática, fase M5).
 //   node scripts/servidor_local.js real      → sin base falsa: la PWA habla con el Supabase de verdad
 //                                              (web/conexion.js), con las cuentas de verdad.
 const http = require('http');
@@ -43,6 +45,13 @@ function tablasDePrueba() {
     p2.libro.hojas.splice(0, p2.libro.hojas.length, ...prep.libro.hojas);
     Object.assign(p2.propiedades, prep.propiedades);
     p2.llamar('generarPlan');
+  }
+  if (MODO === 'fin') {
+    const c = prep.contexto;
+    const [plan] = c.leerTabla_('planes');
+    const mover = fecha => c.sumarDias_(fecha, c.diasEntre_(plan.fin, c.sumarDias_(c.fechaIso_(new Date()), 1)));
+    c.reescribirTabla_('planes', [Object.assign(plan, { inicio: mover(plan.inicio), fin: mover(plan.fin) })]);
+    c.reescribirTabla_('plan_comidas', c.leerTabla_('plan_comidas').map(f => Object.assign(f, { fecha: mover(f.fecha) })));
   }
   return Object.fromEntries(ORDEN.map(n => [n, prep.contexto.leerTabla_(n)]));
 }
