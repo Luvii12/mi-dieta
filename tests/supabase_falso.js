@@ -37,7 +37,7 @@ const PERMITIDOS = {
   comida: ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'],
   origen: ['semilla', 'ia', 'manual'],
   activa: ['si', 'no', 'propuesta', 'descartada'],
-  hecha: ['si', 'no', 'libre'],
+  hecha: ['si', 'no', 'libre', 'saltada'],
   tipo: ['excluido', 'alergia', 'favorito'],
   aceptada: ['si', 'no'],
   valor: ['me_encanta', 'normal', 'no_repetir'],

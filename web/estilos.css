@@ -347,6 +347,7 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 .tesela-merienda { background: var(--tesela-merienda); color: var(--terciario); }
 .tesela-cena { background: var(--tesela-cena); color: var(--primario-contenedor); }
 .tesela-libre { background: var(--superficie-media); color: var(--terciario); }
+.tesela-saltada { background: var(--superficie-media); color: var(--texto-suave); }
 
 .boton {
   display: inline-flex;
@@ -471,6 +472,7 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 .estado .icono { font-size: 14px; }
 .estado-hecha { color: var(--secundario); background: var(--secundario-suave); font-weight: 600; }
 .estado-libre { color: var(--terciario); background: var(--terciario-suave); font-weight: 600; }
+.estado-saltada { font-weight: 600; }
 .comida-nombre { font-size: 14px; line-height: 20px; font-weight: 600; }
 .comida-nombre a {
   text-decoration: none;
@@ -506,6 +508,7 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 }
 .boton-estado.hecha { color: var(--secundario); }
 .boton-estado.libre { color: var(--terciario); }
+.boton-estado.saltada { color: var(--texto-suave); }
 .circulo {
   width: 22px;
   height: 22px;
@@ -520,6 +523,7 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 .circulo .icono { font-size: 14px; }
 .circulo.lleno { background: var(--secundario); border-color: var(--secundario); color: #ffffff; }
 .circulo.libre { background: var(--terciario-suave); border-color: transparent; color: var(--terciario); }
+.circulo.saltada { background: var(--superficie-media); border-color: transparent; color: var(--texto-suave); }
 .boton-texto {
   min-height: 44px;
   padding: 0 8px;
@@ -620,6 +624,7 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 .comida-plan-nombre { font-size: 14px; line-height: 20px; font-weight: 600; margin: 2px 0 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .comida-plan-flecha { font-size: 20px; color: var(--borde-variante); }
 .comida-plan-hecha { font-size: 20px; color: var(--secundario); }
+.comida-plan-saltada { font-size: 20px; color: var(--texto-suave); }
 .receta-valoracion { font-size: 20px; line-height: 1; flex-shrink: 0; }
 
 /* ---------- Recetas ---------- */

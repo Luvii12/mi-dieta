@@ -1,4 +1,5 @@
-// Panel «Cambiar plato»: otras recetas de la misma comida con los gramos recalculados, y «Comida libre».
+// Panel «Cambiar plato»: otras recetas de la misma comida con los gramos recalculados y, si se pide,
+// «Comida libre» y «No la he hecho».
 
 import { leerLocal } from './api.js';
 import { $, h, icono, numero, tesela, pastillasMacros } from './comun.js';
@@ -22,7 +23,8 @@ async function aplicar(accion) {
   }
 }
 
-export async function abrirCambiarPlato(planId, fecha, comida) {
+// opciones: {libre, saltar}: ofrecer también «Comida libre» y «No la he hecho» (solo hoy, en el plan activo).
+export async function abrirCambiarPlato(planId, fecha, comida, { libre: conLibre = false, saltar = false } = {}) {
   const panel = $('panel-cambiar');
   const lista = $('panel-lista');
   $('panel-titulo').textContent = `Cambiar ${comida.comida.toLowerCase()}`;
@@ -31,12 +33,19 @@ export async function abrirCambiarPlato(planId, fecha, comida) {
   panel.showModal();
 
   // Con «Comida libre semanal» apagada en Ajustes no se ofrece.
-  const libre = (leerLocal('dieta.config') || {}).comida_libre_semanal === false ? null : opcion([
+  const libre = !conLibre || (leerLocal('dieta.config') || {}).comida_libre_semanal === false ? null : opcion([
     h('span', { class: 'tesela tesela-libre', 'aria-hidden': 'true' }, icono('celebration')),
     h('span', { class: 'alternativa-texto' },
       h('span', { class: 'alternativa-nombre' }, 'Comida libre'),
       h('span', { class: 'alternativa-nota' }, 'Comes fuera del plan. Cuenta como hecha.')),
   ], () => aplicar(() => marcarComida(planId, fecha, comida.comida, 'libre')));
+  const saltada = !saltar || comida.hecha === 'saltada' ? null : opcion([
+    h('span', { class: 'tesela tesela-saltada', 'aria-hidden': 'true' }, icono('block')),
+    h('span', { class: 'alternativa-texto' },
+      h('span', { class: 'alternativa-nombre' }, 'No la he hecho'),
+      h('span', { class: 'alternativa-nota' }, 'Cuenta como no hecha en tu adherencia.')),
+  ], () => aplicar(() => marcarComida(planId, fecha, comida.comida, 'saltada')));
+  const extra = [libre, saltada].filter(Boolean);
 
   let opciones;
   try {
@@ -44,7 +53,7 @@ export async function abrirCambiarPlato(planId, fecha, comida) {
   } catch (err) {
     if (!panel.open) return;
     $('panel-estado').textContent = err.message;
-    if (libre) lista.replaceChildren(libre);
+    lista.replaceChildren(...extra);
     return;
   }
   if (!panel.open) return;
@@ -58,7 +67,7 @@ export async function abrirCambiarPlato(planId, fecha, comida) {
         o.diaOk ? h('span', { class: 'alternativa-nota texto-secundario' }, icono('check_circle', 'relleno'), 'El día sigue cuadrando')
           : h('span', { class: 'alternativa-nota texto-terciario' }, icono('error'), `El día quedaría en ${numero(o.macrosDia.kcal)} kcal`)),
     ], () => aplicar(() => cambiarPlato(planId, fecha, comida.comida, o.receta_id)))),
-    libre || '');
+    ...extra);
 }
 
 export function prepararPanel() {

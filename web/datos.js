@@ -104,17 +104,17 @@ export function buscarComida(planId, fecha, comida) {
     if (!p || p.plan_id !== planId) continue;
     const dia = p.dias.find(d => d.fecha === fecha);
     const c = dia && dia.comidas.find(x => x.comida === comida);
-    if (c) return { comida: c, dia: dia, plan: p, activo: p === plan.activo };
+    if (c) return { comida: c, dia: dia, plan: p, activo: p === plan.activo, vista: ['activo', 'siguiente', 'borrador'].find(v => plan[v] === p) };
   }
   const hoy = leerHoy();
   if (hoy && hoy.plan_id === planId && hoy.fecha === fecha) {
     const c = hoy.comidas.find(x => x.comida === comida);
-    if (c) return { comida: c, dia: hoy, plan: { plan_id: planId, inicio: hoy.inicio, fin: hoy.fin }, activo: true };
+    if (c) return { comida: c, dia: hoy, plan: { plan_id: planId, inicio: hoy.inicio, fin: hoy.fin }, activo: true, vista: 'activo' };
   }
   return null;
 }
 
-// hecha: 'si', 'no' o 'libre'.
+// hecha: 'si', 'no', 'libre' o 'saltada' («No la he hecho»).
 export async function marcarComida(planId, fecha, comida, hecha) {
   const encontrada = buscarComida(planId, fecha, comida);
   const antes = encontrada ? encontrada.comida.hecha : 'no';

@@ -63,7 +63,7 @@ function resumen(hoy) {
       h('div', { class: 'resumen-macros' }, MACROS.map(m => barraMacro(m, comido[m.clave], objetivo[m.clave])))));
 }
 
-// Botón de la izquierda del pie de cada comida: marca, desmarca o deshace la comida libre.
+// Botón de la izquierda del pie de cada comida: marca, desmarca o deshace la comida libre o «No la he hecho».
 function botonEstado(hoy, c) {
   const marcar = hecha => () => marcarComida(hoy.plan_id, hoy.fecha, c.comida, hecha).catch(err => avisar(err.message));
   const foco = `estado-${c.comida}`;
@@ -77,6 +77,11 @@ function botonEstado(hoy, c) {
       'aria-label': `${c.comida}: comida libre. Tocar para deshacer` },
     h('span', { class: 'circulo libre' }, icono('celebration')), h('span', null, 'Comida libre'));
   }
+  if (c.hecha === 'saltada') {
+    return h('button', { type: 'button', class: 'boton-estado saltada', 'data-foco': foco, onclick: marcar('no'),
+      'aria-label': `${c.comida}: no la has hecho. Tocar para deshacer` },
+    h('span', { class: 'circulo saltada' }, icono('remove')), h('span', null, 'No la has hecho'));
+  }
   return h('button', { type: 'button', class: 'boton-estado', 'data-foco': foco, onclick: marcar('si') },
     h('span', { class: 'circulo' }), h('span', null, 'Marcar hecha'));
 }
@@ -84,6 +89,7 @@ function botonEstado(hoy, c) {
 function etiquetaEstado(c) {
   if (c.hecha === 'si') return h('span', { class: 'estado estado-hecha' }, icono('check_circle', 'relleno'), 'Hecha');
   if (c.hecha === 'libre') return h('span', { class: 'estado estado-libre' }, 'Libre');
+  if (c.hecha === 'saltada') return h('span', { class: 'estado estado-saltada' }, 'No hecha');
   return h('span', { class: 'estado' }, 'Pendiente');
 }
 
@@ -99,7 +105,7 @@ function tarjetaComida(hoy, c) {
     h('div', { class: 'comida-pie' },
       botonEstado(hoy, c),
       h('button', { type: 'button', class: 'boton-texto', 'data-foco': `cambiar-${c.comida}`,
-        onclick: () => abrirCambiarPlato(hoy.plan_id, hoy.fecha, c) }, 'Cambiar plato')));
+        onclick: () => abrirCambiarPlato(hoy.plan_id, hoy.fecha, c, { libre: true, saltar: true }) }, 'Cambiar plato')));
 }
 
 function pintar(contenedor, hoy) {

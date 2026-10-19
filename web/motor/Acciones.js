@@ -174,10 +174,13 @@ const ACCIONES = {
     });
   },
 
-  // Marca una comida del plan activo: hecha = 'si', 'no' o 'libre' (comida libre: se sale del plan).
-  // Petición: {plan_id, fecha, comida, hecha}.
+  // Marca una comida del plan activo: hecha = 'si', 'no', 'libre' (comida libre: se sale del plan) o
+  // 'saltada' (no se hizo; solo hoy o días pasados). Petición: {plan_id, fecha, comida, hecha}.
   marcarComida: function (peticion) {
     if (ESTADOS_COMIDA.indexOf(peticion.hecha) < 0) throw new Error('Estado de comida no válido: ' + peticion.hecha + '.');
+    if (peticion.hecha === 'saltada' && peticion.fecha > fechaIso_(new Date())) {
+      throw new Error('Solo se puede marcar como no hecha una comida de hoy o de días pasados.');
+    }
     return conBloqueo_(() => {
       diaDelPlanActivo_(peticion);
       actualizarFilas_('plan_comidas', esLaComida_(peticion), { hecha: peticion.hecha });
@@ -185,10 +188,10 @@ const ACCIONES = {
     });
   },
 
-  // Recetas por las que se puede cambiar una comida del plan activo, ajustadas a su objetivo y con lo que
-  // sumaría el día. Petición: {plan_id, fecha, comida}.
+  // Recetas por las que se puede cambiar una comida (ver diaCambiable_), ajustadas a su objetivo y con lo
+  // que sumaría el día. Petición: {plan_id, fecha, comida}.
   alternativas: function (peticion) {
-    const { plan, filas } = diaDelPlanActivo_(peticion);
+    const { plan, filas } = diaCambiable_(peticion);
     const objetivos = parsearValor_(plan.objetivos) || {};
     const recetasPorId = leerRecetasPorId_();
     const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
@@ -202,12 +205,12 @@ const ACCIONES = {
     }, vista.objetivoDia, objetivos.tolerancias.dia);
   },
 
-  // Cambia el plato de una comida del plan activo por otra receta de la misma comida, con los gramos
+  // Cambia el plato de una comida (ver diaCambiable_) por otra receta de la misma comida, con los gramos
   // recalculados para su objetivo. La comida vuelve a «pendiente». Devuelve el día actualizado.
   // Petición: {plan_id, fecha, comida, receta_id}.
   cambiarPlato: function (peticion) {
     return conBloqueo_(() => {
-      const { plan, filas } = diaDelPlanActivo_(peticion);
+      const { plan, filas } = diaCambiable_(peticion);
       const recetasPorId = leerRecetasPorId_();
       const receta = recetasPorId[peticion.receta_id];
       if (!receta || receta.error) throw new Error('No se puede usar la receta ' + peticion.receta_id + '.');
@@ -440,7 +443,7 @@ function balanceBloque_(planes, comidas, config, hoy) {
     pesajes: pesajes, ritmo: ritmo, adherencia: adherencia, propuesta: propuesta };
 }
 
-const ESTADOS_COMIDA = ['si', 'no', 'libre'];
+const ESTADOS_COMIDA = ['si', 'no', 'libre', 'saltada'];
 const DIAS_AVISO_FIN = 2; // el borrador del siguiente plan se genera cuando al activo le quedan estos días
 
 function mismosObjetivos_(a, b) {
@@ -511,11 +514,30 @@ function valoracionesActuales_() {
 
 const esLaComida_ = peticion => f => f.plan_id === peticion.plan_id && f.fecha === peticion.fecha && f.comida === peticion.comida;
 
-// Plan activo y filas del día pedido. Solo se cambian comidas del plan activo.
+// Plan activo y filas del día pedido. Solo se marcan comidas del plan activo.
 function diaDelPlanActivo_(peticion) {
+  return diaDePlan_(peticion, plan => {
+    if (plan.estado !== 'activo') throw new Error('Solo se pueden cambiar comidas del plan activo.');
+  });
+}
+
+// Plan y filas del día pedido para cambiar un plato: del activo, de hoy en adelante; del siguiente y del
+// borrador, cualquier día.
+function diaCambiable_(peticion) {
+  return diaDePlan_(peticion, plan => {
+    if (['activo', 'siguiente', 'borrador'].indexOf(plan.estado) < 0) {
+      throw new Error('Solo se pueden cambiar platos del plan activo, del siguiente o del borrador.');
+    }
+    if (plan.estado === 'activo' && peticion.fecha < fechaIso_(new Date())) {
+      throw new Error('Ese día ya ha pasado: solo se pueden cambiar platos de hoy en adelante.');
+    }
+  });
+}
+
+function diaDePlan_(peticion, comprobar) {
   const plan = leerTabla_('planes').find(p => p.plan_id === peticion.plan_id);
   if (!plan) throw new Error('No existe el plan ' + peticion.plan_id + '.');
-  if (plan.estado !== 'activo') throw new Error('Solo se pueden cambiar comidas del plan activo.');
+  comprobar(plan);
   const filas = leerTabla_('plan_comidas').filter(f => f.plan_id === plan.plan_id && f.fecha === peticion.fecha);
   if (!filas.some(f => f.comida === peticion.comida)) {
     throw new Error('El plan no tiene ' + String(peticion.comida).toLowerCase() + ' el ' + peticion.fecha + '.');

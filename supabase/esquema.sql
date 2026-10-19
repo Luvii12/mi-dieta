@@ -127,11 +127,16 @@ create table if not exists public.plan_comidas (
   "P" numeric,
   "C" numeric,
   "G" numeric,
-  hecha text not null default 'no' check (hecha in ('si', 'no', 'libre')),
+  hecha text not null default 'no',
   cambiada_por text,
   primary key (user_id, plan_id, fecha, comida),
   foreign key (user_id, plan_id) references public.planes (user_id, plan_id) on delete cascade
 );
+
+-- Estados de una comida. Va aparte para que, al volver a ejecutar el esquema, se actualice en tablas que ya
+-- existen ('saltada': marcada como no hecha, desde 2026-10-19).
+alter table public.plan_comidas drop constraint if exists plan_comidas_hecha_check;
+alter table public.plan_comidas add constraint plan_comidas_hecha_check check (hecha in ('si', 'no', 'libre', 'saltada'));
 
 create table if not exists public.pesos (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,

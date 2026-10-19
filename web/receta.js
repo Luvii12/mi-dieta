@@ -1,15 +1,17 @@
 // Pantalla «Receta»: macros, ingredientes pesados para tus objetivos, preparación, valoración y, si es una
-// comida del plan activo, «Marcar como hecha» (design/mi_dieta_receta_pollo_al_curry).
+// comida del plan activo, «Marcar como hecha» y, hasta hoy, «No la he hecho»; «Cambiar plato» en el plan
+// activo de hoy en adelante y en el siguiente y el borrador (design/mi_dieta_receta_pollo_al_curry).
 // Rutas: #receta/<plan_id>/<fecha>/<comida> (comida de un plan) y #receta/<id> (biblioteca de recetas, con
 // «Hacer mi versión» y, en las propias, «Editar» y «Borrar»; o propuesta de la IA: en lugar de valorar,
 // «Añadir a la biblioteca» o «Descartar»).
 
 import { llamar } from './api.js';
-import { h, icono, numero, fechaTitulo, ICONO_COMIDA, avisar, abrirFormulario } from './comun.js';
+import { h, icono, numero, fechaTitulo, hoyIso, ICONO_COMIDA, avisar, abrirFormulario } from './comun.js';
 import { buscarComida, buscarReceta, guardarPlan, guardarRecetas, guardarPropuestas, marcarComida, valorar,
   aceptarPropuesta, descartarPropuesta, esPropia, actualizarPropias } from './datos.js';
 import { vacio } from './hoy.js';
 import { abrirAlimentoNuevo, estadoPropuesta } from './recetas.js';
+import { abrirCambiarPlato } from './cambiar.js';
 
 const VALORACIONES = [
   { valor: 'me_encanta', emoji: '😍', texto: 'Me encanta' },
@@ -63,15 +65,17 @@ export function ingredienteFijo(ing) {
 }
 
 function pintar(contenedor, encontrada) {
-  const { comida: c, dia, plan, activo, biblioteca } = encontrada;
+  const { comida: c, dia, plan, activo, vista, biblioteca } = encontrada;
+  const hoy = hoyIso();
   const pesados = c.ingredientes.filter(i => i.escalable);
   const fijos = c.ingredientes.filter(i => !i.escalable);
   const listaPasos = pasos(c.preparacion);
   const m = c.macros;
 
   const valorarCon = valor => () => valorar(c.receta_id, valor).catch(err => avisar(err.message));
-  const marcar = () => marcarComida(plan.plan_id, dia.fecha, c.comida, c.hecha === 'si' ? 'no' : 'si').catch(err => avisar(err.message));
+  const marcarCon = hecha => () => marcarComida(plan.plan_id, dia.fecha, c.comida, hecha).catch(err => avisar(err.message));
   const propuesta = c.propuesta;
+  const cambiable = vista === 'siguiente' || vista === 'borrador' || (vista === 'activo' && dia.fecha >= hoy);
 
   contenedor.replaceChildren(
     h('div', { class: `receta-portada tesela-${c.comida.toLowerCase()}`, 'aria-hidden': 'true' }, icono(ICONO_COMIDA[c.comida])),
@@ -128,16 +132,37 @@ function pintar(contenedor, encontrada) {
             'data-foco': 'valorar-' + v.valor, onclick: valorarCon(v.valor) },
           h('span', { class: 'valoracion-emoji', 'aria-hidden': 'true' }, v.emoji), h('span', null, v.texto))))),
 
-      biblioteca && !propuesta ? accionesReceta(c) : null),
+      biblioteca && !propuesta ? accionesReceta(c) : null,
+      cambiable ? h('section', { class: 'acciones-receta', 'aria-label': 'Cambiar el plato' },
+        h('button', { type: 'button', class: 'boton boton-secundario', 'data-foco': 'cambiar-plato',
+          onclick: () => abrirCambiarPlato(plan.plan_id, dia.fecha, c, { libre: activo && dia.fecha === hoy }) },
+        icono('restaurant_menu'), 'Cambiar plato')) : null),
 
     propuesta ? barraPropuesta(propuesta) : '',
-    activo ? h('div', { class: 'barra-accion' },
-      c.hecha === 'si'
-        ? h('button', { type: 'button', class: 'boton boton-grande boton-hecho', 'data-foco': 'marcar', onclick: marcar },
-          icono('task_alt'), '¡Registrada en tu día!')
-        : h('button', { type: 'button', class: 'boton boton-grande boton-primario', 'data-foco': 'marcar', onclick: marcar },
-          icono('check_circle'), 'Marcar como hecha')) : '');
+    activo ? barraMarcar(c, dia.fecha <= hoy, marcarCon) : '');
   contenedor.classList.toggle('con-barra', Boolean(activo || propuesta));
+}
+
+// Barra de una comida del plan activo: hecha (se desmarca), no hecha (se deshace) o pendiente; hasta hoy,
+// la pendiente también se puede marcar como no hecha.
+function barraMarcar(c, hastaHoy, marcarCon) {
+  if (c.hecha === 'si') {
+    return h('div', { class: 'barra-accion' },
+      h('button', { type: 'button', class: 'boton boton-grande boton-hecho', 'data-foco': 'marcar', onclick: marcarCon('no') },
+        icono('task_alt'), '¡Registrada en tu día!'));
+  }
+  if (c.hecha === 'saltada') {
+    return h('div', { class: 'barra-accion' },
+      h('button', { type: 'button', class: 'boton boton-grande boton-secundario', 'data-foco': 'marcar', onclick: marcarCon('no'),
+        'aria-label': 'No la has hecho. Tocar para deshacer' }, icono('remove'), 'No la has hecho · Deshacer'));
+  }
+  const hecha = h('button', { type: 'button', class: 'boton boton-grande boton-primario', 'data-foco': 'marcar', onclick: marcarCon('si') },
+    icono('check_circle'), 'Marcar como hecha');
+  if (!hastaHoy) return h('div', { class: 'barra-accion' }, hecha);
+  return h('div', { class: 'barra-accion barra-accion-doble' },
+    h('button', { type: 'button', class: 'boton boton-grande boton-secundario', 'data-foco': 'saltar', onclick: marcarCon('saltada') },
+      'No la hice'),
+    hecha);
 }
 
 // Recetas de la biblioteca: hacer una versión propia y, en las que añadió esta cuenta, editar o borrar.

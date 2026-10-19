@@ -225,6 +225,60 @@ test('cambiarPlato: rechaza recetas de otra comida o con alimentos excluidos', (
   assert.ok(alternativas.every(a => a.receta_id !== conSalmon.id));
 });
 
+test('cambiarPlato: en el activo de hoy en adelante, y en el siguiente y el borrador cualquier día', () => {
+  const { gas, plan } = planActivoEnMiercoles();
+  const cambiar = (planId, fecha, comida) => {
+    const base = { plan_id: planId, fecha, comida };
+    const alternativas = gas.llamar('alternativas', base);
+    if (!alternativas.ok) return alternativas;
+    return gas.llamar('cambiarPlato', { ...base, receta_id: alternativas.datos[0].receta_id });
+  };
+  assert.equal(cambiar(plan.plan_id, '2026-10-21', 'Cena').ok, true, 'hoy');
+  assert.equal(cambiar(plan.plan_id, '2026-10-30', 'Cena').ok, true, 'un día que aún no ha llegado');
+  assert.match(gas.llamar('alternativas', { plan_id: plan.plan_id, fecha: '2026-10-20', comida: 'Cena' }).error, /ya ha pasado/);
+  assert.match(gas.llamar('cambiarPlato', { plan_id: plan.plan_id, fecha: '2026-10-20', comida: 'Cena', receta_id: 'C1' }).error, /ya ha pasado/);
+
+  const borrador = gas.llamar('generarPlan').datos;
+  assert.equal(borrador.inicio, '2026-11-02');
+  const r = cambiar(borrador.plan_id, '2026-11-05', 'Almuerzo');
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.datos.comidas.find(c => c.comida === 'Almuerzo').cambiada, true);
+  assert.equal(gas.llamar('activarPlan', { plan_id: borrador.plan_id }).datos.estado, 'siguiente');
+  assert.equal(cambiar(borrador.plan_id, '2026-11-02', 'Desayuno').ok, true, 'el siguiente');
+  const vista = gas.llamar('plan').datos.siguiente;
+  assert.equal(vista.dias[0].comidas[0].cambiada, true);
+  assert.equal(vista.dias[3].comidas.find(c => c.comida === 'Almuerzo').cambiada, true, 'el cambio del borrador sigue');
+});
+
+test('cambiarPlato en el borrador: activarlo con ajuste recalcula los gramos con el plato cambiado', () => {
+  const { gas } = bloqueCompleto('2026-10-31T09:00:00+01:00', 0.01);
+  const borrador = gas.llamar('generarPlan').datos;
+  const base = { plan_id: borrador.plan_id, fecha: borrador.inicio, comida: 'Cena' };
+  const nueva = gas.llamar('alternativas', base).datos[0];
+  assert.equal(gas.llamar('cambiarPlato', { ...base, receta_id: nueva.receta_id }).ok, true);
+  assert.equal(gas.llamar('activarPlan', { plan_id: borrador.plan_id, ajuste_kcal: -120 }).ok, true);
+  const fila = filas(gas, 'plan_comidas').find(f => f.plan_id === borrador.plan_id && f.fecha === borrador.inicio && f.comida === 'Cena');
+  assert.equal(fila.cambiada_por, nueva.receta_id);
+  assert.ok(Number(fila.kcal) < nueva.macros.kcal, `${nueva.macros.kcal} → ${fila.kcal}`);
+  const cena = gas.llamar('plan').datos.siguiente.dias[0].comidas.find(c => c.comida === 'Cena');
+  assert.equal(cena.receta_id, nueva.receta_id);
+});
+
+test('marcarComida saltada: hoy o antes, cuenta en contra en la adherencia pero no como sin marcar', () => {
+  const { gas, plan } = planActivoEnMiercoles();
+  const marcar = (fecha, comida, hecha) => gas.llamar('marcarComida', { plan_id: plan.plan_id, fecha, comida, hecha });
+  assert.equal(marcar('2026-10-21', 'Merienda', 'saltada').ok, true);
+  assert.equal(marcar('2026-10-20', 'Merienda', 'saltada').ok, true, 'un día pasado');
+  assert.match(marcar('2026-10-22', 'Merienda', 'saltada').error, /hoy o de días pasados/);
+  assert.equal(gas.llamar('hoy').datos.comidas.find(c => c.comida === 'Merienda').hecha, 'saltada');
+
+  ['Desayuno', 'Almuerzo', 'Cena'].forEach(c => marcar('2026-10-21', c, 'si'));
+  const p = gas.llamar('progreso').datos;
+  assert.deepEqual(p.bloque.adherencia, { hechas: 3, planificadas: 12, sin_marcar: 7, pct: 25 });
+  assert.equal(p.racha, 0, 'un día con una comida sin hacer no está completo');
+  assert.equal(marcar('2026-10-21', 'Merienda', 'no').ok, true, 'se deshace');
+});
+
 test('valorar: la última valoración cuenta y «No lo repetiría» la quita de las alternativas', () => {
   const { gas, plan } = planActivoEnMiercoles();
   const base = { plan_id: plan.plan_id, fecha: '2026-10-21', comida: 'Desayuno' };

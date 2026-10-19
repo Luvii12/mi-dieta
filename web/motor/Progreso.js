@@ -69,7 +69,8 @@ function cambioSemana_(pesos, hoy) {
 
 // Adherencia de un plan hasta hoy: comidas hechas / comidas planificadas. Cuentan los días pasados y,
 // de hoy, solo las comidas ya marcadas. Con `libreSemanal`, la primera comida libre de cada semana
-// del plan no cuenta (ni a favor ni en contra); el resto de comidas libres cuentan como no hechas.
+// del plan no cuenta (ni a favor ni en contra); el resto de comidas libres cuentan como no hechas. Las
+// marcadas como no hechas («saltada») cuentan en contra, pero no como «sin marcar».
 function adherencia_(comidas, inicio, hoy, libreSemanal) {
   const contadas = comidas.filter(c => c.fecha < hoy || (c.fecha === hoy && c.hecha !== 'no' && c.hecha !== ''))
     .sort((a, b) => String(a.fecha).localeCompare(String(b.fecha)));
@@ -87,7 +88,7 @@ function adherencia_(comidas, inicio, hoy, libreSemanal) {
     }
     planificadas++;
     if (c.hecha === 'si') hechas++;
-    if (c.hecha !== 'si' && c.hecha !== 'libre') sinMarcar++;
+    if (['si', 'libre', 'saltada'].indexOf(c.hecha) < 0) sinMarcar++;
   });
   return { hechas: hechas, planificadas: planificadas, sin_marcar: sinMarcar,
     pct: planificadas ? Math.round(hechas / planificadas * 100) : null };

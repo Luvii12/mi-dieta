@@ -58,7 +58,8 @@ function tarjetaComida(plan, dia, c) {
         h('span', { class: 'pastilla pastilla-proteina' }, `${numero(c.macros.P)}g Prot`),
         h('span', { class: 'pastilla pastilla-carbo' }, `${numero(c.macros.C)}g Carb`),
         h('span', { class: 'pastilla pastilla-grasa' }, `${numero(c.macros.G)}g Gra`))),
-    estaHecha(c) ? icono('check_circle', 'relleno comida-plan-hecha') : icono('chevron_right', 'comida-plan-flecha'));
+    estaHecha(c) ? icono('check_circle', 'relleno comida-plan-hecha')
+      : c.hecha === 'saltada' ? icono('remove', 'comida-plan-saltada') : icono('chevron_right', 'comida-plan-flecha'));
 }
 
 function totalDia(dia, objetivo) {
