@@ -4,6 +4,7 @@
 import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion, cambiarContrasena, puedoEditarAlimentos } from './api.js';
 import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';
 import { METAS, ENTRENOS } from './perfil.js';
+import { abrirAlimentoNuevo } from './recetas.js';
 
 const CACHE_CONFIG = 'dieta.config';
 const CACHE_ALIMENTOS = 'dieta.alimentos';
@@ -156,9 +157,10 @@ async function guardarExcluidos(ids, texto) {
   }
 }
 
-// ---------- Panel de alimentos (añadir excluido o cambiar nombres) ----------
+// ---------- Panel de alimentos (añadir excluido, cambiar nombres o elegir un ingrediente) ----------
 
 let modoAlimentos = 'excluir';
+let alElegir = null; // modo 'elegir': qué hacer con el alimento elegido
 
 const normalizar = t => String(t).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -168,6 +170,16 @@ function pintarListaAlimentos() {
     (!busqueda || normalizar(a.nombre).includes(busqueda) || normalizar(a.id).includes(busqueda)));
   const filas = lista.slice(0, 60).map(a => {
     const detalle = [a.estado, a.recetas ? `en ${a.recetas} ${a.recetas === 1 ? 'receta' : 'recetas'}` : 'sin recetas'].filter(Boolean).join(' · ');
+    if (modoAlimentos === 'elegir') {
+      return h('li', null, h('button', { type: 'button', class: 'fila-alimento',
+        onclick: () => {
+          $('panel-alimentos').close();
+          alElegir(a);
+        } },
+      h('span', { class: 'fila-alimento-texto' }, h('span', { class: 'fila-alimento-nombre' }, a.nombre),
+        h('span', { class: 'fila-alimento-detalle' }, [a.estado, a.unidad ? `1 ud = ${numero(a.unidad)} g` : ''].filter(Boolean).join(' · '))),
+      icono('add', 'texto-primario')));
+    }
     if (modoAlimentos === 'excluir') {
       return h('li', null, h('button', { type: 'button', class: 'fila-alimento',
         onclick: () => {
@@ -202,12 +214,38 @@ function pintarListaAlimentos() {
   });
   if (lista.length > 60) filas.push(h('li', { class: 'texto-ayuda' }, `Y ${lista.length - 60} más: escribe para buscar.`));
   if (!lista.length) filas.push(h('li', { class: 'texto-ayuda' }, 'Ningún alimento coincide.'));
+  const buscado = $('alimentos-buscar').value.trim();
+  if (modoAlimentos === 'elegir' && buscado) {
+    filas.push(h('li', null, h('button', { type: 'button', class: 'boton boton-discontinuo', onclick: () => anadirNuevo(buscado) },
+      icono('add'), h('span', null, `Añadir «${buscado}» como alimento nuevo`))));
+  }
   $('alimentos-lista').replaceChildren(...filas);
+}
+
+// Alimento que no está en la tabla: se añade con los valores de su etiqueta y se elige.
+function anadirNuevo(nombre) {
+  const base = normalizar(nombre).replace(/[^a-z0-9]+/g, '_').replace(/^[^a-z]+|_+$/g, '').slice(0, 36) || 'alimento';
+  let id = base;
+  for (let n = 2; alimentos.some(a => a.id === id); n++) id = `${base}_${n}`;
+  $('panel-alimentos').close();
+  const elegir = alElegir;
+  // Al cerrar el formulario, el foco va a los gramos del ingrediente recién añadido.
+  abrirAlimentoNuevo({ id, nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1), grupo: 'proteina', estado: 'crudo' }, 'gramos-' + id, async nuevo => {
+    await cargarAlimentos();
+    const a = alimentos.find(x => x.id === nuevo);
+    if (a) elegir(a);
+  });
+}
+
+// Panel para elegir un ingrediente al crear una receta (sin los alimentos excluidos). elegir(alimento).
+export function elegirAlimento(elegir) {
+  alElegir = elegir;
+  abrirAlimentos('elegir');
 }
 
 async function abrirAlimentos(modo) {
   modoAlimentos = modo;
-  $('alimentos-titulo').textContent = modo === 'excluir' ? 'Añadir alimento que no como' : 'Nombres de alimentos';
+  $('alimentos-titulo').textContent = { excluir: 'Añadir alimento que no como', nombres: 'Nombres de alimentos', elegir: 'Añadir ingrediente' }[modo];
   $('alimentos-buscar').value = '';
   $('alimentos-estado').textContent = modo === 'nombres' ? 'Cambia un nombre y sal del campo para guardarlo.' : '';
   $('alimentos-lista').replaceChildren();

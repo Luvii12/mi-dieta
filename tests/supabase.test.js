@@ -116,6 +116,15 @@ test('un día completo da lo mismo con Supabase que con el motor solo, y deja la
   await iguales('recetas');
   await iguales('guardarPerfil', { perfil });
   await iguales('plan');
+  // Recetas propias: nueva (mi versión de otra), editada y borrada.
+  const arroz = { comida: 'Cena', nombre: 'Arroz con pollo al limón', preparacion: 'Dora el pollo y mézclalo con el arroz.',
+    ingredientes: [{ alimento: 'pechuga_pollo', gramos: 150 }, { alimento: 'arroz', gramos: 50 }, { alimento: 'aceite_oliva', gramos: 8 }] };
+  const nueva = await iguales('guardarReceta', { receta: arroz, version_de: 'C1' });
+  assert.equal(nueva.ok, true, nueva.error);
+  await iguales('guardarReceta', { receta: { ...arroz, id: nueva.datos.id, ingredientes: arroz.ingredientes.concat([{ alimento: 'tomate', gramos: 80 }]) } });
+  await iguales('recetas');
+  await iguales('borrarReceta', { receta_id: nueva.datos.id });
+  assert.equal(falso.tablas.recetas.find(r => r.id === nueva.datos.id).creado_por, 'u1');
 
   assert.deepEqual(comparables(tablasDeBase(sb, falso, 'u1', navegador.motor)), comparables(todasLasTablas(referencia.contexto)));
 });
@@ -139,6 +148,19 @@ test('cada usuario solo ve y cambia lo suyo', async () => {
   assert.equal(r.ok, false);
   assert.match(r.error, /No tienes permiso para cambiar el alimento aceite_oliva/);
   assert.notEqual(falso.tablas.alimentos.find(a => a.id === 'aceite_oliva').nombre, 'Otro nombre');
+
+  // Las recetas también: u2 crea las suyas, pero no puede editar ni borrar las de u1.
+  await nube('config', { cambios: { objetivo_cena: { kcal: 373, P: 34.9, C: 29.1, G: 12.3 }, objetivo_almuerzo: { kcal: 542, P: 41.1, C: 48, G: 20 } } });
+  const arroz = { comida: 'Cena', nombre: 'Arroz con pollo', preparacion: '',
+    ingredientes: [{ alimento: 'pechuga_pollo', gramos: 150 }, { alimento: 'arroz', gramos: 50 }, { alimento: 'aceite_oliva', gramos: 8 }] };
+  const suya = await nube('guardarReceta', { receta: arroz });
+  assert.equal(suya.ok, true, suya.error);
+  assert.equal(falso.tablas.recetas.find(f => f.id === suya.datos.id).creado_por, 'u2');
+  assert.deepEqual(await sb.recetasPropias(con, sesion), [suya.datos.id]);
+  const ajena = await nube('guardarReceta', { receta: { ...arroz, id: 'C1', nombre: 'Cena de u1 cambiada' } });
+  assert.match(ajena.error, /No tienes permiso para cambiar la receta C1/);
+  assert.match((await nube('borrarReceta', { receta_id: 'C1' })).error, /No tienes permiso/);
+  assert.equal(falso.tablas.recetas.find(f => f.id === 'C1').activa, 'si');
 });
 
 // Receta de cena como la escribiría Claude Code (cuadra con los objetivos de la semilla).

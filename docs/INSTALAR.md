@@ -37,4 +37,9 @@ Es una estimación con fórmulas generales: la app no sustituye a un dietista-nu
 
 Cuando a tu plan le quedan 2 días, la app prepara sola el siguiente al abrirla y te avisa en **Hoy**. Si quieres, revísalo en **Plan** y elige el ajuste de calorías; si no haces nada, empieza solo con las mismas calorías.
 
-Tus datos (plan, pesos y valoraciones) solo los ves tú. Las recetas son comunes: si te gusta un tipo de comida, pídele a Fran recetas nuevas para ti.
+## 5. Tus recetas
+En **Recetas › Crear receta** puedes añadir las tuyas: nombre, comida, ingredientes con los gramos de una ración como la harías y la preparación. Pulsa **Calcular para mi objetivo** y la app ajusta los gramos a tus macros; si no cuadra, te dice qué cambiar (aunque puedes guardarla igualmente). Si un alimento no está, añádelo con los valores de su etiqueta.
+
+En cualquier receta tienes **Hacer mi versión** para cambiarle lo que quieras: la original deja de salirte. Las que creas tú las puedes **Editar** o **Borrar**.
+
+Tus datos (plan, pesos y valoraciones) solo los ves tú. Las recetas son comunes: las que crees también pueden salirles a los demás. Si te apetece un tipo de comida y no quieres escribir la receta, pídele a Fran recetas nuevas para ti.

@@ -1,12 +1,13 @@
 // Pantalla «Receta»: macros, ingredientes pesados para tus objetivos, preparación, valoración y, si es una
 // comida del plan activo, «Marcar como hecha» (design/mi_dieta_receta_pollo_al_curry).
-// Rutas: #receta/<plan_id>/<fecha>/<comida> (comida de un plan) y #receta/<id> (biblioteca de recetas o
-// propuesta de la IA: en lugar de valorar, «Añadir a la biblioteca» o «Descartar»).
+// Rutas: #receta/<plan_id>/<fecha>/<comida> (comida de un plan) y #receta/<id> (biblioteca de recetas, con
+// «Hacer mi versión» y, en las propias, «Editar» y «Borrar»; o propuesta de la IA: en lugar de valorar,
+// «Añadir a la biblioteca» o «Descartar»).
 
 import { llamar } from './api.js';
-import { h, icono, numero, fechaTitulo, ICONO_COMIDA, avisar } from './comun.js';
+import { h, icono, numero, fechaTitulo, ICONO_COMIDA, avisar, abrirFormulario } from './comun.js';
 import { buscarComida, buscarReceta, guardarPlan, guardarRecetas, guardarPropuestas, marcarComida, valorar,
-  aceptarPropuesta, descartarPropuesta } from './datos.js';
+  aceptarPropuesta, descartarPropuesta, esPropia, actualizarPropias } from './datos.js';
 import { vacio } from './hoy.js';
 import { abrirAlimentoNuevo, estadoPropuesta } from './recetas.js';
 
@@ -21,19 +22,19 @@ const COLOR_GRUPO = { proteina: 'primario', carbohidrato: 'carbo', grasa: 'secun
 
 const esMl = ing => ing.alimento.endsWith('_ml');
 
-// «Revuelve…; sirve…» → ['Revuelve…', 'Sirve…']
+// «Revuelve…; sirve…» → ['Revuelve…', 'Sirve…'] (también un paso por línea, como se escriben en la app)
 function pasos(texto) {
-  return String(texto || '').split(/;\s*|\.\s+/).map(p => p.trim().replace(/\.$/, '')).filter(Boolean)
+  return String(texto || '').split(/;\s*|\.\s+|\n+/).map(p => p.trim().replace(/\.$/, '')).filter(Boolean)
     .map(p => p.charAt(0).toUpperCase() + p.slice(1) + '.');
 }
 
-function cajaMacro(clase, titulo, valor, unidad) {
+export function cajaMacro(clase, titulo, valor, unidad) {
   return h('div', { class: 'macro-caja macro-caja-' + clase },
     h('span', { class: 'macro-caja-titulo' }, titulo),
     h('span', { class: 'macro-caja-valor' }, valor, h('span', { class: 'macro-caja-unidad' }, ' ' + unidad)));
 }
 
-function ingredientePesado(ing) {
+export function ingredientePesado(ing) {
   if (ing.gramos == null) return ingredienteConLimites(ing);
   const detalle = [ing.estado === 'crudo' ? 'en crudo' : ing.estado === 'cocinado' ? 'cocinado' : '', ing.piezas ? `${numero(ing.gramos)} g` : '']
     .filter(Boolean).join(' · ');
@@ -55,7 +56,7 @@ function ingredienteConLimites(ing) {
     h('span', { class: 'pesado-cantidad' }, `${numero(ing.min_g)}–${numero(ing.max_g)}`, h('span', { class: 'pesado-unidad' }, esMl(ing) ? ' ml' : ' g')));
 }
 
-function ingredienteFijo(ing) {
+export function ingredienteFijo(ing) {
   return h('li', { class: 'fijo' },
     h('span', null, ing.nombre, ing.nuevo ? h('span', { class: 'pesado-detalle texto-terciario' }, 'alimento nuevo') : null),
     h('span', { class: 'fijo-cantidad' }, `${numero(ing.gramos)} ${esMl(ing) ? 'ml' : 'g'}`));
@@ -125,7 +126,9 @@ function pintar(contenedor, encontrada) {
         h('div', { class: 'valoracion-opciones' }, VALORACIONES.map(v =>
           h('button', { type: 'button', class: 'valoracion-opcion', 'aria-pressed': c.valoracion === v.valor ? 'true' : 'false',
             'data-foco': 'valorar-' + v.valor, onclick: valorarCon(v.valor) },
-          h('span', { class: 'valoracion-emoji', 'aria-hidden': 'true' }, v.emoji), h('span', null, v.texto)))))),
+          h('span', { class: 'valoracion-emoji', 'aria-hidden': 'true' }, v.emoji), h('span', null, v.texto))))),
+
+      biblioteca && !propuesta ? accionesReceta(c) : null),
 
     propuesta ? barraPropuesta(propuesta) : '',
     activo ? h('div', { class: 'barra-accion' },
@@ -135,6 +138,31 @@ function pintar(contenedor, encontrada) {
         : h('button', { type: 'button', class: 'boton boton-grande boton-primario', 'data-foco': 'marcar', onclick: marcar },
           icono('check_circle'), 'Marcar como hecha')) : '');
   contenedor.classList.toggle('con-barra', Boolean(activo || propuesta));
+}
+
+// Recetas de la biblioteca: hacer una versión propia y, en las que añadió esta cuenta, editar o borrar.
+function accionesReceta(c) {
+  const id = encodeURIComponent(c.receta_id);
+  const borrar = () => abrirFormulario({
+    titulo: `¿Borrar «${c.nombre}»?`,
+    nota: 'Dejará de salir en los planes nuevos de todos. Los platos que ya estén en un plan se quedan.',
+    campos: [],
+    textoGuardar: 'Borrar receta',
+    foco: 'borrar-receta',
+    guardar: async () => {
+      await llamar('borrarReceta', { receta_id: c.receta_id });
+      guardarRecetas(await llamar('recetas'));
+      await actualizarPropias();
+      avisar('Receta borrada.');
+      location.hash = '#recetas';
+    },
+  });
+  return h('section', { class: 'acciones-receta', 'aria-label': 'Cambiar la receta' },
+    h('a', { class: 'boton boton-secundario', href: '#nueva/' + id }, icono('edit_note'), 'Hacer mi versión'),
+    esPropia(c.receta_id) ? [
+      h('a', { class: 'boton boton-secundario', href: '#editar/' + id }, icono('edit'), 'Editar'),
+      h('button', { type: 'button', class: 'boton boton-texto boton-peligro', 'data-foco': 'borrar-receta', onclick: borrar }, icono('delete'), 'Borrar receta'),
+    ] : null);
 }
 
 // Qué le pasa a una propuesta que aún no se puede añadir: el alimento que falta (con botón para añadirlo)
@@ -212,7 +240,7 @@ export async function cargarReceta(contenedor) {
   contenedor.replaceChildren(h('p', { class: 'cargando' }, 'Cargando receta…'));
   try {
     if (esDeBiblioteca()) {
-      const [recetas, propuestas] = await Promise.all([llamar('recetas'), llamar('propuestas')]);
+      const [recetas, propuestas] = await Promise.all([llamar('recetas'), llamar('propuestas'), actualizarPropias()]);
       guardarRecetas(recetas);
       guardarPropuestas(propuestas);
     }

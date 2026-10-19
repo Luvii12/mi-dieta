@@ -2,13 +2,14 @@
 // Los cambios se aplican primero en la copia local (la pantalla responde al momento) y, si el servidor
 // falla, se deshacen.
 
-import { llamar, leerLocal, guardarLocal } from './api.js';
+import { llamar, leerLocal, guardarLocal, idsRecetasPropias } from './api.js';
 import { hoyIso } from './comun.js';
 
 const CACHE_HOY = 'dieta.ultimoHoy';
 const CACHE_PLAN = 'dieta.plan';
 const CACHE_RECETAS = 'dieta.recetas';
 const CACHE_PROPUESTAS = 'dieta.propuestas';
+const CACHE_PROPIAS = 'dieta.recetasPropias';
 
 export const leerPlan = () => leerLocal(CACHE_PLAN);
 export const guardarPlan = datos => guardarLocal(CACHE_PLAN, datos);
@@ -18,6 +19,16 @@ export const leerRecetas = () => leerLocal(CACHE_RECETAS);
 export const guardarRecetas = recetas => guardarLocal(CACHE_RECETAS, recetas);
 export const leerPropuestas = () => leerLocal(CACHE_PROPUESTAS);
 export const guardarPropuestas = propuestas => guardarLocal(CACHE_PROPUESTAS, propuestas);
+export const esPropia = id => (leerLocal(CACHE_PROPIAS) || []).includes(id);
+
+// Vuelve a pedir qué recetas son de esta cuenta. Sin conexión se queda con lo que había.
+export async function actualizarPropias() {
+  try {
+    guardarLocal(CACHE_PROPIAS, await idsRecetasPropias());
+  } catch (err) {
+    // Se reintenta la próxima vez que se abra Recetas.
+  }
+}
 
 // Receta de la biblioteca (o propuesta de la IA) con la misma forma que una comida del plan (para la
 // pantalla «Receta»). Las propuestas llevan `propuesta` (estado, alimentos que faltan o motivo) y, si aún

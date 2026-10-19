@@ -1,4 +1,5 @@
-// Arranque y navegación entre pantallas (#hoy, #plan, #recetas, #receta/…, #progreso, #ajustes, #perfil). Sin
+// Arranque y navegación entre pantallas (#hoy, #plan, #recetas, #receta/…, #nueva, #editar/…, #progreso, #ajustes,
+// #perfil). Sin
 // sesión, solo la pantalla de entrada; con una cuenta que aún no tiene objetivos, solo el alta.
 
 import { haySesion, llamar, leerLocal, guardarLocal } from './api.js';
@@ -8,18 +9,22 @@ import { cargarHoy, pintarHoy } from './hoy.js';
 import { cargarPlan, pintarPlan } from './plan.js';
 import { cargarReceta, pintarReceta, recordarAnterior } from './receta.js';
 import { cargarRecetas, pintarRecetas, precargarRecetas } from './recetas.js';
+import { cargarEditor } from './editor.js';
 import { cargarAjustes, prepararAjustes } from './ajustes.js';
 import { cargarProgreso, prepararProgreso, precargarProgreso } from './progreso.js';
 import { prepararPanel } from './cambiar.js';
 import { pintarEntrar } from './entrar.js';
 import { pintarPerfil, CLAVE_ALTA } from './perfil.js';
 
-const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'progreso', 'ajustes', 'perfil', 'entrar', 'alta'];
+const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'editor', 'progreso', 'ajustes', 'perfil', 'entrar', 'alta'];
+// Rutas que no se llaman como su pantalla: el editor de recetas (crear, mi versión y editar).
+const RUTAS = { nueva: 'editor', editar: 'editor' };
 
 const vistaActual = () => {
   if (!haySesion()) return 'entrar';
   if (leerLocal(CLAVE_ALTA) === true) return 'alta';
-  const nombre = location.hash.slice(1).split('/')[0];
+  const parte = location.hash.slice(1).split('/')[0];
+  const nombre = RUTAS[parte] || parte;
   return VISTAS.includes(nombre) && nombre !== 'entrar' && nombre !== 'alta' ? nombre : 'hoy';
 };
 
@@ -33,7 +38,7 @@ function mostrarVista() {
   document.body.dataset.vista = vista;
   // Pestaña activa de la barra inferior (la receta no tiene: tapa la barra con su botón).
   document.querySelectorAll('.navegacion a').forEach(a => {
-    if (a.dataset.vista === vista) a.setAttribute('aria-current', 'page');
+    if (a.dataset.vista === (vista === 'editor' ? 'recetas' : vista)) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
   window.scrollTo(0, 0);
@@ -50,6 +55,7 @@ function mostrarVista() {
   if (vista === 'plan') cargarPlan($('vista-plan'));
   if (vista === 'recetas') cargarRecetas($('vista-recetas'));
   if (vista === 'receta') cargarReceta($('vista-receta'));
+  if (vista === 'editor') cargarEditor($('vista-editor'));
   if (vista === 'progreso') cargarProgreso($('vista-progreso'));
   if (vista === 'ajustes') cargarAjustes();
 }

@@ -205,6 +205,12 @@ export async function editaAlimentos(con, sesion) {
   return filas.length > 0;
 }
 
+// Ids de las recetas que ha añadido a la biblioteca esta cuenta: las que puede editar y borrar.
+export async function recetasPropias(con, sesion) {
+  const filas = await rest(con, sesion, 'GET', `recetas?select=id&creado_por=eq.${sesion.usuario.id}&activa=eq.si&order=id`);
+  return filas.map(f => f.id);
+}
+
 // ---------- Filas de la base ↔ filas del motor ----------
 
 // Fila de la base → fila del motor, como una celda de Sheets: '' si no hay valor y los jsonb como texto JSON.

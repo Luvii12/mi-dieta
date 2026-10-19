@@ -26,3 +26,13 @@ La IA devuelve JSON con el mismo formato que la semilla (`nombre`, `comida`, `pr
 3. Guarda la receta con `origen = ia` y `activa = propuesta`; el usuario la revisa en Recetas y la añade o la descarta.
 
 Si la IA necesita un alimento que no está en la tabla, lo declara en `alimentos_nuevos` (id, nombre, grupo, crudo/cocinado, **sin macros**). La propuesta queda «Falta alimento» hasta que el usuario lo añade con los valores de la etiqueta o de BEDCA; entonces pasa el optimizador como las demás. Máximo 2 alimentos nuevos por receta.
+
+## Recetas propias (creadas en la app)
+Cualquiera crea recetas en Recetas › «Crear receta», hace «Mi versión» de una de la biblioteca o edita las suyas (`web/editor.js`, motor en `web/motor/MisRecetas.js`). Decidido por Fran (2026-10-19):
+- Pone los gramos de **una ración como la haría**. La app decide qué se ajusta: proteína, lácteos, hidratos y grasas son escalables entre **0,5 y 1,6 veces** lo que puso (las piezas, en unidades enteras); verduras y condimentos quedan fijos. Con las 22 semillas y gramos «a ojo» (±30–40 %) cuadra el 95 % de las veces.
+- Se guarda a la **escala del plan de Fran** (dividiendo por el factor de ración de quien la crea, `factorRacion_`), como todas las recetas, para que a cada persona le salga su ración.
+- Va a la **biblioteca común** (`origen = manual`, ids `R1, R2…`): puede salir en los planes de todos.
+- Si no cuadra con el objetivo de su comida, **se puede guardar con un aviso** que dice qué cambiar («le falta proteína: añade claras…»): el día la compensa, aunque puede haber días «a revisar».
+- «Mi versión» marca la original como «No repetiría» para quien la hace.
+- Editar y borrar: solo quien la creó (la base lo impone; Fran es el creador de las 22 semillas). Al editar no se cambia la comida y se recalculan las comidas sin comer de los planes de quien edita. Borrar la deja en `activa = no`: los platos ya planificados se quedan.
+- Si falta un alimento, se añade desde el buscador con los valores de su etiqueta (como en las propuestas de la IA).

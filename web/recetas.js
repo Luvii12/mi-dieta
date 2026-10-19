@@ -1,12 +1,12 @@
 // Pantalla «Recetas»: la biblioteca completa, agrupada por comida, con los gramos ajustados al objetivo
 // de cada comida. Sin diseño propio en design/: sigue el estilo de las tarjetas de «Plan».
 // Al tocar una receta se abre #receta/<id>.
-// Arriba, las recetas propuestas por la IA pendientes de revisar (las escribe Claude Code con
-// scripts/recetas_ia.js; la app solo las enseña, las añade o las descarta).
+// Arriba, «Crear receta» (#nueva, editor.js) y las recetas propuestas por la IA pendientes de revisar (las
+// escribe Claude Code con scripts/recetas_ia.js; la app solo las enseña, las añade o las descarta).
 
 import { llamar } from './api.js';
 import { h, icono, numero, tesela, avisar, abrirFormulario, COMIDAS } from './comun.js';
-import { leerRecetas, guardarRecetas, leerPropuestas, guardarPropuestas, anadirAlimento } from './datos.js';
+import { leerRecetas, guardarRecetas, leerPropuestas, guardarPropuestas, anadirAlimento, actualizarPropias } from './datos.js';
 import { vacio } from './hoy.js';
 
 const EMOJI_VALORACION = { me_encanta: ['😍', 'Me encanta'], no_repetir: ['🤔', 'No repetiría'] };
@@ -80,6 +80,7 @@ function pintar(contenedor, recetas, propuestas) {
         h('h1', { class: 'titulo-pantalla' }, 'Recetas'),
         h('p', { class: 'subtitulo' }, 'Gramos calculados para el objetivo de cada comida.')),
       h('span', { class: 'insignia insignia-primaria' }, `${recetas.length} recetas`)),
+    h('a', { class: 'boton boton-discontinuo', href: '#nueva' }, icono('add'), 'Crear receta'),
     seccionPropuestas(propuestas || []),
     ...COMIDAS.map(comida => {
       const deComida = recetas.filter(r => r.comida === comida);
@@ -102,7 +103,7 @@ export function pintarRecetas(contenedor) {
 // al momento y ya actualizada. Si falla, no pasa nada: se pedirán al abrir la pestaña.
 export async function precargarRecetas() {
   try {
-    const [recetas, propuestas] = await Promise.all([llamar('recetas'), llamar('propuestas')]);
+    const [recetas, propuestas] = await Promise.all([llamar('recetas'), llamar('propuestas'), actualizarPropias()]);
     guardarRecetas(recetas);
     guardarPropuestas(propuestas);
   } catch (err) {
@@ -114,7 +115,7 @@ export async function cargarRecetas(contenedor) {
   const habia = pintarRecetas(contenedor);
   if (!habia) contenedor.replaceChildren(h('p', { class: 'cargando' }, 'Calculando recetas…'));
   try {
-    const [recetas, propuestas] = await Promise.all([llamar('recetas'), llamar('propuestas').catch(() => leerPropuestas())]);
+    const [recetas, propuestas] = await Promise.all([llamar('recetas'), llamar('propuestas').catch(() => leerPropuestas()), actualizarPropias()]);
     guardarRecetas(recetas);
     guardarPropuestas(propuestas);
     pintar(contenedor, recetas, propuestas);
@@ -128,8 +129,9 @@ export async function cargarRecetas(contenedor) {
 const GRUPOS = [['proteina', 'Proteína'], ['carbohidrato', 'Hidratos'], ['grasa', 'Grasa'], ['lacteo', 'Lácteo'], ['fruta', 'Fruta'],
   ['verdura_condimento', 'Verdura o condimento']];
 
-// falta: {id, nombre, grupo, estado} (lo que dijo la IA; los valores por 100 g los pone el usuario).
-export function abrirAlimentoNuevo(falta, foco) {
+// falta: {id, nombre, grupo, estado} (lo que dijo la IA o lo que se buscó al crear una receta; los valores por
+// 100 g los pone el usuario). alAnadir(id): tras añadirlo (opcional).
+export function abrirAlimentoNuevo(falta, foco, alAnadir) {
   abrirFormulario({
     titulo: 'Añadir alimento',
     nota: 'Valores por 100 g, de la etiqueta o de BEDCA, en el estado que indiques (crudo o cocinado). La IA no da valores nutricionales.',
@@ -151,6 +153,7 @@ export function abrirAlimentoNuevo(falta, foco) {
       }
       await anadirAlimento(Object.assign({ id: falta.id }, v, { gramos_por_unidad: Number.isNaN(v.gramos_por_unidad) ? '' : v.gramos_por_unidad }));
       avisar(`${v.nombre} añadido a tus alimentos.`);
+      if (alAnadir) await alAnadir(falta.id);
     },
   });
 }

@@ -280,7 +280,8 @@ const ACCIONES = {
     return ACCIONES.progreso();
   },
 
-  // Todos los alimentos (para Ajustes), con cuántas recetas activas los usan y si están excluidos.
+  // Todos los alimentos (para Ajustes y para crear recetas), con sus gramos por unidad, cuántas recetas
+  // activas los usan y si están excluidos.
   alimentos: function () {
     const usos = {};
     recetasActivas_(leerRecetasPorId_()).forEach(r => r.ingredientes_fijos.concat(r.ingredientes_escalables).forEach(i => {
@@ -288,7 +289,7 @@ const ACCIONES = {
     }));
     const excluidos = new Set(leerTabla_('preferencias').filter(p => p.tipo === 'excluido').map(p => p.alimento_id));
     return leerTabla_('alimentos').map(a => ({ id: a.id, nombre: a.nombre || a.id, grupo: a.grupo, estado: a.estado,
-      recetas: usos[a.id] || 0, excluido: excluidos.has(a.id) }))
+      unidad: Number(a.gramos_por_unidad) || null, recetas: usos[a.id] || 0, excluido: excluidos.has(a.id) }))
       .sort((a, b) => String(a.nombre).localeCompare(String(b.nombre), 'es'));
   },
 
@@ -312,6 +313,17 @@ const ACCIONES = {
       reescribirTabla_('preferencias', otras.concat(ids.map(id => ({ tipo: 'excluido', alimento_id: id, nota: '' }))));
     });
     return ids;
+  },
+
+  // ---------- Recetas propias (MisRecetas.js) ----------
+
+  // Recetas que crea cada persona (MisRecetas.js): guardarReceta ({receta, version_de?, probar?}) y
+  // borrarReceta ({receta_id}).
+  guardarReceta: function (peticion) {
+    return guardarRecetaManual_(peticion);
+  },
+  borrarReceta: function (peticion) {
+    return borrarRecetaManual_(peticion);
   },
 
   // ---------- Recetas con IA (RecetasIA.js) ----------

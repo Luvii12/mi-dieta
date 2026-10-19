@@ -151,18 +151,23 @@ function evaluarDia_(macros, objetivo, tol) {
   return evaluacion;
 }
 
+// Cuánto se escala un alimento de una receta de `comida` para `objetivo` frente al plan de Fran (1 = nada),
+// según el macro de su grupo; entre ESCALA_MINIMA y ESCALA_MAXIMA.
+function factorRacion_(id, comida, objetivo, alimentos) {
+  const ref = REFERENCIA_COMIDAS[comida];
+  if (!ref || !objetivo) return 1;
+  const n = MACRO_DEL_GRUPO[alimento_(id, alimentos).grupo] || 'kcal';
+  const f = Number(objetivo[n]) / ref[n];
+  return f > 0 ? Math.min(ESCALA_MAXIMA, Math.max(ESCALA_MINIMA, f)) : 1;
+}
+
 // La receta con sus cantidades escaladas a las raciones de `objetivo`: cada ingrediente según el macro de
 // su grupo (la proteína escala con P, los hidratos y la fruta con C, la grasa con G y la verdura con las
 // kcal), en proporción al objetivo de esa comida en el plan de Fran. Con sus objetivos, la receta no cambia.
 // Las piezas (huevos, panes…) siguen siendo enteras.
 function racionesReceta_(receta, objetivo, alimentos) {
-  const ref = REFERENCIA_COMIDAS[receta.comida];
-  if (!ref || !objetivo) return receta;
-  const factor = id => {
-    const n = MACRO_DEL_GRUPO[alimento_(id, alimentos).grupo] || 'kcal';
-    const f = Number(objetivo[n]) / ref[n];
-    return f > 0 ? Math.min(ESCALA_MAXIMA, Math.max(ESCALA_MINIMA, f)) : 1;
-  };
+  if (!REFERENCIA_COMIDAS[receta.comida] || !objetivo) return receta;
+  const factor = id => factorRacion_(id, receta.comida, objetivo, alimentos);
   const ids = receta.ingredientes_fijos.concat(receta.ingredientes_escalables).map(i => i.alimento);
   if (ids.every(id => factor(id) === 1)) return receta;
   const piezas = (g, u) => Math.max(1, Math.round(g / u)) * u;
@@ -227,6 +232,6 @@ function ajustarReceta_(original, objetivo, alimentos, tolComida) {
 if (typeof module !== 'undefined') {
   module.exports = {
     NUTRIENTES, REFERENCIA_COMIDAS, indexarAlimentos_, calcularMacros_, redondearMacros_, sumarMacros_, minimosCuadradosAcotados_, optimizarGramos_,
-    redondearGramos_, evaluarComida_, evaluarDia_, racionesReceta_, ajustarReceta_,
+    redondearGramos_, evaluarComida_, evaluarDia_, factorRacion_, racionesReceta_, ajustarReceta_,
   };
 }
