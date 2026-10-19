@@ -21,11 +21,12 @@ function diaSemana_(iso) {
   return (new Date(iso + 'T00:00:00Z').getUTCDay() + 6) % 7;
 }
 
-// El plan empieza el lunes siguiente a hoy; si hay un plan activo que acaba más tarde, el día después.
+// Sin plan activo, el plan empieza el lunes siguiente a hoy. Con uno, el día después de que acabe (aunque no
+// sea lunes: el primero de quien se da de alta empieza cualquier día) o, si ya acabó, hoy mismo, para no
+// quedarse días sin plan.
 function fechaInicioPlan_(hoyIso, finPlanActivo) {
-  let inicio = sumarDias_(hoyIso, 7 - diaSemana_(hoyIso));
-  if (finPlanActivo && finPlanActivo >= inicio) inicio = sumarDias_(finPlanActivo, 1);
-  return inicio;
+  if (finPlanActivo) return finPlanActivo < hoyIso ? hoyIso : sumarDias_(finPlanActivo, 1);
+  return sumarDias_(hoyIso, 7 - diaSemana_(hoyIso));
 }
 
 // ---------- Azar reproducible ----------

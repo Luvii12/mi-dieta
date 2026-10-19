@@ -65,7 +65,8 @@ test('plan → activar → hoy: el día a día del plan activo', () => {
   const borrador = gas.llamar('generarPlan').datos;
 
   let hoy = gas.llamar('hoy').datos;
-  assert.match(hoy.mensaje, /borrador/);
+  assert.equal(hoy.inicio, '2026-10-19', 'el borrador aún no ha empezado');
+  assert.equal(hoy.plan_id, null);
 
   assert.equal(gas.llamar('activarPlan', { plan_id: borrador.plan_id }).ok, true);
   const vista = gas.llamar('plan').datos;
@@ -115,8 +116,8 @@ test('activarPlan: con el activo ya terminado, lo archiva', () => {
   gas.llamar('activarPlan', { plan_id: primero.plan_id });
   const despues = enFecha(gas, '2026-11-03T08:00:00+01:00');
   const segundo = despues.llamar('generarPlan').datos;
-  assert.equal(segundo.inicio, '2026-11-09');
-  assert.equal(despues.llamar('activarPlan', { plan_id: segundo.plan_id }).datos.estado, 'activo');
+  assert.equal(segundo.inicio, '2026-11-03', 'empieza hoy');
+  assert.equal(despues.llamar('activarPlan', { plan_id: segundo.plan_id }).datos.estado, 'activo', 'se puede activar con su ajuste');
   assert.equal(filas(despues, 'planes').find(p => p.plan_id === primero.plan_id).estado, 'archivado');
 });
 
@@ -338,12 +339,42 @@ test('revisarFinDePlan: también si el plan ya terminó; sin plan activo no hace
   const { gas } = bloqueCompleto('2026-11-04T10:00:00+01:00', 0.01);
   const r = gas.llamar('revisarFinDePlan');
   assert.equal(r.ok, true, r.error);
-  assert.equal(r.datos.generado.inicio, '2026-11-09', 'el lunes siguiente');
-  assert.equal(gas.llamar('revisarFinDePlan').datos.generado, null, 'ya hay borrador');
+  assert.equal(r.datos.generado.inicio, '2026-11-04', 'empieza hoy');
+  assert.equal(gas.llamar('hoy').datos.plan_id, r.datos.generado.plan_id, 'y se activa solo');
+  assert.equal(gas.llamar('revisarFinDePlan').datos.generado, null, 'ya hay uno en curso');
 
   const nuevo = enFecha(preparar(), '2026-11-04T10:00:00+01:00');
   assert.equal(nuevo.llamar('revisarFinDePlan').datos.generado, null);
   assert.equal(filas(nuevo, 'planes').length, 0);
+});
+
+test('activación automática: el borrador sin activar se activa solo el día que empieza, sin cambiar calorías', () => {
+  // Borrador generado 2 días antes del fin y sin activar.
+  const { gas, plan } = bloqueCompleto('2026-10-30T07:00:00+01:00', 0.01);
+  gas.llamar('revisarFinDePlan');
+  const borrador = gas.llamar('plan').datos.borrador;
+  const kcal = gas.llamar('config').datos.objetivo_almuerzo.kcal;
+  assert.equal(gas.llamar('hoy').datos.plan_id, plan.plan_id, 'el último día del activo sigue el activo');
+
+  const lunes = enFecha(gas, '2026-11-02T08:00:00+01:00');
+  const hoy = lunes.llamar('hoy').datos;
+  assert.equal(hoy.plan_id, borrador.plan_id);
+  assert.equal(hoy.comidas.length, 4);
+  const estados = Object.fromEntries(filas(lunes, 'planes').map(p => [p.plan_id, p.estado]));
+  assert.deepEqual(estados, { [plan.plan_id]: 'archivado', [borrador.plan_id]: 'activo' });
+  assert.equal(lunes.llamar('config').datos.objetivo_almuerzo.kcal, kcal, 'mismas calorías');
+  const historial = filas(lunes, 'ajustes_historial');
+  assert.equal(historial.length, 1);
+  assert.equal(historial[0].aceptada, historial[0].propuesta_kcal === 0 ? 'si' : 'no');
+});
+
+test('activación automática: el primer plan (tras el alta) se activa solo al empezar', () => {
+  const gas = preparar();
+  const borrador = gas.llamar('generarPlan').datos;
+  assert.equal(gas.llamar('plan').datos.borrador.plan_id, borrador.plan_id, 'antes de empezar sigue en borrador');
+  const lunes = enFecha(gas, '2026-10-19T08:00:00+02:00');
+  assert.equal(lunes.llamar('hoy').datos.plan_id, borrador.plan_id);
+  assert.equal(filas(lunes, 'ajustes_historial').length, 0, 'sin bloque anterior no hay ajuste');
 });
 
 test('activarPlan con ajuste: cambia objetivos, recalcula gramos del borrador y lo apunta en el historial', () => {

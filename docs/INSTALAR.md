@@ -24,7 +24,7 @@ Si algún día la olvidas, pídele a Fran una temporal nueva.
 ## 3. Tu perfil
 La primera vez la app te pregunta tu objetivo (perder grasa, mantener o ganar músculo), los días que entrenas, tu trabajo, sexo, fecha de nacimiento, altura y peso. Con eso calcula tus calorías y macros. Los puedes cambiar cuando quieras en **Ajustes › Mi objetivo**.
 
-Al pulsar **Empezar** prepara tu primer plan, que empieza **mañana**. Revísalo en la pestaña **Plan** y pulsa **Activar plan**.
+Al pulsar **Empezar** prepara tu primer plan, que empieza **mañana**. Puedes revisarlo en la pestaña **Plan** y pulsar **Activar plan**; si no, se activa solo.
 
 Es una estimación con fórmulas generales: la app no sustituye a un dietista-nutricionista.
 
@@ -35,6 +35,6 @@ Es una estimación con fórmulas generales: la app no sustituye a un dietista-nu
 - **Progreso**: pésate y apúntalo, mejor por la mañana y en ayunas. Con tu peso y lo que marcas, la app propone el ajuste del siguiente plan.
 - **Ajustes**: alimentos que no quieres que salgan, la comida libre semanal y tu peso objetivo.
 
-Cuando a tu plan le quedan 2 días, la app prepara sola el siguiente al abrirla: te avisa en **Hoy** para que lo revises y lo actives.
+Cuando a tu plan le quedan 2 días, la app prepara sola el siguiente al abrirla y te avisa en **Hoy**. Si quieres, revísalo en **Plan** y elige el ajuste de calorías; si no haces nada, empieza solo con las mismas calorías.
 
 Tus datos (plan, pesos y valoraciones) solo los ves tú. Las recetas son comunes: si te gusta un tipo de comida, pídele a Fran recetas nuevas para ti.

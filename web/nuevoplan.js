@@ -147,7 +147,7 @@ export function vistaNuevoPlan(plan, acciones) {
     h('div', { class: 'acciones-plan' },
       h('button', { type: 'button', class: 'boton boton-primario boton-grande', onclick: () => acciones.activar(balance ? eleccion[plan.plan_id] : 0) },
         icono('event_available'), 'Activar plan', icono('arrow_forward')),
-      h('p', { class: 'nota-activar' }, `Empieza el ${fechaTitulo(plan.inicio).toLowerCase()} · Podrás cambiar cualquier plato cuando quieras`),
+      h('p', { class: 'nota-activar' }, `Empieza el ${fechaTitulo(plan.inicio).toLowerCase()} · Si no lo activas antes, ese día se activará solo sin cambiar las calorías`),
       h('button', { type: 'button', class: 'boton boton-secundario', onclick: acciones.regenerar }, 'Generar otro borrador')),
   ];
 }

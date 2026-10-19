@@ -22,10 +22,10 @@ Generar cada 14 días un plan con 4 comidas diarias (desayuno, almuerzo, meriend
 3. Ajustar los gramos de los ingredientes escalables con el optimizador para cuadrar los macros de esa comida.
 4. Redondear (5 g, 5 ml de aceite o piezas enteras) y recalcular macros.
 5. Validar el día completo con las tolerancias. Si un día falla, probar otra combinación de recetas (máx. 20 intentos) y, si sigue fallando, marcarlo para revisión.
-6. Guardar como **borrador**; el usuario lo revisa y lo activa.
+6. Guardar como **borrador**; el usuario lo revisa y lo activa. Si no lo activa, se activa solo el día que empieza, sin cambiar las calorías.
 
 ## Automatización
-- Al abrir la app (una vez al día): si al plan activo le quedan 2 días o menos, calcula el progreso, propone el ajuste y genera el borrador.
+- Al abrir la app (una vez al día): si al plan activo le quedan 2 días o menos, calcula el progreso, propone el ajuste y genera el borrador (si ya terminó, el nuevo empieza ese día y se activa solo).
 - Botón manual «Generar nuevo plan» en cualquier momento.
 
 ## Fases posteriores (no ahora)

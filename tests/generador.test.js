@@ -34,9 +34,10 @@ test('fechas: el plan empieza el lunes siguiente', () => {
   assert.equal(G.fechaInicioPlan_('2026-10-19'), '2026-10-26'); // lunes → el siguiente
 });
 
-test('fechas: con un plan activo, empieza el día después de que acabe', () => {
+test('fechas: con un plan activo, empieza el día después de que acabe (o hoy, si ya acabó)', () => {
   assert.equal(G.fechaInicioPlan_('2026-10-16', '2026-11-01'), '2026-11-02');
-  assert.equal(G.fechaInicioPlan_('2026-10-16', '2026-10-11'), '2026-10-19'); // plan ya acabado
+  assert.equal(G.fechaInicioPlan_('2026-10-16', '2026-10-16'), '2026-10-17'); // acaba hoy (viernes): sin hueco hasta el lunes
+  assert.equal(G.fechaInicioPlan_('2026-10-16', '2026-10-11'), '2026-10-16'); // plan ya acabado
 });
 
 test('fechas: sumar días cruza meses y el cambio de hora', () => {

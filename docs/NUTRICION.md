@@ -49,7 +49,7 @@ Al darse de alta, y cada vez que alguien cambia de objetivo en Ajustes › Mi ob
    - Ritmo < 0,25 %/semana con adherencia ≥ 80 %: −100 a −150 kcal, quitando de carbohidratos o grasa (nunca proteína).
    - Ritmo > 1 %/semana: +100 a +150 kcal.
    - Menos de 4 pesajes en el bloque: no proponer ajuste.
-5. El ajuste se reparte proporcionalmente entre comidas y siempre es una **propuesta** que el usuario acepta.
+5. El ajuste se reparte proporcionalmente entre comidas y siempre es una **propuesta** que el usuario acepta. Si no activa el borrador, el día que empieza se activa solo manteniendo las calorías.
 6. **Según el objetivo del perfil** (las reglas de arriba son las de perder grasa, y las de quien no tiene perfil):
    - Mantener: ritmo entre −0,25 % y +0,25 % semanal → mantener; pierde más → +120; gana más → −120. Alternativa a mantener: −120.
    - Ganar músculo: ritmo < +0,1 % → +120; entre +0,1 % y +0,5 % → mantener (alternativa: «Acelerar ganancia», +120); > +0,5 % → −120.
