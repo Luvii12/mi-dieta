@@ -1,7 +1,8 @@
 // Recetas propuestas por la IA (Fase 5). Claude propone platos en JSON usando los alimentos de la tabla;
 // el código los valida y calcula los gramos. La IA nunca da valores nutricionales.
 // Las escribe Claude Code con la suscripción del usuario (sin API de pago): pide `pedidoRecetas`, escribe las
-// recetas y las manda con `importarPropuestas` (scripts/recetas_ia.js). La versión que llamaba a la API (desde
+// recetas y las manda con `importarPropuestas` (scripts/recetas_ia.js). Desde la app, «Pedir recetas a la IA»
+// (web/pedir.js) copia el `encargo` para pegarlo en el chat de IA de cada uno y pega su respuesta (`texto`). La versión que llamaba a la API (desde
 // el antiguo Apps Script) está en el historial de git, commit 3fb63e7.
 //
 // Una receta propuesta se guarda en `recetas` con origen = ia y activa = propuesta hasta que el usuario la
@@ -328,6 +329,51 @@ function guardarPropuestasIA_(recetas) {
   return ids;
 }
 
+// ---------- Encargo para un chat de IA (Claude, ChatGPT, Gemini…) desde la app ----------
+
+const FORMATO_CHAT_IA = [
+  'Responde solo con un bloque JSON, sin nada más, con esta forma (los `alimento` son los `id` de la tabla):',
+  JSON.stringify({ recetas: [{
+    nombre: 'Nombre del plato',
+    preparacion: 'Primer paso; segundo paso; tercer paso',
+    ingredientes_fijos: [{ alimento: 'tomate', gramos: 60 }],
+    ingredientes_escalables: [{ alimento: 'pechuga_pollo', min_g: 100, max_g: 200, unidad: false },
+      { alimento: 'aceite_oliva', min_g: 3, max_g: 15, unidad: false }],
+    alimentos_nuevos: [],
+  }] }, null, 1),
+  'Si usas un alimento nuevo, descríbelo en `alimentos_nuevos` así: {"id": "salmon_ahumado", "nombre": "Salmón ahumado", ' +
+    `"grupo": uno de ${GRUPOS_ALIMENTO.join(', ')}, "estado": "crudo" o "cocinado"}. Nunca pongas calorías ni macros.`,
+].join('\n');
+
+// Todo lo que hay que pegar en el chat: instrucciones, pedido y formato de la respuesta.
+function encargoChatIA_(sistema, mensaje) {
+  return [sistema, mensaje, FORMATO_CHAT_IA].join('\n\n');
+}
+
+// Lo que el chat contestó, pegado tal cual (puede venir en un bloque de código o con texto alrededor) → recetas.
+function leerRespuestaIA_(texto) {
+  const t = String(texto || '');
+  const inicio = t.search(/[[{]/);
+  const fin = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
+  let datos = null;
+  if (inicio >= 0 && fin > inicio) {
+    try {
+      datos = JSON.parse(t.slice(inicio, fin + 1));
+    } catch (err) {
+      datos = null;
+    }
+  }
+  const recetas = Array.isArray(datos) ? datos : datos && Array.isArray(datos.recetas) ? datos.recetas : datos && datos.nombre ? [datos] : null;
+  if (!recetas || !recetas.length) throw new Error('No encuentro las recetas en lo que has pegado: copia la respuesta entera, desde la primera «{» hasta la última «}».');
+  return recetas;
+}
+
+// Mensaje para pedirle al chat que corrija las recetas descartadas.
+function correccionChatIA_(descartadas) {
+  return ['Estas recetas no valen:', ...descartadas.map(d => `- ${d.nombre}: ${d.motivo}`),
+    'Corrígelas (o cámbialas por otras) con las mismas instrucciones y devuélveme solo el bloque JSON con las nuevas.'].join('\n');
+}
+
 // Nombre de quien pide las recetas (del alta), o '' si no lo tiene.
 function nombrePersona_(config) {
   return String((config.perfil || {}).nombre || '').trim();
@@ -337,23 +383,29 @@ function nombrePersona_(config) {
 // mensaje y esquema.
 function pedidoRecetasIA_(peticion) {
   const datos = datosPedidoIA_(peticion);
-  return { pedido: datos.pedido, para: nombrePersona_(datos.ctx.config), sistema: SISTEMA_RECETAS_IA, mensaje: datos.mensaje(), esquema: ESQUEMA_RECETAS_IA };
+  const mensaje = datos.mensaje();
+  return { pedido: datos.pedido, para: nombrePersona_(datos.ctx.config), sistema: SISTEMA_RECETAS_IA, mensaje: mensaje, esquema: ESQUEMA_RECETAS_IA,
+    encargo: encargoChatIA_(SISTEMA_RECETAS_IA, mensaje) };
 }
 
-// Recetas escritas fuera de la app (Claude Code). Petición: {comida, recetas: [formato ESQUEMA_RECETAS_IA], probar}.
-// Con `probar` solo dice qué pasaría (y los macros de las válidas), sin guardar nada.
+// Recetas escritas fuera de la app (Claude Code o el chat de cada uno). Petición: {comida, recetas: [formato
+// ESQUEMA_RECETAS_IA] o texto (la respuesta del chat pegada tal cual), probar}. Con `probar` solo dice qué
+// pasaría (y los macros de las válidas), sin guardar nada. Si se descarta alguna, `correccion` es el mensaje
+// para pedirle al chat que la corrija.
 function importarPropuestasIA_(peticion) {
   const datos = datosPedidoIA_(peticion);
-  if (!Array.isArray(peticion.recetas) || !peticion.recetas.length) throw new Error('No hay recetas que importar.');
-  const revision = revisarRecetasIA_(peticion.recetas, datos.pedido.comida, datos.ctx, datos.filasRecetas);
+  const recetas = peticion.texto !== undefined ? leerRespuestaIA_(peticion.texto) : peticion.recetas;
+  if (!Array.isArray(recetas) || !recetas.length) throw new Error('No hay recetas que importar.');
+  const revision = revisarRecetasIA_(recetas, datos.pedido.comida, datos.ctx, datos.filasRecetas);
   const resumen = revision.validas.map(r => {
     const e = r.evaluacion;
     return { nombre: r.nombre, estado: e.estado, macros: e.ajuste ? redondearMacros_(e.ajuste.macros) : null,
       gramos: e.ajuste ? e.ajuste.gramos : null, faltan: e.faltan || null };
   });
-  if (peticion.probar) return { validas: resumen, descartadas: revision.descartadas };
+  const correccion = revision.descartadas.length ? correccionChatIA_(revision.descartadas) : null;
+  if (peticion.probar) return { validas: resumen, descartadas: revision.descartadas, correccion: correccion };
   const ids = guardarPropuestasIA_(revision.validas);
-  return { nuevas: ids, validas: resumen, descartadas: revision.descartadas, propuestas: listarPropuestas_() };
+  return { nuevas: ids, validas: resumen, descartadas: revision.descartadas, correccion: correccion, propuestas: listarPropuestas_() };
 }
 
 const mismoNombre_ = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
@@ -391,6 +443,6 @@ function anadirAlimentoIA_(peticion) {
 if (typeof module !== 'undefined') {
   module.exports = {
     ESQUEMA_RECETAS_IA, SISTEMA_RECETAS_IA, mensajeRecetasIA_, normalizarRecetaIA_, evaluarRecetaIA_, desviaciones_,
-    limpiarIngredientesIA_, siguienteIdIA_, filaAlimentoNuevo_,
+    limpiarIngredientesIA_, siguienteIdIA_, filaAlimentoNuevo_, encargoChatIA_, leerRespuestaIA_, correccionChatIA_,
   };
 }

@@ -27,6 +27,9 @@ La IA devuelve JSON con el mismo formato que la semilla (`nombre`, `comida`, `pr
 
 Si la IA necesita un alimento que no está en la tabla, lo declara en `alimentos_nuevos` (id, nombre, grupo, crudo/cocinado, **sin macros**). La propuesta queda «Falta alimento» hasta que el usuario lo añade con los valores de la etiqueta o de BEDCA; entonces pasa el optimizador como las demás. Máximo 2 alimentos nuevos por receta.
 
+## Pedir recetas a la IA desde la app (sin Fran)
+Recetas › «Pedir a la IA» (`web/pedir.js`, 2026-10-19): cada persona elige comida, cuántas (1–3) e idea; la app prepara el encargo (lo mismo que `recetas_ia.js pedido`, con sus excluidos y sus gustos, más un ejemplo del JSON) para **copiarlo o compartirlo** a su chat de IA (Claude, ChatGPT, Gemini; gratis, sin API ni servidor). Pega la respuesta tal cual (la app saca el JSON aunque venga en un bloque de código o con texto alrededor) y pulsa «Añadir a mis propuestas»: se valida con el optimizador y las que valen quedan en sus «Propuestas de la IA» para añadirlas o descartarlas. Si alguna no vale, «Copiar corrección para la IA» da el mensaje para pedírsela corregida. Lo escrito se guarda en el móvil por si Android cierra la app mientras está en el chat.
+
 ## Recetas propias (creadas en la app)
 Cualquiera crea recetas en Recetas › «Crear receta», hace «Mi versión» de una de la biblioteca o edita las suyas (`web/editor.js`, motor en `web/motor/MisRecetas.js`). Decidido por Fran (2026-10-19):
 - Pone los gramos de **una ración como la haría**. La app decide qué se ajusta: proteína, lácteos, hidratos y grasas son escalables entre **0,5 y 1,6 veces** lo que puso (las piezas, en unidades enteras); verduras y condimentos quedan fijos. Con las 22 semillas y gramos «a ojo» (±30–40 %) cuadra el 95 % de las veces.

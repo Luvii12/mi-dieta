@@ -1,8 +1,8 @@
 // Pantalla «Recetas»: la biblioteca completa, agrupada por comida, con los gramos ajustados al objetivo
 // de cada comida. Sin diseño propio en design/: sigue el estilo de las tarjetas de «Plan».
 // Al tocar una receta se abre #receta/<id>.
-// Arriba, «Crear receta» (#nueva, editor.js) y las recetas propuestas por la IA pendientes de revisar (las
-// escribe Claude Code con scripts/recetas_ia.js; la app solo las enseña, las añade o las descarta).
+// Arriba, «Crear receta» (#nueva, editor.js), «Pedir a la IA» (#pedir, pedir.js) y las recetas propuestas por
+// la IA pendientes de revisar (llegan de pedir.js o de scripts/recetas_ia.js; aquí se añaden o se descartan).
 
 import { llamar } from './api.js';
 import { h, icono, numero, tesela, avisar, abrirFormulario, COMIDAS } from './comun.js';
@@ -80,7 +80,9 @@ function pintar(contenedor, recetas, propuestas) {
         h('h1', { class: 'titulo-pantalla' }, 'Recetas'),
         h('p', { class: 'subtitulo' }, 'Gramos calculados para el objetivo de cada comida.')),
       h('span', { class: 'insignia insignia-primaria' }, `${recetas.length} recetas`)),
-    h('a', { class: 'boton boton-discontinuo', href: '#nueva' }, icono('add'), 'Crear receta'),
+    h('div', { class: 'acciones-recetas' },
+      h('a', { class: 'boton boton-discontinuo', href: '#nueva' }, icono('add'), 'Crear receta'),
+      h('a', { class: 'boton boton-discontinuo', href: '#pedir' }, icono('auto_awesome'), 'Pedir a la IA')),
     seccionPropuestas(propuestas || []),
     ...COMIDAS.map(comida => {
       const deComida = recetas.filter(r => r.comida === comida);

@@ -1185,3 +1185,15 @@ a.objetivo-boton { color: inherit; text-decoration: none; }
 .acciones-receta { display: flex; flex-direction: column; gap: 10px; }
 .boton-peligro { justify-content: center; min-height: 44px; margin-right: 0; color: var(--error); }
 .boton-peligro:hover { color: var(--error); }
+
+/* ---------- Pedir recetas a la IA (#pedir) ---------- */
+
+.acciones-recetas { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.paso-numero-sm { width: 24px; height: 24px; font-size: 13px; }
+.form-perfil > .ajustes-seccion textarea { min-height: 120px; }
+.lista-resultado { gap: 0; }
+.resultado-receta { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; border-top: 1px solid var(--superficie-media); }
+.resultado-receta:first-child { border-top: 0; padding-top: 0; }
+.resultado-receta:last-child { padding-bottom: 0; }
+.resultado-receta .insignia { flex-shrink: 0; }
+.copia-oculta { position: fixed; top: -1000px; left: 0; opacity: 0; }

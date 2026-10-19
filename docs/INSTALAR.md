@@ -42,4 +42,6 @@ En **Recetas › Crear receta** puedes añadir las tuyas: nombre, comida, ingred
 
 En cualquier receta tienes **Hacer mi versión** para cambiarle lo que quieras: la original deja de salirte. Las que creas tú las puedes **Editar** o **Borrar**.
 
-Tus datos (plan, pesos y valoraciones) solo los ves tú. Las recetas son comunes: las que crees también pueden salirles a los demás. Si te apetece un tipo de comida y no quieres escribir la receta, pídele a Fran recetas nuevas para ti.
+¿Te apetece un tipo de comida y no tienes la receta? En **Recetas › Pedir a la IA** eliges la comida y una idea («con salmón», «rápidas»), pulsas **Copiar encargo** (o **Compartir con…**) y lo pegas en tu chat de IA: Claude, ChatGPT o Gemini, con una cuenta gratuita basta. Copia su respuesta entera, pégala en la app y pulsa **Añadir a mis propuestas**: la app calcula los gramos y las verás arriba en Recetas para añadirlas o descartarlas.
+
+Tus datos (plan, pesos y valoraciones) solo los ves tú. Las recetas son comunes: las que crees o añadas también pueden salirles a los demás.

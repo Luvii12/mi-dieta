@@ -127,6 +127,35 @@ test('recetas para otra persona: se piden para la ración de referencia y a ella
   assert.ok(proporcion > 0.75 && proporcion < 0.95, 'pollo: ' + suya.gramos.pechuga_pollo + ' frente a ' + deFran.gramos.pechuga_pollo);
 });
 
+test('pedir desde la app: encargo para pegar en un chat y respuesta pegada tal cual', () => {
+  const gas = preparar();
+  const pedido = gas.llamar('pedidoRecetas', { comida: 'Cena', cantidad: 2, idea: 'con salmón' }).datos;
+  assert.ok(pedido.encargo.startsWith(pedido.sistema), 'empieza por las instrucciones');
+  assert.ok(pedido.encargo.includes(pedido.mensaje));
+  assert.match(pedido.encargo, /Responde solo con un bloque JSON/);
+  assert.match(pedido.encargo, /"ingredientes_escalables"/);
+
+  // Como lo pegaría alguien: con texto alrededor y en un bloque de código; una vale y otra no cuadra.
+  const respuesta = 'Aquí tienes:\n```json\n' + JSON.stringify({ recetas: [TACOS, SOLO_POLLO] }, null, 2) + '\n```\n¡Que aproveche!';
+  const r = gas.llamar('importarPropuestas', { comida: 'Cena', texto: respuesta });
+  assert.equal(r.ok, true, r.error);
+  assert.deepEqual(r.datos.nuevas, ['IA1']);
+  assert.equal(r.datos.descartadas[0].nombre, 'Pollo a la plancha');
+  assert.match(r.datos.correccion, /^Estas recetas no valen:\n- Pollo a la plancha: No cuadra/);
+  assert.match(r.datos.correccion, /devuélveme solo el bloque JSON/);
+  assert.equal(r.datos.propuestas.length, 1);
+});
+
+test('leerRespuestaIA_: acepta lista, objeto o una receta suelta; si no hay JSON, lo dice', () => {
+  const c = preparar().contexto;
+  assert.equal(c.leerRespuestaIA_(JSON.stringify([TACOS])).length, 1);
+  assert.equal(c.leerRespuestaIA_('Claro: ' + JSON.stringify(TACOS)).length, 1);
+  assert.equal(c.leerRespuestaIA_(JSON.stringify({ recetas: [TACOS, SOLO_POLLO] })).length, 2);
+  assert.throws(() => c.leerRespuestaIA_('Lo siento, no puedo'), /No encuentro las recetas/);
+  assert.throws(() => c.leerRespuestaIA_('{"recetas": [{"nombre": "a"'), /No encuentro las recetas/);
+  assert.throws(() => c.leerRespuestaIA_('{"recetas": []}'), /No encuentro las recetas/);
+});
+
 test('aceptar, descartar y añadir el alimento que falta', () => {
   const gas = preparar();
   gas.llamar('importarPropuestas', { comida: 'Cena', recetas: [TACOS, CON_NUEVO] });
