@@ -11,6 +11,7 @@
     "supabase-semilla": "node scripts/supabase_semilla.js",
     "probar-supabase": "node scripts/probar_supabase.js",
     "cambiar-contrasena": "node scripts/cambiar_contrasena.js",
-    "invitar": "node scripts/invitar.js"
+    "invitar": "node scripts/invitar.js",
+    "skill": "node scripts/skill_alimentos.js"
   }
 }
