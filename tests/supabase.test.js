@@ -107,6 +107,15 @@ test('un día completo da lo mismo con Supabase que con el motor solo, y deja la
   await iguales('activarPlan', { plan_id: plan.datos.borrador.plan_id });
   await iguales('plan');
   await iguales('hoy');
+  // Quitar la merienda borra su objetivo de config y sus comidas desde mañana; ponerla de nuevo las añade.
+  const perfil = { nombre: 'Ana', sexo: 'mujer', nacimiento: '1997-02-01', altura_cm: 165, peso_kg: 62, trabajo: 'de_pie', entreno: '3_4', meta: 'perder' };
+  const sinMerienda = await iguales('guardarPerfil', { perfil: { ...perfil, comidas: ['Desayuno'] } });
+  assert.equal(sinMerienda.datos.comidas_cambiadas, true);
+  assert.equal(sinMerienda.datos.config.objetivo_merienda, undefined);
+  await iguales('plan');
+  await iguales('recetas');
+  await iguales('guardarPerfil', { perfil });
+  await iguales('plan');
 
   assert.deepEqual(comparables(tablasDeBase(sb, falso, 'u1', navegador.motor)), comparables(todasLasTablas(referencia.contexto)));
 });

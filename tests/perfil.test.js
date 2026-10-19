@@ -6,7 +6,7 @@ Object.assign(globalThis, require('../web/motor/Util.js'), require('../web/motor
 const P = require('../web/motor/Perfil.js');
 const Pr = require('../web/motor/Progreso.js');
 const { SEMILLA } = require('../data/semilla.js');
-const { cargarMotor } = require('./motor_navegador.js');
+const { cargarMotor, enFecha } = require('./motor_navegador.js');
 
 const HOY = '2026-10-18';
 const alimentos = indexarAlimentos_(SEMILLA.alimentos);
@@ -110,6 +110,27 @@ test('reparto: cada macro entre las comidas como en el plan de Fran', () => {
   const parte = (c, n) => ref[c][n] / COMIDAS.reduce((s, x) => s + ref[x][n], 0);
   assert.ok(Math.abs(o.comidas.Merienda.P / o.dia.P - parte('Merienda', 'P')) < 0.002);
   COMIDAS.forEach(c => assert.equal(o.comidas[c].kcal, Math.round(kcalDeMacros(o.comidas[c]))));
+});
+
+test('comidas: el almuerzo y la cena siempre; el desayuno y la merienda, si se eligen', () => {
+  assert.deepEqual(P.comidasValidas_(undefined), COMIDAS);
+  assert.deepEqual(P.comidasValidas_(['Merienda', 'Desayuno']), COMIDAS);
+  assert.deepEqual(P.comidasValidas_(['Merienda']), ['Almuerzo', 'Merienda', 'Cena']);
+  assert.deepEqual(P.comidasValidas_([]), ['Almuerzo', 'Cena']);
+  assert.throws(() => P.comidasValidas_('Desayuno'), /comidas/);
+  assert.deepEqual(perfil({}).comidas, COMIDAS);
+});
+
+test('reparto sin desayuno: el día es el mismo y se reparte entre las otras 3 comidas', () => {
+  const cuatro = P.calcularObjetivos_(perfil({}), HOY);
+  const tres = P.calcularObjetivos_(perfil({ comidas: ['Merienda'] }), HOY);
+  assert.deepEqual(Object.keys(tres.comidas), ['Almuerzo', 'Merienda', 'Cena']);
+  assert.deepEqual(tres.dia, cuatro.dia);
+  ['P', 'C', 'G'].forEach(n => {
+    const suma = Object.keys(tres.comidas).reduce((s, c) => s + tres.comidas[c][n], 0);
+    assert.ok(Math.abs(suma - tres.dia[n]) <= 0.2, n);
+  });
+  ['Almuerzo', 'Merienda', 'Cena'].forEach(c => assert.ok(tres.comidas[c].kcal > cuatro.comidas[c].kcal, c));
 });
 
 // ---------- Raciones ----------
@@ -230,4 +251,63 @@ test('guardarPerfil: cambiar de objetivo recalcula los objetivos sin tocar el re
   assert.equal(m.contexto.leerTabla_('pesos').length, 1, 'un pesaje por día');
   assert.equal(Number(m.contexto.leerTabla_('pesos')[0].peso_kg), 78);
   assert.match(m.llamar('guardarPerfil', { perfil: Object.assign({}, DATOS_ALTA, { meta: 'x' }) }).error, /objetivo/);
+});
+
+const comidasDelDia = (m, fecha) => m.contexto.leerTabla_('plan_comidas').filter(f => f.fecha === fecha).map(f => f.comida);
+
+test('guardarPerfil sin desayuno: plan de 3 comidas que cuadra el día y Recetas sin desayunos', () => {
+  const m = cargarMotor('2026-10-21T10:00:00+02:00', COMUNES());
+  const r = m.llamar('guardarPerfil', { perfil: Object.assign({}, DATOS_ALTA, { comidas: ['Merienda'] }) });
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.datos.config.objetivo_desayuno, undefined);
+  assert.equal(r.datos.comidas_cambiadas, false, 'en el alta no hay nada que cambiar');
+  const plan = m.llamar('generarPlan');
+  assert.equal(plan.ok, true, plan.error);
+  assert.ok(plan.datos.dias.every(d => d.comidas.map(c => c.comida).join() === 'Almuerzo,Merienda,Cena'));
+  assert.ok(plan.datos.dias.filter(d => d.revisar).length <= 3, 'días a revisar: ' + plan.datos.dias.filter(d => d.revisar).length);
+  assert.ok(m.llamar('recetas').datos.every(x => x.comida !== 'Desayuno'));
+  assert.match(m.llamar('pedidoRecetas', { comida: 'Desayuno' }).error, /Ana no tiene desayuno/);
+});
+
+test('guardarPerfil: quitar la merienda a mitad de plan la quita desde mañana; volver a ponerla la añade', () => {
+  const alta = cargarMotor('2026-10-21T10:00:00+02:00', COMUNES());
+  alta.llamar('guardarPerfil', { perfil: DATOS_ALTA });
+  const plan = alta.llamar('generarPlan').datos;
+  alta.llamar('activarPlan', { plan_id: plan.plan_id });
+  const m = enFecha(alta, '2026-10-25T10:00:00+01:00');
+  const almuerzoAntes = m.contexto.leerTabla_('plan_comidas').find(f => f.fecha === '2026-10-28' && f.comida === 'Almuerzo');
+
+  const sinMerienda = Object.assign({}, DATOS_ALTA, { comidas: ['Desayuno'] });
+  assert.equal(m.llamar('guardarPerfil', { perfil: sinMerienda, probar: true }).datos.comidas_cambiadas, true);
+  const r = m.llamar('guardarPerfil', { perfil: sinMerienda });
+  assert.equal(r.ok, true, r.error);
+  assert.equal(r.datos.comidas_cambiadas, true);
+  assert.deepEqual(comidasDelDia(m, '2026-10-25'), ['Desayuno', 'Almuerzo', 'Merienda', 'Cena'], 'hoy no cambia');
+  assert.deepEqual(comidasDelDia(m, '2026-10-26').sort(), ['Almuerzo', 'Cena', 'Desayuno']);
+  const almuerzo = m.contexto.leerTabla_('plan_comidas').find(f => f.fecha === '2026-10-28' && f.comida === 'Almuerzo');
+  assert.equal(almuerzo.receta_id, almuerzoAntes.receta_id, 'mismos platos');
+  assert.ok(Number(almuerzo.kcal) > Number(almuerzoAntes.kcal), 'más grandes');
+  const vista = m.llamar('plan').datos.activo;
+  assert.equal(vista.dias.find(d => d.fecha === '2026-10-28').comidas.length, 3);
+  assert.equal(m.llamar('hoy').datos.comidas.length, 4);
+
+  const r2 = m.llamar('guardarPerfil', { perfil: DATOS_ALTA });
+  assert.equal(r2.datos.comidas_cambiadas, true);
+  for (let d = 26; d <= 31; d++) assert.deepEqual(comidasDelDia(m, '2026-10-' + d).sort(), ['Almuerzo', 'Cena', 'Desayuno', 'Merienda']);
+  const meriendas = m.contexto.leerTabla_('plan_comidas').filter(f => f.comida === 'Merienda' && f.fecha >= '2026-10-26');
+  assert.equal(meriendas.length, 10, 'del 26-10 al 4-11');
+  assert.ok(meriendas.every(f => Number(f.kcal) > 0 && f.hecha === 'no'));
+  assert.ok(meriendas.every((f, i) => i === 0 || f.receta_id !== meriendas[i - 1].receta_id), 'sin repetir la del día anterior');
+  assert.equal(m.llamar('guardarPerfil', { perfil: DATOS_ALTA }).datos.comidas_cambiadas, false, 'sin cambios, nada');
+});
+
+test('activarPlan: un borrador de 4 comidas se adapta al activarlo si la persona ya no merienda', () => {
+  const m = cargarMotor('2026-10-21T10:00:00+02:00', COMUNES());
+  m.llamar('guardarPerfil', { perfil: DATOS_ALTA });
+  const plan = m.llamar('generarPlan').datos;
+  m.contexto.escribirConfig_('objetivo_merienda', ''); // como si se hubiera quitado sin tocar el borrador
+  m.contexto.reescribirTabla_('config', m.contexto.leerTabla_('config').filter(f => f.clave !== 'objetivo_merienda'));
+  const r = m.llamar('activarPlan', { plan_id: plan.plan_id });
+  assert.equal(r.ok, true, r.error);
+  assert.ok(m.contexto.leerTabla_('plan_comidas').every(f => f.comida !== 'Merienda'));
 });

@@ -75,7 +75,7 @@ function prepararCandidatas_(recetas, datos) {
   const anteriores = new Set(datos.recetasPlanAnterior || []);
   const porComida = {};
   const descartadas = [];
-  COMIDAS.forEach(c => { porComida[c] = []; });
+  COMIDAS.filter(c => datos.objetivos[c]).forEach(c => { porComida[c] = []; });
 
   recetas.forEach(r => {
     if (!porComida[r.comida]) return;
@@ -116,20 +116,22 @@ function puntuacionDia_(evaluacion, tolDia) {
 // ---------- Generación ----------
 
 // datos: {inicio, recetas, alimentos, objetivos: {Desayuno: {...}}, tolerancias: {dia, comida}, config,
-//         valoraciones, preferencias, recetasPlanAnterior: [ids], azar}
+//         valoraciones, preferencias, recetasPlanAnterior: [ids], azar}. Las comidas del plan son las que
+//         tienen objetivo (quien no desayuna no tiene objetivo de desayuno).
 // Devuelve {inicio, fin, objetivoDia, dias: [{fecha, comidas, macros, evaluacion, revisar}], descartadas}.
 function generarPlan_(datos) {
   const azar = datos.azar || Math.random;
   const { porComida, descartadas } = prepararCandidatas_(datos.recetas, datos);
-  COMIDAS.forEach(c => {
+  const comidas = Object.keys(porComida);
+  comidas.forEach(c => {
     if (porComida[c].length < 2) {
       throw new Error('Hay muy pocas recetas de ' + c.toLowerCase() + ' que se puedan usar (' + porComida[c].length +
         '). Revisa exclusiones y valoraciones.');
     }
   });
   const reglas = {};
-  COMIDAS.forEach(c => { reglas[c] = reglasRepeticion_(c, porComida[c].length, datos.config || {}); });
-  const objetivoDia = sumarMacros_(COMIDAS.map(c => datos.objetivos[c]));
+  comidas.forEach(c => { reglas[c] = reglasRepeticion_(c, porComida[c].length, datos.config || {}); });
+  const objetivoDia = sumarMacros_(comidas.map(c => datos.objetivos[c]));
   const tolDia = datos.tolerancias.dia;
 
   // Se generan varios planes completos y se queda el primero sin días a revisar
@@ -137,7 +139,7 @@ function generarPlan_(datos) {
   let mejor = null;
   let completos = 0;
   for (let reinicio = 0; reinicio < REINICIOS_PLAN && completos < PLANES_CANDIDATOS; reinicio++) {
-    const dias = intentarPlan_(datos.inicio, porComida, reglas, objetivoDia, tolDia, azar);
+    const dias = intentarPlan_(datos.inicio, comidas, porComida, reglas, objetivoDia, tolDia, azar);
     if (!dias) continue;
     completos++;
     const aRevisar = dias.filter(d => d.revisar).length;
@@ -153,14 +155,14 @@ function generarPlan_(datos) {
 }
 
 // Un intento de plan completo. Devuelve null si se queda sin recetas posibles algún día (se reinicia).
-function intentarPlan_(inicio, porComida, reglas, objetivoDia, tolDia, azar) {
+function intentarPlan_(inicio, comidas, porComida, reglas, objetivoDia, tolDia, azar) {
   const usos = {};
   const dias = [];
   let ayer = {};
   for (let d = 0; d < DIAS_PLAN; d++) {
     const restantes = DIAS_PLAN - d;
     const posibles = {};
-    for (const c of COMIDAS) {
+    for (const c of comidas) {
       posibles[c] = porComida[c].filter(r => (usos[r.id] || 0) < reglas[c].max && (reglas[c].consecutivos || ayer[c] !== r.id));
       // Sin días seguidos, a una receta con k usos pendientes le hacen falta 2k−1 días: si no sobran,
       // tiene que salir hoy. Los callejones sin salida que queden se resuelven reiniciando el plan.
@@ -174,8 +176,8 @@ function intentarPlan_(inicio, porComida, reglas, objetivoDia, tolDia, azar) {
     let mejor = null;
     for (let intento = 0; intento < INTENTOS_POR_DIA; intento++) {
       const eleccion = {};
-      COMIDAS.forEach(c => { eleccion[c] = elegirPonderado_(posibles[c], azar); });
-      const macros = sumarMacros_(COMIDAS.map(c => eleccion[c].macros));
+      comidas.forEach(c => { eleccion[c] = elegirPonderado_(posibles[c], azar); });
+      const macros = sumarMacros_(comidas.map(c => eleccion[c].macros));
       const evaluacion = evaluarDia_(macros, objetivoDia, tolDia);
       const puntuacion = puntuacionDia_(evaluacion, tolDia);
       if (!mejor || (evaluacion.ok && !mejor.evaluacion.ok) ||
@@ -188,7 +190,7 @@ function intentarPlan_(inicio, porComida, reglas, objetivoDia, tolDia, azar) {
     const fecha = sumarDias_(inicio, d);
     dias.push({
       fecha: fecha,
-      comidas: COMIDAS.map(c => ({
+      comidas: comidas.map(c => ({
         comida: c,
         receta_id: mejor.eleccion[c].id,
         nombre: mejor.eleccion[c].nombre,
@@ -199,9 +201,9 @@ function intentarPlan_(inicio, porComida, reglas, objetivoDia, tolDia, azar) {
       evaluacion: mejor.evaluacion,
       revisar: !mejor.evaluacion.ok,
     });
-    COMIDAS.forEach(c => { usos[mejor.eleccion[c].id] = (usos[mejor.eleccion[c].id] || 0) + 1; });
+    comidas.forEach(c => { usos[mejor.eleccion[c].id] = (usos[mejor.eleccion[c].id] || 0) + 1; });
     ayer = {};
-    COMIDAS.forEach(c => { ayer[c] = mejor.eleccion[c].id; });
+    comidas.forEach(c => { ayer[c] = mejor.eleccion[c].id; });
   }
   return dias;
 }

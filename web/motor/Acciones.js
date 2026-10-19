@@ -11,15 +11,17 @@ const ACCIONES = {
     return leerConfig_();
   },
 
-  // Todas las recetas activas con los gramos ajustados al objetivo de su comida y su última valoración.
-  // Si una receta no se puede calcular (p. ej. alimento desconocido) lleva `error` en vez de `ajuste`.
+  // Las recetas activas de las comidas que hace la persona, con los gramos ajustados al objetivo de su
+  // comida y su última valoración. Si una receta no se puede calcular (p. ej. alimento desconocido) lleva
+  // `error` en vez de `ajuste`.
   recetas: function () {
     const config = leerConfig_();
     const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
     const tolComida = (config.tolerancias || {}).comida;
     const valoraciones = valoracionesActuales_();
+    const suyas = comidasDe_(config);
     return leerTabla_('recetas')
-      .filter(fila => fila.activa === 'si')
+      .filter(fila => fila.activa === 'si' && suyas.indexOf(fila.comida) >= 0)
       .map(fila => {
         const resultado = { id: fila.id, comida: fila.comida, nombre: fila.nombre, preparacion: fila.preparacion, origen: fila.origen,
           valoracion: valoraciones[fila.id] || null };
@@ -134,24 +136,31 @@ const ACCIONES = {
 
   // Guarda el perfil (alta o cambio de objetivo) y los objetivos que salen de él (Perfil.js), y el peso
   // como pesaje de hoy. Petición: {perfil: {nombre, sexo, nacimiento, altura_cm, peso_kg, trabajo, entreno,
-  // meta}, probar?}. Con `probar` solo calcula. Los planes ya hechos no cambian; el borrador se recalcula al
-  // activarlo. A quien se da de alta se le pone también la configuración inicial (tolerancias…).
-  // Devuelve {perfil, calculo, config}.
+  // meta, comidas?}, probar?}. Con `probar` solo calcula. Los planes ya hechos no cambian (el borrador se
+  // recalcula al activarlo), salvo si cambian las comidas que hace: entonces, desde mañana, sus planes
+  // quitan o añaden esas comidas y recalculan los gramos con los objetivos nuevos.
+  // A quien se da de alta se le pone también la configuración inicial (tolerancias…).
+  // Devuelve {perfil, calculo, config, comidas_cambiadas}.
   guardarPerfil: function (peticion) {
     const hoy = fechaIso_(new Date());
     const perfil = validarPerfil_(peticion.perfil, hoy);
     const config = leerConfig_();
     const calculo = calcularObjetivos_(perfil, hoy, config.kcal_minimas);
-    if (peticion.probar) return { perfil: perfil, calculo: calculo, config: config };
+    const cambian = comidasDe_(config).join() !== perfil.comidas.join() && COMIDAS.some(c => config['objetivo_' + c.toLowerCase()]);
+    if (peticion.probar) return { perfil: perfil, calculo: calculo, config: config, comidas_cambiadas: cambian };
     conBloqueo_(() => {
       escribirConfig_('perfil', perfil);
-      COMIDAS.forEach(c => escribirConfig_('objetivo_' + c.toLowerCase(), calculo.comidas[c]));
+      COMIDAS.forEach(c => {
+        if (calculo.comidas[c]) escribirConfig_('objetivo_' + c.toLowerCase(), calculo.comidas[c]);
+        else borrarConfig_('objetivo_' + c.toLowerCase());
+      });
       const iniciales = { kcal_minimas: calculo.kcal_minimas, tolerancias: TOLERANCIAS_INICIALES, max_rep_desayuno: 4,
         max_rep_merienda: 4, dias_flexibles: 0, comida_libre_semanal: true };
       Object.keys(iniciales).filter(k => config[k] === undefined).forEach(k => escribirConfig_(k, iniciales[k]));
       if (!actualizarFilas_('pesos', f => f.fecha === hoy, { peso_kg: perfil.peso_kg })) anadirFilas_('pesos', [{ fecha: hoy, peso_kg: perfil.peso_kg }]);
+      if (cambian) adaptarPlanes_(calculo.comidas, sumarDias_(hoy, 1));
     });
-    return { perfil: perfil, calculo: calculo, config: leerConfig_() };
+    return { perfil: perfil, calculo: calculo, config: leerConfig_(), comidas_cambiadas: cambian };
   },
 
   // Activa el borrador indicado (ver activarBorrador_). Petición: {plan_id, ajuste_kcal?}.
@@ -183,6 +192,7 @@ const ACCIONES = {
     const objetivos = parsearValor_(plan.objetivos) || {};
     const recetasPorId = leerRecetasPorId_();
     const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
+    if (!objetivos.comidas[peticion.comida]) throw new Error(sinComida_(peticion.comida));
     const vista = vistaPlan_(plan, filas, recetasPorId, alimentos);
     return alternativasComida_(vista.dias[0], peticion.comida, recetasActivas_(recetasPorId), {
       objetivos: objetivos.comidas,
@@ -207,6 +217,7 @@ const ACCIONES = {
       if (prohibido) throw new Error('La receta ' + receta.id + ' lleva ' + prohibido.alimento + ', que está excluido.');
 
       const objetivos = parsearValor_(plan.objetivos) || {};
+      if (!objetivos.comidas[peticion.comida]) throw new Error(sinComida_(peticion.comida));
       const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
       const ajuste = ajustarReceta_(receta, objetivos.comidas[peticion.comida], alimentos);
       const m = redondearMacros_(ajuste.macros);
@@ -370,15 +381,11 @@ function activarBorrador_(planes, plan, delta, hoy) {
   }
   if (delta) {
     objetivos = ajustarObjetivos_(objetivos, delta);
-    COMIDAS.forEach(c => escribirConfig_('objetivo_' + c.toLowerCase(), objetivos[c]));
+    Object.keys(objetivos).forEach(c => escribirConfig_('objetivo_' + c.toLowerCase(), objetivos[c]));
   }
 
-  const guardados = parsearValor_(plan.objetivos) || {};
-  if (!mismosObjetivos_(guardados.comidas, objetivos)) {
-    const delPlan = comidas.filter(f => f.plan_id === plan.plan_id);
-    reoptimizarComidas_(delPlan, objetivos, leerRecetasPorId_(), indexarAlimentos_(leerTabla_('alimentos')));
-    reescribirTabla_('plan_comidas', comidas);
-    plan.objetivos = { comidas: objetivos, tolerancias: guardados.tolerancias || config.tolerancias };
+  if (!mismosObjetivos_((parsearValor_(plan.objetivos) || {}).comidas, objetivos)) {
+    reescribirTabla_('plan_comidas', adaptarPlan_(plan, comidas, objetivos, plan.inicio, datosAdaptar_(config)));
   }
 
   const activo = planes.find(p => p.estado === 'activo');
@@ -425,8 +432,61 @@ const ESTADOS_COMIDA = ['si', 'no', 'libre'];
 const DIAS_AVISO_FIN = 2; // el borrador del siguiente plan se genera cuando al activo le quedan estos días
 
 function mismosObjetivos_(a, b) {
-  return Boolean(a) && COMIDAS.every(c => a[c] && ['kcal', 'P', 'C', 'G'].every(n => Number(a[c][n]) === Number(b[c][n])));
+  return Boolean(a) && Object.keys(a).length === Object.keys(b).length &&
+    Object.keys(b).every(c => a[c] && ['kcal', 'P', 'C', 'G'].every(n => Number(a[c][n]) === Number(b[c][n])));
 }
+
+// Pone al día los planes que quedan por comer (activo, siguiente y borrador) desde `desde` con `objetivos`
+// (cuando cambian las comidas que hace la persona). Ver adaptarPlan_.
+function adaptarPlanes_(objetivos, desde) {
+  const planes = planesAlDia_();
+  let comidas = leerTabla_('plan_comidas');
+  const datos = datosAdaptar_(leerConfig_());
+  planes.filter(p => ['activo', 'siguiente', 'borrador'].indexOf(p.estado) >= 0 && p.fin >= desde).forEach(p => {
+    comidas = adaptarPlan_(p, comidas, objetivos, desde > p.inicio ? desde : p.inicio, datos);
+  });
+  reescribirTabla_('planes', planes);
+  reescribirTabla_('plan_comidas', comidas);
+}
+
+function datosAdaptar_(config) {
+  return { config: config, recetasPorId: leerRecetasPorId_(), alimentos: indexarAlimentos_(leerTabla_('alimentos')),
+    valoraciones: leerTabla_('valoraciones'), preferencias: leerTabla_('preferencias') };
+}
+
+// Las filas de `plan_comidas` con las del plan, desde `desde`, ajustadas a `objetivos`: quita las de comidas
+// que ya no tiene, añade las que le falten (con una receta elegida como al generar, sin repetir la del día
+// anterior) y recalcula los gramos de todas con los mismos platos. Guarda los objetivos en el plan (`plan`
+// cambia). Devuelve las filas nuevas de toda la tabla.
+function adaptarPlan_(plan, comidas, objetivos, desde, datos) {
+  const tocar = f => f.plan_id === plan.plan_id && f.fecha >= desde;
+  const quedan = comidas.filter(f => !tocar(f) || objetivos[f.comida]);
+  const delPlan = quedan.filter(tocar);
+  const faltan = Object.keys(objetivos).filter(c => !delPlan.some(f => f.comida === c));
+  if (faltan.length) {
+    const { porComida } = prepararCandidatas_(recetasActivas_(datos.recetasPorId),
+      { objetivos: objetivos, alimentos: datos.alimentos, valoraciones: datos.valoraciones, preferencias: datos.preferencias });
+    faltan.forEach(c => {
+      if (!porComida[c].length) throw new Error('No hay recetas de ' + c.toLowerCase() + ' que se puedan usar.');
+      let ayer = null;
+      for (let fecha = desde; fecha <= plan.fin; fecha = sumarDias_(fecha, 1)) {
+        const posibles = porComida[c].length > 1 ? porComida[c].filter(r => r.id !== ayer) : porComida[c];
+        const elegida = elegirPonderado_(posibles, Math.random);
+        const fila = { plan_id: plan.plan_id, fecha: fecha, comida: c, receta_id: elegida.id, gramos: {}, kcal: 0, P: 0, C: 0, G: 0,
+          hecha: 'no', cambiada_por: '' };
+        quedan.push(fila);
+        delPlan.push(fila);
+        ayer = elegida.id;
+      }
+    });
+  }
+  reoptimizarComidas_(delPlan, objetivos, datos.recetasPorId, datos.alimentos);
+  const guardados = parsearValor_(plan.objetivos) || {};
+  plan.objetivos = { comidas: objetivos, tolerancias: guardados.tolerancias || datos.config.tolerancias };
+  return quedan;
+}
+
+const sinComida_ = comida => 'Ya no tienes ' + String(comida).toLowerCase() + ' en tus comidas.';
 const VALORES_VALORACION = ['me_encanta', 'normal', 'no_repetir'];
 
 function recetasActivas_(recetasPorId) {
@@ -451,14 +511,19 @@ function diaDelPlanActivo_(peticion) {
   return { plan: plan, filas: filas };
 }
 
-// {objetivo_desayuno: {...}, ...} de config → {Desayuno: {...}, ...}
+// {objetivo_desayuno: {...}, ...} de config → {Desayuno: {...}, ...}, solo con las comidas que hace la persona.
 function objetivosDeConfig_(config) {
   const objetivos = {};
   COMIDAS.forEach(c => {
-    objetivos[c] = config['objetivo_' + c.toLowerCase()];
-    if (!objetivos[c]) throw new Error('No hay objetivo para «' + c + '» en config.');
+    if (config['objetivo_' + c.toLowerCase()]) objetivos[c] = config['objetivo_' + c.toLowerCase()];
+    else if (COMIDAS_OPCIONALES.indexOf(c) < 0) throw new Error('No hay objetivo para «' + c + '» en config.');
   });
   return objetivos;
+}
+
+// Las comidas que hace la persona: las que tienen objetivo (sin desayuno o sin merienda, si los quitó).
+function comidasDe_(config) {
+  return COMIDAS.filter(c => COMIDAS_OPCIONALES.indexOf(c) < 0 || config['objetivo_' + c.toLowerCase()]);
 }
 
 // Todas las recetas (activas o no) con los ingredientes ya convertidos: {id: receta}.
@@ -476,6 +541,11 @@ function leerRecetasPorId_() {
 
 function leerConfig_() {
   return configAObjeto_(leerTabla_('config'));
+}
+
+function borrarConfig_(clave) {
+  const filas = leerTabla_('config');
+  if (filas.some(f => f.clave === clave)) reescribirTabla_('config', filas.filter(f => f.clave !== clave));
 }
 
 // Crea o actualiza una fila de `config`. Usa un bloqueo para que dos peticiones no pisen la misma fila.

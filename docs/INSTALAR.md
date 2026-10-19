@@ -22,14 +22,14 @@ Es una web que se instala como una app (no está en la tienda).
 Si algún día la olvidas, pídele a Fran una temporal nueva.
 
 ## 3. Tu perfil
-La primera vez la app te pregunta tu objetivo (perder grasa, mantener o ganar músculo), los días que entrenas, tu trabajo, sexo, fecha de nacimiento, altura y peso. Con eso calcula tus calorías y macros. Los puedes cambiar cuando quieras en **Ajustes › Mi objetivo**.
+La primera vez la app te pregunta tu objetivo (perder grasa, mantener o ganar músculo), los días que entrenas, tu trabajo, si desayunas y meriendas, sexo, fecha de nacimiento, altura y peso. Con eso calcula tus calorías y macros. Los puedes cambiar cuando quieras en **Ajustes › Mi objetivo**.
 
 Al pulsar **Empezar** prepara tu primer plan, que empieza **mañana**. Puedes revisarlo en la pestaña **Plan** y pulsar **Activar plan**; si no, se activa solo.
 
 Es una estimación con fórmulas generales: la app no sustituye a un dietista-nutricionista.
 
 ## 4. El día a día
-- **Hoy**: las 4 comidas del día con sus gramos. Marca cada una como **hecha** al comerla.
+- **Hoy**: las comidas del día con sus gramos. Marca cada una como **hecha** al comerla.
 - **Cambiar plato**: si no te apetece una comida, elige otra; la app recalcula los gramos para que el día siga cuadrando.
 - **Valora** los platos al abrir una receta (😍 Me encanta, 👌 Normal, 🤔 No repetiría): los que te encantan salen más y los que no repetirías dejan de salir.
 - **Progreso**: pésate y apúntalo, mejor por la mañana y en ayunas. Con tu peso y lo que marcas, la app propone el ajuste del siguiente plan.

@@ -110,9 +110,10 @@ function racha_(comidas, hoy) {
 // Objetivos por comida con `deltaKcal` repartido en proporción a las kcal de cada comida y, dentro de
 // cada comida, entre carbohidratos y grasa según su peso en kcal. La proteína no se toca.
 function ajustarObjetivos_(objetivos, deltaKcal) {
-  const total = COMIDAS.reduce((s, c) => s + objetivos[c].kcal, 0);
+  const comidas = Object.keys(objetivos);
+  const total = comidas.reduce((s, c) => s + objetivos[c].kcal, 0);
   const nuevos = {};
-  COMIDAS.forEach(c => {
+  comidas.forEach(c => {
     const o = objetivos[c];
     const dk = deltaKcal * o.kcal / total;
     const kcalC = o.C * 4;
@@ -190,7 +191,7 @@ function proponerAjuste_(datos) {
 
   const opcion = (d, recomendada) => {
     const nuevos = d ? ajustarObjetivos_(datos.objetivos, d) : datos.objetivos;
-    const m = sumarMacros_(COMIDAS.map(c => nuevos[c]));
+    const m = sumarMacros_(Object.keys(nuevos).map(c => nuevos[c]));
     let titulo = 'Mantener calorías actuales';
     let nota = 'Mismos objetivos que este bloque.';
     if (d < 0) {

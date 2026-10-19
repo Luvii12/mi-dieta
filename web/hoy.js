@@ -1,4 +1,4 @@
-// Pantalla «Hoy»: resumen de lo comido frente al objetivo y las 4 comidas del día
+// Pantalla «Hoy»: resumen de lo comido frente al objetivo y las comidas del día
 // (design/mi_dieta_hoy_modo_claro y _oscuro).
 
 import { llamar } from './api.js';

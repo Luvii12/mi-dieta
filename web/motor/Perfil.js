@@ -1,7 +1,8 @@
 // Perfil de cada persona (fase M4, docs/NUTRICION.md › «Objetivos según el perfil»): con sus datos (sexo,
 // edad, altura, peso, trabajo, días de entrenamiento y objetivo) calcula sus kcal y macros del día y los
-// reparte entre las 4 comidas con las proporciones del plan de Fran (REFERENCIA_COMIDAS, Nutricion.js).
-// Se usa al darse de alta y cada vez que alguien cambia de objetivo. Funciones puras.
+// reparte entre sus comidas (las 4, o sin desayuno o sin merienda) con las proporciones del plan de Fran
+// (REFERENCIA_COMIDAS, Nutricion.js). Se usa al darse de alta y cada vez que alguien cambia de objetivo.
+// Funciones puras.
 
 // Tolerancias en % (docs/NUTRICION.md). P_margen_g: el día nunca puede quedar más de 10 g de
 // proteína por debajo del objetivo.
@@ -33,6 +34,7 @@ const METAS = {
 const PROTEINA_MAXIMA_G_KG = 2.2;
 
 const KCAL_MINIMAS_SEXO = { mujer: 1200, hombre: 1500 };
+const COMIDAS_OPCIONALES = ['Desayuno', 'Merienda']; // el almuerzo y la cena van siempre
 const GRASA_PCT = 25;        // de las kcal (EFSA: 20–35 %); baja hasta el 20 % si los hidratos no llegan a 100 g
 const GRASA_PCT_MINIMA = 20;
 const HIDRATOS_MINIMOS_G = 100;
@@ -55,7 +57,7 @@ function pesoReferencia_(pesoKg, alturaCm) {
 }
 
 // Comprueba los datos del perfil y los devuelve limpios. Lanza un Error con el primer problema.
-// perfil: {nombre, sexo, nacimiento, altura_cm, peso_kg, trabajo, entreno, meta}
+// perfil: {nombre, sexo, nacimiento, altura_cm, peso_kg, trabajo, entreno, meta, comidas?}. Sin `comidas`, las 4.
 function validarPerfil_(perfil, hoyIso) {
   const p = perfil || {};
   const numero = v => Number(String(v === undefined || v === null ? '' : v).replace(',', '.'));
@@ -74,7 +76,15 @@ function validarPerfil_(perfil, hoyIso) {
   if (!ENTRENOS[p.entreno]) throw new Error('Elige cuántos días entrenas.');
   if (!METAS[p.meta]) throw new Error('Elige tu objetivo.');
   return { nombre: nombre, sexo: p.sexo, nacimiento: p.nacimiento, altura_cm: altura, peso_kg: peso,
-    trabajo: p.trabajo, entreno: p.entreno, meta: p.meta };
+    trabajo: p.trabajo, entreno: p.entreno, meta: p.meta, comidas: comidasValidas_(p.comidas) };
+}
+
+// Las comidas que hace la persona, en orden: el almuerzo y la cena siempre; el desayuno y la merienda, si
+// los elige (sin lista, todas).
+function comidasValidas_(lista) {
+  if (lista === undefined || lista === null) return COMIDAS.slice();
+  if (!Array.isArray(lista)) throw new Error('Elige qué comidas haces.');
+  return COMIDAS.filter(c => COMIDAS_OPCIONALES.indexOf(c) < 0 || lista.indexOf(c) >= 0);
 }
 
 // Objetivos de una persona a partir de su perfil (ya validado). `kcalMinimas`: su mínimo si ya tiene uno
@@ -97,10 +107,12 @@ function calcularObjetivos_(perfil, hoyIso, kcalMinimas) {
   const G = Math.round(kcalGrasa / 9);
   const C = Math.round((kcal - P * 4 - G * 9) / 4);
 
-  const total = n => COMIDAS.reduce((s, c) => s + REFERENCIA_COMIDAS[c][n], 0);
+  // Las comidas que no hace la persona no cuentan: el día se reparte entre las demás, en proporción.
+  const suyas = perfil.comidas || COMIDAS;
+  const total = n => suyas.reduce((s, c) => s + REFERENCIA_COMIDAS[c][n], 0);
   const dia = { P: P, C: C, G: G };
   const comidas = {};
-  COMIDAS.forEach(c => {
+  suyas.forEach(c => {
     const o = {};
     ['P', 'C', 'G'].forEach(n => { o[n] = redondearPerfil_(dia[n] * REFERENCIA_COMIDAS[c][n] / total(n), 1); });
     comidas[c] = { kcal: Math.round(o.P * 4 + o.C * 4 + o.G * 9), P: o.P, C: o.C, G: o.G };
@@ -123,7 +135,7 @@ function proteinaMinimaGKg_(meta) {
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    TOLERANCIAS_INICIALES, TRABAJOS, ENTRENOS, METAS, KCAL_MINIMAS_SEXO, edad_, pesoReferencia_,
-    validarPerfil_, calcularObjetivos_, proteinaMinimaGKg_,
+    TOLERANCIAS_INICIALES, TRABAJOS, ENTRENOS, METAS, KCAL_MINIMAS_SEXO, COMIDAS_OPCIONALES, edad_, pesoReferencia_,
+    validarPerfil_, comidasValidas_, calcularObjetivos_, proteinaMinimaGKg_,
   };
 }

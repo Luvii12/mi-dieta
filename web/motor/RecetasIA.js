@@ -263,7 +263,7 @@ function vistaPropuesta_(fila, ctx) {
 
 function listarPropuestas_() {
   const ctx = contextoIA_();
-  return leerTabla_('recetas').filter(f => f.activa === 'propuesta').map(f => vistaPropuesta_(f, ctx));
+  return leerTabla_('recetas').filter(f => f.activa === 'propuesta' && ctx.objetivos[f.comida]).map(f => vistaPropuesta_(f, ctx));
 }
 
 // Lo que necesita quien escriba las recetas: el comida/cantidad/idea pedidos, con la comida validada, y el
@@ -272,6 +272,7 @@ function datosPedidoIA_(peticion, extra) {
   const comida = peticion.comida;
   if (COMIDAS.indexOf(comida) < 0) throw new Error('Comida no válida: ' + comida + '.');
   const ctx = contextoIA_();
+  if (!ctx.objetivos[comida]) throw new Error((nombrePersona_(ctx.config) || 'Esta persona') + ' no tiene ' + comida.toLowerCase() + ' en sus comidas.');
   const filasRecetas = leerTabla_('recetas');
   const valoraciones = ultimasValoraciones_(leerTabla_('valoraciones'));
   const nombre = id => (filasRecetas.find(f => f.id === id) || {}).nombre;

@@ -1,10 +1,12 @@
-// Pantalla del perfil: objetivo, entrenamiento y datos de la persona → sus kcal y macros (motor/Perfil.js).
+// Pantalla del perfil: objetivo, entrenamiento, comidas que hace y datos de la persona → sus kcal y macros
+// (motor/Perfil.js).
 // Dos usos: el alta (#alta, sale sola mientras la cuenta no tenga objetivos, sin barra de navegación) y
 // «Mi objetivo» (#perfil, desde Ajustes) para cambiar de objetivo cuando se quiera.
 // Sin diseño propio en design/: usa las tarjetas, filas y selectores de Ajustes y Plan.
 
 import { llamar, leerLocal, guardarLocal } from './api.js';
 import { h, icono, numero, avisar, COMIDAS, ICONO_COMIDA } from './comun.js';
+import { guardarPlan, guardarRecetas } from './datos.js';
 
 export const CLAVE_ALTA = 'dieta.alta'; // true: la cuenta aún no tiene objetivos
 const CACHE_CONFIG = 'dieta.config';
@@ -23,6 +25,8 @@ const TRABAJOS = {
   fisico: { nombre: 'Físico', nota: 'Obra, almacén, campo…' },
 };
 const SEXOS = { hombre: 'Hombre', mujer: 'Mujer' };
+// Comidas que se pueden quitar (el almuerzo y la cena van siempre).
+const OPCIONALES = { Desayuno: 'Si no desayunas, quítalo.', Merienda: 'Si no meriendas, quítala.' };
 
 let datos = {};
 
@@ -64,6 +68,25 @@ function opcionesMeta(alCambiar) {
   return lista;
 }
 
+// Interruptores del desayuno y la merienda (como «Comida libre semanal» en Ajustes).
+function opcionesComidas(alCambiar) {
+  return h('div', { class: 'tarjeta lista-objetivos' }, Object.entries(OPCIONALES).map(([comida, nota]) => {
+    const id = 'perfil-comida-' + comida.toLowerCase();
+    const interruptor = h('button', { type: 'button', class: 'interruptor', role: 'switch', 'aria-checked': String(datos.comidas.includes(comida)),
+      'aria-labelledby': id, 'aria-describedby': id + '-nota',
+      onclick: () => {
+        datos.comidas = datos.comidas.includes(comida) ? datos.comidas.filter(c => c !== comida) : datos.comidas.concat([comida]);
+        interruptor.setAttribute('aria-checked', String(datos.comidas.includes(comida)));
+        alCambiar();
+      } }, h('span', { class: 'interruptor-bola' }));
+    return h('div', { class: 'preferencia' },
+      h('div', { class: 'preferencia-texto' },
+        h('span', { class: 'preferencia-titulo', id }, comida),
+        h('span', { class: 'texto-ayuda', id: id + '-nota' }, nota)),
+      interruptor);
+  }));
+}
+
 const campo = (etiqueta, control, unidad) => h('label', { class: 'campo' },
   h('span', { class: 'campo-etiqueta' }, etiqueta),
   h('span', { class: 'campo-caja' }, control, unidad ? h('span', { class: 'campo-unidad' }, unidad) : null));
@@ -84,7 +107,8 @@ function pesoConocido(perfil) {
 export function pintarPerfil(contenedor, alta, terminar) {
   const config = leerLocal(CACHE_CONFIG) || {};
   const perfil = config.perfil || {};
-  datos = { meta: perfil.meta, entreno: perfil.entreno, trabajo: perfil.trabajo || 'sentado', sexo: perfil.sexo };
+  datos = { meta: perfil.meta, entreno: perfil.entreno, trabajo: perfil.trabajo || 'sentado', sexo: perfil.sexo,
+    comidas: perfil.comidas || COMIDAS.slice() };
 
   const resultado = h('div', { class: 'perfil-resultado' });
   const olvidar = () => resultado.replaceChildren();
@@ -105,7 +129,7 @@ export function pintarPerfil(contenedor, alta, terminar) {
   const calcular = h('button', { type: 'submit', class: 'boton boton-primario' }, icono('local_fire_department'), textoCalcular);
 
   const leerPerfil = () => ({ nombre: nombre.value, sexo: datos.sexo, nacimiento: nacimiento.value, altura_cm: altura.value,
-    peso_kg: peso.value, trabajo: datos.trabajo, entreno: datos.entreno, meta: datos.meta });
+    peso_kg: peso.value, trabajo: datos.trabajo, entreno: datos.entreno, meta: datos.meta, comidas: datos.comidas });
 
   const formulario = h('form', { class: 'form-perfil', novalidate: true,
     onsubmit: async evento => {
@@ -136,6 +160,9 @@ export function pintarPerfil(contenedor, alta, terminar) {
       h('div', { class: 'campo' }, h('span', { class: 'campo-etiqueta' }, 'Tu trabajo'),
         selector('trabajo', Object.fromEntries(Object.entries(TRABAJOS).map(([k, t]) => [k, t.nombre])), 'Tu trabajo', alCambiarTrabajo),
         notaTrabajo))),
+  seccion('perfil-titulo-comidas', 'restaurant', 'Tus comidas',
+    h('p', { class: 'texto-ayuda' }, 'El almuerzo y la cena van siempre. Si quitas una comida, sus calorías se reparten entre las demás.'),
+    opcionesComidas(olvidar)),
   seccion('perfil-titulo-datos', 'person', 'Tus datos',
     h('div', { class: 'tarjeta tarjeta-ajuste' },
       campo('Nombre', nombre),
@@ -163,9 +190,10 @@ export function pintarPerfil(contenedor, alta, terminar) {
 function pintarResultado(contenedor, r, alta, terminar) {
   const c = r.calculo;
   // Lo que se guarda son las comidas: su suma puede diferir del cálculo en 1–3 kcal por los redondeos.
-  const kcal = COMIDAS.reduce((s, x) => s + c.comidas[x].kcal, 0);
-  const actuales = COMIDAS.every(x => r.config['objetivo_' + x.toLowerCase()])
-    ? COMIDAS.reduce((s, x) => s + Number(r.config['objetivo_' + x.toLowerCase()].kcal), 0) : null;
+  const suyas = COMIDAS.filter(x => c.comidas[x]);
+  const kcal = suyas.reduce((s, x) => s + c.comidas[x].kcal, 0);
+  const configuradas = COMIDAS.filter(x => r.config['objetivo_' + x.toLowerCase()]);
+  const actuales = configuradas.length ? configuradas.reduce((s, x) => s + Number(r.config['objetivo_' + x.toLowerCase()].kcal), 0) : null;
   const meta = METAS[r.perfil.meta];
   const estado = h('p', { class: 'mensaje mensaje-error', role: 'status' });
   const texto = h('span', null, alta ? 'Empezar' : 'Guardar objetivos');
@@ -179,6 +207,11 @@ function pintarResultado(contenedor, r, alta, terminar) {
       const guardado = await llamar('guardarPerfil', { perfil: r.perfil });
       guardarLocal(CACHE_CONFIG, guardado.config);
       document.getElementById('marca-sub-kcal').textContent = `${numero(kcal)} kcal/día`;
+      if (guardado.comidas_cambiadas) {
+        // El plan cambia desde mañana y Recetas enseña otras comidas: se vuelven a pedir al abrirlos.
+        guardarPlan(null);
+        guardarRecetas(null);
+      }
       if (!alta) {
         avisar(`Objetivos guardados: ${numero(kcal)} kcal al día.`);
         terminar('#ajustes');
@@ -205,7 +238,7 @@ function pintarResultado(contenedor, r, alta, terminar) {
       h('div', { class: 'seccion-titulo seccion-titulo-sm' }, icono('local_fire_department', 'texto-primario'),
         h('h2', { id: 'perfil-titulo-resultado', tabindex: '-1' }, 'Tus objetivos')),
       h('span', { class: 'insignia insignia-primaria-borde' }, `${numero(kcal)} kcal/día`)),
-    h('ul', { class: 'tarjeta lista-objetivos' }, COMIDAS.map(comida => {
+    h('ul', { class: 'tarjeta lista-objetivos' }, suyas.map(comida => {
       const o = c.comidas[comida];
       return h('li', { class: 'objetivo' },
         h('span', { class: 'objetivo-icono ' + COLOR_COMIDA[comida], 'aria-hidden': 'true' }, icono(ICONO_COMIDA[comida])),
@@ -220,8 +253,9 @@ function pintarResultado(contenedor, r, alta, terminar) {
         `${numero(kcal)} kcal, con ${numero(c.dia.P)} g de proteína (${numero(c.proteina_g_kg, 1)} g por kg), ` +
         `${numero(c.dia.C)} g de hidratos y ${numero(c.dia.G)} g de grasa.`),
       c.aviso ? nota('error', 'texto-terciario', c.aviso) : null,
-      !alta && actuales ? nota('event_available', 'texto-secundario',
-        `Sustituye a tus objetivos actuales (${numero(actuales)} kcal). El plan activo no cambia: se aplica al siguiente plan y al cambiar un plato.`) : null,
+      !alta && actuales ? nota('event_available', 'texto-secundario', r.comidas_cambiadas
+        ? `Sustituye a tus objetivos actuales (${numero(actuales)} kcal). Desde mañana tu plan pasa a ${suyas.length} comidas y recalcula los gramos con los mismos platos.`
+        : `Sustituye a tus objetivos actuales (${numero(actuales)} kcal). El plan activo no cambia: se aplica al siguiente plan y al cambiar un plato.`) : null,
       nota('verified', 'texto-secundario', 'Es una estimación con fórmulas generales: la app no sustituye a un dietista-nutricionista. ' +
         'Si tienes alguna enfermedad, estás embarazada o tomas medicación, consulta antes con un profesional.')),
     estado,
