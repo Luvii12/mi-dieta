@@ -3,7 +3,10 @@
 // Referencia: prototipo/semana.py (solve, round_g, fit) y docs/NUTRICION.md.
 
 const NUTRIENTES = ['kcal', 'P', 'C', 'G'];
-const PASO_G = 5; // redondeo a 5 g (y 5 ml de aceite)
+const PASO_G = 5; // redondeo a 5 g
+// El aceite, de 1 en 1 ml (2026-10-19): con 5 ml (~4,5 g de grasa) las raciones pequeñas no cuadraban la grasa.
+const PASO_ACEITE = 1;
+const pasoDe_ = id => (/^aceite/.test(id) ? PASO_ACEITE : PASO_G);
 
 // Objetivo de cada comida en el plan de Fran («Ajustes Fran. Déficit», docs/NUTRICION.md). Las cantidades
 // de las recetas (fijas, mínimas y máximas) están pensadas para estas raciones; para otros objetivos se
@@ -113,7 +116,7 @@ function optimizarGramos_(fijos, escalables, objetivo, alimentos, fijados) {
   return resultado;
 }
 
-// Redondeo realista: piezas enteras para los alimentos por unidad; múltiplos de 5 g para el resto.
+// Redondeo realista: piezas enteras para los alimentos por unidad; ml enteros de aceite; múltiplos de 5 g para el resto.
 // Siempre dentro de [min_g, max_g]; si min_g es 0 el ingrediente puede desaparecer.
 function redondearGramos_(gramos, escalable, alimentos) {
   const lo = escalable.min_g;
@@ -125,7 +128,8 @@ function redondearGramos_(gramos, escalable, alimentos) {
     piezas = Math.min(piezas, Math.floor(hi / u + 1e-9));
     return piezas * u;
   }
-  const v = Math.round(gramos / PASO_G) * PASO_G;
+  const paso = pasoDe_(escalable.alimento);
+  const v = Math.round(gramos / paso) * paso;
   return Math.min(Math.max(v, lo > 0 ? lo : 0), hi);
 }
 

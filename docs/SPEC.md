@@ -20,7 +20,7 @@ Generar cada 14 días un plan con 4 comidas diarias (desayuno, almuerzo, meriend
    - Peso de selección: «Me encanta» ×3, «Normal» ×1, «No lo repetiría» excluida. Penalizar recetas usadas en el plan anterior.
    - Nunca usar recetas con alimentos excluidos o alérgenos (filtro duro en código).
 3. Ajustar los gramos de los ingredientes escalables con el optimizador para cuadrar los macros de esa comida.
-4. Redondear (5 g, 5 ml de aceite o piezas enteras) y recalcular macros.
+4. Redondear (5 g, aceite en ml enteros o piezas enteras) y recalcular macros.
 5. Validar el día completo con las tolerancias. Si un día falla, probar otra combinación de recetas (máx. 20 intentos) y, si sigue fallando, marcarlo para revisión.
 6. Guardar como **borrador**; el usuario lo revisa y lo activa. Si no lo activa, se activa solo el día que empieza, sin cambiar las calorías.
 

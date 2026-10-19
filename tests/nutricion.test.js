@@ -92,8 +92,16 @@ test('redondeo: múltiplos de 5 g dentro de los límites', () => {
 });
 
 test('redondeo: con mínimo 0 el ingrediente puede desaparecer; con mínimo > 0 no', () => {
-  assert.equal(N.redondearGramos_(2, { alimento: 'aceite', min_g: 0, max_g: 15 }, juguete), 0);
+  assert.equal(N.redondearGramos_(2, { alimento: 'arroz', min_g: 0, max_g: 90 }, juguete), 0);
+  assert.equal(N.redondearGramos_(2, { alimento: 'arroz', min_g: 30, max_g: 90 }, juguete), 30);
+  assert.equal(N.redondearGramos_(0.4, { alimento: 'aceite', min_g: 0, max_g: 15 }, juguete), 0);
   assert.equal(N.redondearGramos_(2, { alimento: 'aceite', min_g: 3, max_g: 15 }, juguete), 3);
+});
+
+test('redondeo: 5 g en general y el aceite de 1 en 1 ml', () => {
+  assert.equal(N.redondearGramos_(143, { alimento: 'pollo', min_g: 100, max_g: 200 }, juguete), 145);
+  assert.equal(N.redondearGramos_(7.4, { alimento: 'aceite', min_g: 3, max_g: 15 }, juguete), 7);
+  assert.equal(N.redondearGramos_(7.6, { alimento: 'aceite', min_g: 3, max_g: 15 }, juguete), 8);
 });
 
 test('redondeo: piezas enteras dentro de los límites', () => {
@@ -136,25 +144,42 @@ test('tolerancia de día: la proteína nunca más de 10 g por debajo', () => {
 });
 
 // ---------- Regresión contra el prototipo en Python ----------
+// Única diferencia buscada (2026-10-19): el prototipo redondea el aceite a 5 ml y la app a 1 ml. El resto de
+// gramos tiene que ser idéntico, y los macros, los del prototipo más lo que suma o resta ese aceite.
+
+const esAceite = id => id.startsWith('aceite');
+
+// Gramos del prototipo con el aceite que ha dado la app (comprobando que solo cambia por el redondeo).
+function gramosPrototipo(r, a) {
+  const esperados = Object.fromEntries(Object.entries(r.gramos_resueltos_prueba).filter(([, g]) => g > 0));
+  Object.keys(a.gramos).filter(esAceite).forEach(id => {
+    assert.ok(Math.abs(a.gramos[id] - (esperados[id] || 0)) <= 2.5, `${r.id} ${id}: ${a.gramos[id]} frente a ${esperados[id]}`);
+    esperados[id] = a.gramos[id];
+  });
+  return esperados;
+}
 
 test('regresión: las 22 recetas semilla dan las kcal del prototipo (≤ 2 %)', () => {
   recetasJson.recetas.forEach(r => {
     const a = N.ajustarReceta_(r, recetasJson.objetivo_por_comida[r.comida], alimentos);
-    const desvio = Math.abs(a.macros.kcal / r.macros_prueba.kcal - 1) * 100;
-    assert.ok(desvio <= 2, `${r.id}: ${a.macros.kcal.toFixed(0)} kcal vs ${r.macros_prueba.kcal} (${desvio.toFixed(1)} %)`);
-    ['P', 'C', 'G'].forEach(n => cerca(a.macros[n], r.macros_prueba[n], 0.5));
+    const aceite = {};
+    Object.keys(a.gramos).filter(esAceite).forEach(id => { aceite[id] = a.gramos[id] - (r.gramos_resueltos_prueba[id] || 0); });
+    const extra = N.calcularMacros_(aceite, alimentos);
+    const esperado = n => r.macros_prueba[n] + extra[n];
+    const desvio = Math.abs(a.macros.kcal / esperado('kcal') - 1) * 100;
+    assert.ok(desvio <= 2, `${r.id}: ${a.macros.kcal.toFixed(0)} kcal vs ${esperado('kcal').toFixed(0)} (${desvio.toFixed(1)} %)`);
+    ['P', 'C', 'G'].forEach(n => cerca(a.macros[n], esperado(n), 0.5));
   });
 });
 
-test('regresión: mismos gramos que el prototipo', () => {
+test('regresión: mismos gramos que el prototipo (salvo el redondeo del aceite)', () => {
   recetasJson.recetas.forEach(r => {
     const a = N.ajustarReceta_(r, recetasJson.objetivo_por_comida[r.comida], alimentos);
-    const esperados = Object.fromEntries(Object.entries(r.gramos_resueltos_prueba).filter(([, g]) => g > 0));
-    assert.deepEqual(a.gramos, esperados, r.id);
+    assert.deepEqual(a.gramos, gramosPrototipo(r, a), r.id);
   });
 });
 
-test('recetas ajustadas: límites, piezas enteras y múltiplos de 5', () => {
+test('recetas ajustadas: límites, piezas enteras y múltiplos de 5 (el aceite, ml enteros)', () => {
   recetasJson.recetas.forEach(r => {
     const a = N.ajustarReceta_(r, recetasJson.objetivo_por_comida[r.comida], alimentos, TOL_COMIDA);
     r.ingredientes_escalables.forEach(e => {
@@ -162,7 +187,7 @@ test('recetas ajustadas: límites, piezas enteras y múltiplos de 5', () => {
       assert.ok(g === 0 ? e.min_g === 0 : g >= e.min_g && g <= e.max_g, `${r.id} ${e.alimento} ${g}`);
       if (e.unidad) assert.equal(g % alimentos[e.alimento].gramos_unidad, 0, `${r.id} ${e.alimento}`);
       // El límite manda sobre el redondeo: aceite 0–8 ml puede quedar en 8.
-      else if (g !== e.min_g && g !== e.max_g) assert.equal(g % 5, 0, `${r.id} ${e.alimento} ${g}`);
+      else if (g !== e.min_g && g !== e.max_g) assert.equal(g % (esAceite(e.alimento) ? 1 : 5), 0, `${r.id} ${e.alimento} ${g}`);
     });
     assert.ok(a.evaluacion && typeof a.evaluacion.ok === 'boolean');
     a.ingredientes.forEach(i => assert.ok(['crudo', 'cocinado'].includes(i.estado), `${r.id} ${i.alimento}`));

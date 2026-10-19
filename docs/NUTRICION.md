@@ -36,7 +36,7 @@ Al darse de alta, y cada vez que alguien cambia de objetivo en Ajustes › Mi ob
 - Los ingredientes **fijos** se suman como constante.
 - Minimizar el error relativo en P, C, G y kcal (pesos 1/objetivo): mínimos cuadrados acotados (ver `prototipo/semana.py`, `solve`).
 - Ingredientes por unidad (huevo, tortillas, rebanadas, tortitas): optimizar, redondear a piezas enteras, fijarlas y reoptimizar el resto.
-- Redondeo final: 5 g; aceite en múltiplos de 5 ml; respetar límites.
+- Redondeo final: 5 g; aceite de 1 en 1 ml (desde 2026-10-19; con 5 ml las raciones pequeñas no cuadraban la grasa de la comida: se mide con cuchara medidora o pulverizador); respetar límites. El prototipo en Python sigue con 5 ml: los tests de regresión solo admiten esa diferencia.
 - Implementación en JS: bounded least squares propio (pocas variables, 2–5) o `javascript-lp-solver` (Unlicense). Validar contra los resultados de `data/recetas_semilla.json`.
 
 ## Ajuste cada 2 semanas
