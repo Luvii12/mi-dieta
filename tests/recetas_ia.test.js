@@ -101,6 +101,30 @@ test('mensaje para Claude: objetivo, tabla sin excluidos, recetas existentes y v
   assert.match(texto, /Salmón al horno/, 'lista las cenas que ya existen');
   assert.doesNotMatch(texto, /Huevos revueltos/, 'no lista recetas de otras comidas');
   assert.match(texto, /X: No cuadra/);
+  assert.match(texto, /Ración de referencia: 373 kcal, 34.9 g de proteína/);
+  assert.doesNotMatch(texto, /no escribas las cantidades para ella/, 'con los objetivos de Fran no hace falta aclararlo');
+});
+
+test('recetas para otra persona: se piden para la ración de referencia y a ella le salen a su escala', () => {
+  const gas = preparar();
+  const cena = { kcal: 317, P: 29.7, C: 24.7, G: 10.5 }; // 0,85 de la cena de Fran
+  gas.contexto.escribirConfig_('objetivo_cena', cena);
+  gas.contexto.escribirConfig_('perfil', { nombre: 'Ana' });
+  const pedido = gas.llamar('pedidoRecetas', { comida: 'Cena' }).datos;
+  assert.match(pedido.mensaje, /Ración de referencia: 373 kcal, 34.9 g de proteína/);
+  assert.match(pedido.mensaje, /A Ana la app le escala después cada ingrediente a su ración \(317 kcal, 29.7 g de proteína/);
+  assert.match(pedido.sistema, /Todas las cantidades son para la ración de referencia/);
+
+  // Escrita para la ración de referencia, cuadra con su cena con algo menos de pollo que la de Fran.
+  const arroz = { nombre: 'Arroz con pollo al limón', preparacion: 'Dora el pollo; añade el arroz y el limón',
+    ingredientes_fijos: [{ alimento: 'pimiento_cebolla', gramos: 80 }], alimentos_nuevos: [],
+    ingredientes_escalables: [{ alimento: 'pechuga_pollo', min_g: 100, max_g: 200, unidad: false },
+      { alimento: 'arroz', min_g: 25, max_g: 70, unidad: false }, { alimento: 'aceite_oliva', min_g: 3, max_g: 15, unidad: false }] };
+  const suya = gas.llamar('importarPropuestas', { comida: 'Cena', recetas: [arroz], probar: true }).datos.validas[0];
+  const deFran = preparar().llamar('importarPropuestas', { comida: 'Cena', recetas: [arroz], probar: true }).datos.validas[0];
+  assert.equal(suya && suya.estado, 'valida');
+  const proporcion = suya.gramos.pechuga_pollo / deFran.gramos.pechuga_pollo;
+  assert.ok(proporcion > 0.75 && proporcion < 0.95, 'pollo: ' + suya.gramos.pechuga_pollo + ' frente a ' + deFran.gramos.pechuga_pollo);
 });
 
 test('aceptar, descartar y añadir el alimento que falta', () => {

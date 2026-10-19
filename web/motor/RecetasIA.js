@@ -57,8 +57,10 @@ const SISTEMA_RECETAS_IA = [
   '',
   'Cómo se escribe:',
   '- `ingredientes_escalables`: los 2 a 4 ingredientes que ponen los macros (proteína, hidrato, grasa). El optimizador',
-  '  elige sus gramos entre `min_g` y `max_g`, así que pon límites realistas para una ración y lo bastante amplios para',
-  '  llegar al objetivo de la comida. El aceite siempre va aquí, medido (por ejemplo 3–15 ml).',
+  '  elige sus gramos entre `min_g` y `max_g`, así que pon límites realistas para la ración de referencia del mensaje y',
+  '  lo bastante amplios para llegar a ella. El aceite siempre va aquí, medido (por ejemplo 3–15 ml).',
+  '- Todas las cantidades son para la ración de referencia, aunque la receta sea para otra persona: la app escala',
+  '  después cada ingrediente a la ración de cada uno.',
   '- `unidad: true` solo para alimentos que se cuentan por piezas y tienen gramos por unidad en la tabla (huevos,',
   '  rebanadas…); entonces `min_g` y `max_g` son múltiplos de esos gramos.',
   '- `ingredientes_fijos`: lo que da sabor y textura (tomate triturado, cebolla, salsa…), en gramos fijos.',
@@ -73,7 +75,10 @@ const SISTEMA_RECETAS_IA = [
   '- No repitas platos de la lista de recetas existentes ni hagas variaciones casi iguales entre sí.',
 ].join('\n');
 
-// Mensaje para Claude con todo lo que necesita: comida, objetivo, tabla de alimentos y recetas que ya hay.
+// Mensaje para Claude con todo lo que necesita: comida, ración de referencia, tabla de alimentos y recetas que
+// ya hay. Las cantidades se piden para la ración de referencia (la del plan de Fran, REFERENCIA_COMIDAS), como
+// todas las recetas de la biblioteca: la app las escala a cada persona (racionesReceta_). `objetivo` (el de quien
+// las pide) solo se cita si es distinto.
 // ctx: {comida, cantidad, idea, objetivo, alimentosFilas, excluidos: Set, recetas: [{comida, nombre}],
 //       favoritas: [nombres], noGustan: [nombres], descartadas: [{nombre, motivo}] (del intento anterior),
 //       para: nombre de la persona (opcional)}
@@ -84,11 +89,14 @@ function mensajeRecetasIA_(ctx) {
     .join('\n');
   const excluidos = ctx.alimentosFilas.filter(a => ctx.excluidos.has(a.id)).map(a => a.nombre || a.id);
   const deLaComida = ctx.recetas.filter(r => r.comida === ctx.comida).map(r => r.nombre);
+  const ref = REFERENCIA_COMIDAS[ctx.comida];
   const o = ctx.objetivo;
+  const distinto = o && ['kcal', 'P', 'C', 'G'].some(n => Math.abs(Number(o[n]) - ref[n]) > 0.5);
   const partes = [
     `Propón ${ctx.cantidad} ${ctx.cantidad === 1 ? 'receta' : 'recetas'} de ${ctx.comida.toLowerCase()}${ctx.cantidad === 1 ? '' : ', distintas entre sí'}${ctx.para ? `, para ${ctx.para}` : ''}.`,
     ctx.idea ? `Idea para esta tanda: ${ctx.idea}` : '',
-    `Objetivo de una ración: ${o.kcal} kcal, ${o.P} g de proteína, ${o.C} g de hidratos y ${o.G} g de grasa. Los límites de los escalables tienen que permitir llegar a él.`,
+    `Ración de referencia: ${ref.kcal} kcal, ${ref.P} g de proteína, ${ref.C} g de hidratos y ${ref.G} g de grasa. Escribe todas las cantidades para ella: los límites de los escalables tienen que permitir llegar a ella.` +
+      (distinto ? ` A ${ctx.para || 'esta persona'} la app le escala después cada ingrediente a su ración (${o.kcal} kcal, ${o.P} g de proteína, ${o.C} g de hidratos y ${o.G} g de grasa): no escribas las cantidades para ella.` : ''),
     `Tabla de alimentos (id | nombre | grupo | estado | gramos por unidad):\n${tabla}`,
     excluidos.length ? `Alimentos excluidos (no los uses nunca): ${excluidos.join(', ')}.` : '',
     deLaComida.length ? `Recetas de ${ctx.comida.toLowerCase()} que ya existen (no las repitas):\n- ${deLaComida.join('\n- ')}` : '',

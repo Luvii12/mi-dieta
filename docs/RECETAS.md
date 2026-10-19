@@ -20,7 +20,7 @@ Los macros los ponen pocos ingredientes (proteína, carbohidrato, grasa principa
 El usuario las está probando y puntuando. Las puntuaciones decidirán qué recetas se quedan.
 
 ## Recetas generadas por IA (Fase 5)
-La IA devuelve JSON con el mismo formato que la semilla (`nombre`, `comida`, `preparacion`, `ingredientes_fijos`, `ingredientes_escalables`), usando solo `id` de la pestaña `alimentos`. El código:
+La IA devuelve JSON con el mismo formato que la semilla (`nombre`, `comida`, `preparacion`, `ingredientes_fijos`, `ingredientes_escalables`), usando solo `id` de la pestaña `alimentos`. Las cantidades son siempre para la **ración de referencia** (la del plan de Fran, `REFERENCIA_COMIDAS`), también cuando la receta es para otra persona: la app las escala después a cada uno (2026-10-19; antes se pedían para el objetivo de esa persona y se escalaban dos veces). El código:
 1. Rechaza alimentos desconocidos o excluidos.
 2. Ejecuta el optimizador; si no cuadra la comida dentro de tolerancia, la receta se descarta.
 3. Guarda la receta con `origen = ia` y `activa = propuesta`; el usuario la revisa en Recetas y la añade o la descarta.
