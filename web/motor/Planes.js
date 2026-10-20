@@ -26,14 +26,21 @@ function filasDesdePlan_(generado, planId, objetivos, tolerancias, creado) {
       G: m.G,
       hecha: 'no',
       cambiada_por: '',
+      fijados: textoFijados_(c.fijados),
     });
   }));
   return { plan: plan, comidas: comidas };
 }
 
-// Ingredientes de una comida guardada, con nombre, crudo/cocinado, grupo, si es escalable y piezas.
-// Orden: el de la receta, primero los escalables (no el de las claves de `gramos`, que Postgres reordena).
-function ingredientesDeComida_(gramos, receta, alimentos) {
+// Gramos elegidos por la persona tal como se guardan en `plan_comidas.fijados`: vacío si no hay ninguno.
+function textoFijados_(fijados) {
+  return fijados && Object.keys(fijados).length ? fijados : '';
+}
+
+// Ingredientes de una comida guardada, con nombre, crudo/cocinado, grupo, si es escalable, piezas y si sus
+// gramos los ha elegido la persona (`fijado`). Orden: el de la receta, primero los escalables (no el de las
+// claves de `gramos`, que Postgres reordena).
+function ingredientesDeComida_(gramos, receta, alimentos, fijados) {
   const escalables = {};
   ((receta && receta.ingredientes_escalables) || []).forEach(e => { escalables[e.alimento] = e; });
   const orden = Object.keys(escalables).concat(((receta && receta.ingredientes_fijos) || []).map(f => f.alimento));
@@ -42,6 +49,7 @@ function ingredientesDeComida_(gramos, receta, alimentos) {
     const a = alimentos[id] || { nombre: id, estado: '', grupo: '' };
     const ing = { alimento: id, nombre: a.nombre, estado: a.estado, grupo: a.grupo, gramos: gramos[id], escalable: Boolean(escalables[id]) };
     if (escalables[id] && escalables[id].unidad && a.gramos_unidad) ing.piezas = Math.round(gramos[id] / a.gramos_unidad);
+    if (fijados && id in fijados) ing.fijado = true;
     return ing;
   }).sort((x, y) => posicion(x.alimento) - posicion(y.alimento));
 }
@@ -63,13 +71,15 @@ function vistaPlan_(filaPlan, filasComidas, recetasPorId, alimentos, valoracione
   filasComidas.forEach(f => {
     const recetaId = recetaDeComida_(f);
     const receta = recetasPorId[recetaId];
+    const fijados = parsearValor_(f.fijados) || {};
     (porFecha[f.fecha] = porFecha[f.fecha] || []).push({
       comida: f.comida,
       receta_id: recetaId,
       cambiada: recetaId !== f.receta_id,
       nombre: receta ? receta.nombre : recetaId,
       preparacion: receta ? receta.preparacion : '',
-      ingredientes: ingredientesDeComida_(parsearValor_(f.gramos) || {}, receta, alimentos),
+      ingredientes: ingredientesDeComida_(parsearValor_(f.gramos) || {}, receta, alimentos, fijados),
+      fijados: fijados,
       macros: { kcal: Number(f.kcal), P: Number(f.P), C: Number(f.C), G: Number(f.G) },
       objetivo: objComidas[f.comida] || null,
       hecha: f.hecha || 'no',
@@ -121,20 +131,20 @@ function numeroBloque_(planes, plan) {
   return planes.filter(p => p.estado !== 'borrador' && p.plan_id !== plan.plan_id && String(p.inicio) < String(plan.inicio)).length + 1;
 }
 
-// Recalcula gramos y macros de unas filas de `plan_comidas` para otros objetivos, con los mismos platos.
-// Cambia las filas.
+// Recalcula gramos y macros de unas filas de `plan_comidas` para otros objetivos, con los mismos platos y los
+// gramos que haya elegido la persona (`fijados`). Cambia las filas.
 function reoptimizarComidas_(filas, objetivos, recetasPorId, alimentos) {
   filas.forEach(f => {
     const receta = recetasPorId[recetaDeComida_(f)];
     if (!receta || receta.error) throw new Error('No se puede recalcular la receta ' + recetaDeComida_(f) + '.');
-    const ajuste = ajustarReceta_(receta, objetivos[f.comida], alimentos);
+    const ajuste = ajustarReceta_(receta, objetivos[f.comida], alimentos, null, parsearValor_(f.fijados));
     const m = redondearMacros_(ajuste.macros);
-    Object.assign(f, { gramos: ajuste.gramos, kcal: m.kcal, P: m.P, C: m.C, G: m.G });
+    Object.assign(f, { gramos: ajuste.gramos, kcal: m.kcal, P: m.P, C: m.C, G: m.G, fijados: textoFijados_(ajuste.fijados) });
   });
   return filas;
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = { recetaDeComida_, filasDesdePlan_, ingredientesDeComida_, vistaPlan_, planDeReferencia_, promoverPlanes_,
+  module.exports = { recetaDeComida_, textoFijados_, filasDesdePlan_, ingredientesDeComida_, vistaPlan_, planDeReferencia_, promoverPlanes_,
     numeroBloque_, reoptimizarComidas_ };
 }

@@ -143,6 +143,14 @@ test('tolerancia de día: la proteína nunca más de 10 g por debajo', () => {
   assert.equal(N.evaluarDia_({ kcal: 2500, P: 291, C: 200, G: 70 }, obj, TOL_DIA).ok, true);
 });
 
+test('tolerancia de día: la proteína puede pasarse hasta un 15 % (o lo que diga P_exceso)', () => {
+  const obj = { kcal: 1655, P: 100, C: 159.2, G: 52.6 };
+  assert.equal(N.evaluarDia_({ kcal: 1655, P: 94, C: 159.2, G: 52.6 }, obj, TOL_DIA).ok, false); // −6 %
+  assert.equal(N.evaluarDia_({ kcal: 1655, P: 115, C: 159.2, G: 52.6 }, obj, TOL_DIA).ok, true); // +15 %
+  assert.equal(N.evaluarDia_({ kcal: 1655, P: 116, C: 159.2, G: 52.6 }, obj, TOL_DIA).ok, false);
+  assert.equal(N.evaluarDia_({ kcal: 1655, P: 108, C: 159.2, G: 52.6 }, obj, Object.assign({ P_exceso: 5 }, TOL_DIA)).ok, false);
+});
+
 // ---------- Regresión contra el prototipo en Python ----------
 // Única diferencia buscada (2026-10-19): el prototipo redondea el aceite a 5 ml y la app a 1 ml. El resto de
 // gramos tiene que ser idéntico, y los macros, los del prototipo más lo que suma o resta ese aceite.

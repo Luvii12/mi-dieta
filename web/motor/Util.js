@@ -14,7 +14,7 @@ const PESTANAS = {
   preferencias: ['tipo', 'alimento_id', 'nota'],
   planes: ['plan_id', 'inicio', 'fin', 'estado', 'objetivos', 'creado'],
   plan_comidas: ['plan_id', 'fecha', 'comida', 'receta_id', 'gramos', 'kcal', 'P', 'C', 'G', 'hecha',
-    'cambiada_por'],
+    'cambiada_por', 'fijados'],
   pesos: ['fecha', 'peso_kg', 'cintura_cm'],
   ajustes_historial: ['fecha', 'plan_id', 'ritmo_semanal_pct', 'adherencia_pct', 'propuesta_kcal', 'aceptada'],
 };

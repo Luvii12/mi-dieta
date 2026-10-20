@@ -15,7 +15,7 @@ export const TABLAS = {
   valoraciones: { orden: 'id' },
   preferencias: { orden: 'id' },
   planes: { clave: ['plan_id'], json: ['objetivos'], orden: 'plan_id' },
-  plan_comidas: { clave: ['plan_id', 'fecha', 'comida'], json: ['gramos'], orden: 'plan_id,fecha' },
+  plan_comidas: { clave: ['plan_id', 'fecha', 'comida'], json: ['gramos', 'fijados'], orden: 'plan_id,fecha' },
   pesos: { clave: ['fecha'], orden: 'fecha' },
   ajustes_historial: { orden: 'id' },
 };

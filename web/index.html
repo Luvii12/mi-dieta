@@ -14,7 +14,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
   <!-- Solo los iconos que usa la app (en orden alfabético, como pide Google Fonts). -->
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400..700,0..1,0&icon_names=account_circle,add,arrow_back,arrow_forward,auto_awesome,bakery_dining,block,calendar_month,calendar_today,celebration,check,check_circle,chevron_right,close,cloud_done,cloud_off,content_copy,delete,edit,edit_note,error,event_available,expand_more,fitness_center,flag,insights,key,kitchen,local_fire_department,login,logout,lunch_dining,mail,menu_book,monitor_weight,monitoring,nutrition,outdoor_grill,person,pie_chart,remove,restaurant,restaurant_menu,scale,search,settings,share,skillet,soup_kitchen,task_alt,trending_down,trending_flat,trending_up,tune,verified,visibility,visibility_off,workspace_premium&display=block">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400..700,0..1,0&icon_names=account_circle,add,arrow_back,arrow_forward,auto_awesome,bakery_dining,block,calendar_month,calendar_today,celebration,check,check_circle,chevron_right,close,cloud_done,cloud_off,content_copy,delete,edit,edit_note,error,event_available,expand_more,fitness_center,flag,insights,key,kitchen,local_fire_department,login,logout,lunch_dining,mail,menu_book,monitor_weight,monitoring,nutrition,outdoor_grill,person,pie_chart,remove,restaurant,restaurant_menu,scale,search,settings,share,skillet,soup_kitchen,task_alt,trending_down,trending_flat,trending_up,tune,undo,verified,visibility,visibility_off,workspace_premium&display=block">
   <link rel="stylesheet" href="estilos.css">
   <!-- Motor (scripts clásicos: declaran funciones globales que usa api.js). Se ejecutan en orden, antes que app.js. -->
   <script defer src="motor/Acciones.js"></script>
@@ -204,6 +204,33 @@
     </div>
     <p id="panel-estado" class="subtitulo" role="status"></p>
     <ul id="panel-lista" class="lista-alternativas"></ul>
+  </dialog>
+
+  <dialog id="panel-cantidades" class="hoja-inferior" aria-labelledby="cantidades-titulo">
+    <div class="hoja-cabecera">
+      <h2 id="cantidades-titulo">Cambiar cantidades</h2>
+      <button id="cantidades-cerrar" type="button" class="boton-icono" aria-label="Cerrar">
+        <span class="icono" aria-hidden="true">close</span>
+      </button>
+    </div>
+    <form id="form-cantidades" class="form-formulario" novalidate>
+      <p class="subtitulo">Pon los gramos que quieras (por ejemplo, lo que pesa tu pan) y la app recalcula el resto para tu objetivo.</p>
+      <ul id="cantidades-lista" class="lista-editor"></ul>
+      <div id="cantidades-resumen" class="cantidades-resumen" role="status"></div>
+      <div class="preferencia">
+        <div class="preferencia-texto">
+          <span class="preferencia-titulo" id="cantidades-siempre-titulo">Siempre en esta receta</span>
+          <span class="texto-ayuda" id="cantidades-siempre-nota">También en tus próximas comidas con este plato y en los planes nuevos.</span>
+        </div>
+        <button id="cantidades-siempre" type="button" class="interruptor" role="switch" aria-checked="false"
+          aria-labelledby="cantidades-siempre-titulo" aria-describedby="cantidades-siempre-nota"><span class="interruptor-bola"></span></button>
+      </div>
+      <p id="cantidades-estado" class="mensaje mensaje-error" role="status"></p>
+      <div class="acciones-cantidades">
+        <button id="cantidades-restablecer" type="button" class="boton boton-secundario">Volver a lo calculado</button>
+        <button id="cantidades-guardar" type="submit" class="boton boton-primario">Guardar</button>
+      </div>
+    </form>
   </dialog>
 
   <dialog id="panel-peso" class="hoja-inferior hoja-amplia" aria-labelledby="peso-titulo">

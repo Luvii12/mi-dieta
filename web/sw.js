@@ -1,6 +1,6 @@
 // Service worker: guarda los archivos de la app para que abra sin conexión.
 // Al cambiar cualquier archivo de web/, sube VERSION para que el móvil descargue la nueva.
-const VERSION = 'dieta-v22';
+const VERSION = 'dieta-v23';
 const FUENTES = 'dieta-fuentes-v4';
 const ARCHIVOS = [
   './',
@@ -18,6 +18,7 @@ const ARCHIVOS = [
   'receta.js',
   'recetas.js',
   'cambiar.js',
+  'cantidades.js',
   'ajustes.js',
   'progreso.js',
   'nuevoplan.js',

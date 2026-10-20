@@ -3,7 +3,7 @@
 
 import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion, cambiarContrasena, puedoEditarAlimentos } from './api.js';
 import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';
-import { METAS, ENTRENOS } from './perfil.js';
+import { METAS, ENTRENOS, EJERCICIOS } from './perfil.js';
 import { abrirAlimentoNuevo } from './recetas.js';
 
 const CACHE_CONFIG = 'dieta.config';
@@ -25,8 +25,9 @@ function pintarPerfil() {
   const p = config.perfil;
   $('perfil-icono').textContent = p ? METAS[p.meta].icono : 'person';
   $('perfil-meta').textContent = p ? METAS[p.meta].nombre : 'Completa tu perfil';
-  const entreno = p && (p.entreno === 'no' ? 'Sin entrenar' : `Entrenas ${ENTRENOS[p.entreno]}`);
-  $('perfil-detalle').textContent = p ? `${entreno} · ${numero(p.peso_kg, 1)} kg` : 'La app calcula tus objetivos según tu meta';
+  const ejercicio = p && (p.entreno === 'no' ? 'Sin ejercicio' : `${EJERCICIOS[p.ejercicio || 'fuerza'].nombre} ${ENTRENOS[p.entreno]}`);
+  const detalle = p && [ejercicio, p.andar ? 'andas a diario' : '', `${numero(p.peso_kg, 1)} kg`].filter(Boolean).join(' · ');
+  $('perfil-detalle').textContent = p ? detalle : 'La app calcula tus objetivos según tu meta';
 }
 
 function pintarObjetivos() {

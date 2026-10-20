@@ -22,7 +22,7 @@ const ESQUEMA = {
   planes: { pk: ['user_id', 'plan_id'], columnas: ['user_id', 'plan_id', 'inicio', 'fin', 'estado', 'objetivos', 'creado'],
     noNulas: ['inicio', 'fin', 'estado'], jsonb: ['objetivos'] },
   plan_comidas: { pk: ['user_id', 'plan_id', 'fecha', 'comida'], columnas: ['user_id', 'plan_id', 'fecha', 'comida', 'receta_id',
-    'gramos', 'kcal', 'P', 'C', 'G', 'hecha', 'cambiada_por'], noNulas: ['receta_id', 'gramos', 'hecha'], jsonb: ['gramos'] },
+    'gramos', 'kcal', 'P', 'C', 'G', 'hecha', 'cambiada_por', 'fijados'], noNulas: ['receta_id', 'gramos', 'hecha'], jsonb: ['gramos', 'fijados'] },
   pesos: { pk: ['user_id', 'fecha'], columnas: ['user_id', 'fecha', 'peso_kg', 'cintura_cm'], noNulas: ['peso_kg'] },
   ajustes_historial: { identidad: true, columnas: ['id', 'user_id', 'fecha', 'plan_id', 'ritmo_semanal_pct', 'adherencia_pct',
     'propuesta_kcal', 'aceptada'], noNulas: ['fecha'] },

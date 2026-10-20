@@ -1,6 +1,6 @@
 // Pantalla «Receta»: macros, ingredientes pesados para tus objetivos, preparación, valoración y, si es una
-// comida del plan activo, «Marcar como hecha» y, hasta hoy, «No la he hecho»; «Cambiar plato» en el plan
-// activo de hoy en adelante y en el siguiente y el borrador (design/mi_dieta_receta_pollo_al_curry).
+// comida del plan activo, «Marcar como hecha» y, hasta hoy, «No la he hecho»; «Cambiar cantidades» y «Cambiar
+// plato» en el plan activo de hoy en adelante y en el siguiente y el borrador (design/mi_dieta_receta_pollo_al_curry).
 // Rutas: #receta/<plan_id>/<fecha>/<comida> (comida de un plan) y #receta/<id> (biblioteca de recetas, con
 // «Hacer mi versión» y, en las propias, «Editar» y «Borrar»; o propuesta de la IA: en lugar de valorar,
 // «Añadir a la biblioteca» o «Descartar»).
@@ -12,6 +12,7 @@ import { buscarComida, buscarReceta, guardarPlan, guardarRecetas, guardarPropues
 import { vacio } from './hoy.js';
 import { abrirAlimentoNuevo, estadoPropuesta } from './recetas.js';
 import { abrirCambiarPlato } from './cambiar.js';
+import { abrirCantidades } from './cantidades.js';
 
 const VALORACIONES = [
   { valor: 'me_encanta', emoji: '😍', texto: 'Me encanta' },
@@ -38,8 +39,8 @@ export function cajaMacro(clase, titulo, valor, unidad) {
 
 export function ingredientePesado(ing) {
   if (ing.gramos == null) return ingredienteConLimites(ing);
-  const detalle = [ing.estado === 'crudo' ? 'en crudo' : ing.estado === 'cocinado' ? 'cocinado' : '', ing.piezas ? `${numero(ing.gramos)} g` : '']
-    .filter(Boolean).join(' · ');
+  const detalle = [ing.estado === 'crudo' ? 'en crudo' : ing.estado === 'cocinado' ? 'cocinado' : '', ing.piezas ? `${numero(ing.gramos)} g` : '',
+    ing.fijado ? 'elegido por ti' : ''].filter(Boolean).join(' · ');
   return h('li', { class: 'pesado' },
     h('span', { class: 'pesado-nombre' },
       h('span', { class: 'punto punto-' + (COLOR_GRUPO[ing.grupo] || 'contorno') }),
@@ -60,7 +61,8 @@ function ingredienteConLimites(ing) {
 
 export function ingredienteFijo(ing) {
   return h('li', { class: 'fijo' },
-    h('span', null, ing.nombre, ing.nuevo ? h('span', { class: 'pesado-detalle texto-terciario' }, 'alimento nuevo') : null),
+    h('span', null, ing.nombre, ing.nuevo ? h('span', { class: 'pesado-detalle texto-terciario' }, 'alimento nuevo') : null,
+      ing.fijado ? h('span', { class: 'pesado-detalle' }, 'elegido por ti') : null),
     h('span', { class: 'fijo-cantidad' }, `${numero(ing.gramos)} ${esMl(ing) ? 'ml' : 'g'}`));
 }
 
@@ -134,6 +136,9 @@ function pintar(contenedor, encontrada) {
 
       biblioteca && !propuesta ? accionesReceta(c) : null,
       cambiable ? h('section', { class: 'acciones-receta', 'aria-label': 'Cambiar el plato' },
+        h('button', { type: 'button', class: 'boton boton-secundario', 'data-foco': 'cambiar-cantidades',
+          onclick: () => abrirCantidades(plan.plan_id, dia.fecha, c) },
+        icono('scale'), 'Cambiar cantidades'),
         h('button', { type: 'button', class: 'boton boton-secundario', 'data-foco': 'cambiar-plato',
           onclick: () => abrirCambiarPlato(plan.plan_id, dia.fecha, c, { libre: activo && dia.fecha === hoy }) },
         icono('restaurant_menu'), 'Cambiar plato')) : null),

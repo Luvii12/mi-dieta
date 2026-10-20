@@ -32,26 +32,28 @@ test('perfil: valida y limpia los datos', () => {
   assert.throws(() => perfil({ peso_kg: '' }), /peso/);
   assert.throws(() => perfil({ sexo: 'otro' }), /hombre o mujer/);
   assert.throws(() => perfil({ trabajo: 'x' }), /trabajo/);
-  assert.throws(() => perfil({ entreno: 'x' }), /entrenas/);
+  assert.throws(() => perfil({ entreno: 'x' }), /ejercicio/);
+  assert.throws(() => perfil({ entreno: '3_4', ejercicio: 'yoga' }), /tipo de ejercicio/);
   assert.throws(() => perfil({ meta: 'x' }), /objetivo/);
 });
 
 // ---------- Cálculo ----------
 
 test('objetivos: Mifflin-St Jeor, actividad y déficit del 20 % al perder grasa', () => {
-  // TMB = 10·80 + 6,25·180 − 5·30 + 5 = 1.780; sentado y sin entrenar ×1,2 = 2.136; −20 % → 1.709 → 1.710.
+  // TMB = 10·80 + 6,25·180 − 5·30 + 5 = 1.780; sentado y sin ejercicio ×1,4 = 2.492; −20 % (498) → 1.994 → 1.990.
   const o = P.calcularObjetivos_(perfil(), HOY);
   assert.equal(o.tmb, 1780);
-  assert.equal(o.gasto, 2136);
-  assert.equal(o.kcal, 1710);
-  assert.equal(o.proteina_g_kg, 1.8);
-  assert.deepEqual(o.dia, { kcal: 1710, P: 144, C: 176, G: 48 }); // grasa 25 %, hidratos el resto
+  assert.equal(o.gasto, 2492);
+  assert.equal(o.kcal, 1990);
+  assert.equal(o.proteina_g_kg, 1.4); // perder grasa sin fuerza
+  assert.deepEqual(o.dia, { kcal: 1990, P: 112, C: 262, G: 55 }); // grasa 25 %, hidratos el resto
   assert.ok(Math.abs(kcalDeMacros(o.dia) - o.kcal) <= 4);
   assert.equal(o.aviso, null);
 });
 
 test('objetivos: mujer que entrena y quiere ganar músculo (+10 %, más proteína)', () => {
-  // TMB = 600 + 1.031,25 − 125 − 161 = 1.345,25; sentada + 3–4 días ×1,5 = 2.017,9; +10 % → 2.220.
+  // TMB = 600 + 1.031,25 − 125 − 161 = 1.345,25; sentada (1,4) + 3–4 días (0,1) ×1,5 = 2.017,9; +10 % → 2.220.
+  // Sin `ejercicio` cuenta como fuerza (los perfiles de antes).
   const o = P.calcularObjetivos_(perfil({ sexo: 'mujer', nacimiento: '2001-10-18', altura_cm: 165, peso_kg: 60, entreno: '3_4', meta: 'ganar' }), HOY);
   assert.equal(o.kcal, 2220);
   assert.equal(o.proteina_g_kg, 2);
@@ -59,12 +61,14 @@ test('objetivos: mujer que entrena y quiere ganar músculo (+10 %, más proteín
   assert.equal(o.kcal_minimas, 1200);
 });
 
-test('objetivos: mantener no cambia las kcal; el trabajo y el entrenamiento suben el gasto', () => {
+test('objetivos: mantener no cambia las kcal; el trabajo, el ejercicio y andar suben el gasto', () => {
   const sentado = P.calcularObjetivos_(perfil({ meta: 'mantener' }), HOY);
-  assert.equal(sentado.kcal, 2140);
+  assert.equal(sentado.kcal, 2490);
   assert.equal(sentado.proteina_g_kg, 1.4);
   const fisico = P.calcularObjetivos_(perfil({ meta: 'mantener', trabajo: 'fisico', entreno: '5_mas' }), HOY);
-  assert.equal(fisico.gasto, Math.round(1780 * 1.9));
+  assert.equal(fisico.gasto, Math.round(1780 * 1.85));
+  const andando = P.calcularObjetivos_(perfil({ meta: 'mantener', trabajo: 'fisico', entreno: '5_mas', andar: true }), HOY);
+  assert.equal(andando.gasto, Math.round(1780 * 1.95));
   assert.equal(fisico.proteina_g_kg, 1.8);
 });
 
@@ -93,11 +97,45 @@ test('objetivos: con IMC > 30 la proteína va sobre el peso de un IMC de 25', ()
   assert.equal(P.pesoReferencia_(80, 175), 80);
   const o = P.calcularObjetivos_(perfil({ peso_kg: 120, altura_cm: 175 }), HOY);
   assert.equal(o.peso_referencia, 76.6);
-  assert.equal(o.dia.P, Math.round(1.8 * 76.6));
+  assert.equal(o.dia.P, Math.round(1.4 * 76.6));
 });
 
-test('objetivos: ganar músculo sin entrenar lleva aviso', () => {
+test('objetivos: ganar músculo sin entrenar fuerza lleva aviso', () => {
   assert.match(P.calcularObjetivos_(perfil({ meta: 'ganar' }), HOY).aviso, /entrenar fuerza/);
+  assert.match(P.calcularObjetivos_(perfil({ meta: 'ganar', entreno: '3_4', ejercicio: 'cardio' }), HOY).aviso, /entrenar fuerza/);
+  assert.equal(P.calcularObjetivos_(perfil({ meta: 'ganar', entreno: '3_4', ejercicio: 'fuerza' }), HOY).aviso, null);
+});
+
+test('objetivos: la proteína depende del objetivo y de si hace fuerza', () => {
+  const g = extra => P.calcularObjetivos_(perfil(extra), HOY).proteina_g_kg;
+  // Perder grasa: sin fuerza 1,4 (1,6 con cardio 3 o más días); con fuerza 2,0 o 2,2.
+  assert.equal(g({ andar: true }), 1.4);
+  assert.equal(g({ entreno: '1_2', ejercicio: 'cardio' }), 1.4);
+  assert.equal(g({ entreno: '3_4', ejercicio: 'cardio' }), 1.6);
+  assert.equal(g({ entreno: '1_2', ejercicio: 'fuerza' }), 2);
+  assert.equal(g({ entreno: '5_mas', ejercicio: 'fuerza' }), 2.2);
+  // Mantener y ganar: como antes, el ejercicio de cualquier tipo suma.
+  assert.equal(g({ meta: 'mantener', entreno: '3_4', ejercicio: 'cardio' }), 1.8);
+  assert.equal(g({ meta: 'ganar', entreno: '1_2', ejercicio: 'fuerza' }), 1.8);
+});
+
+test('objetivos: mujer sentada que anda a diario y quiere perder grasa (como Natalia)', () => {
+  // TMB = 670 + 1.037,5 − 110 − 161 = 1.436,5; sentada 1,4 + andar 0,1 = 1,5 → 2.154,8; −20 % → 1.723,8 → 1.720.
+  const p = perfil({ sexo: 'mujer', nacimiento: '2004-10-04', altura_cm: 166, peso_kg: 67, andar: true });
+  assert.equal(p.ejercicio, 'no');
+  assert.equal(p.andar, true);
+  const o = P.calcularObjetivos_(p, HOY);
+  assert.equal(o.kcal, 1720);
+  assert.equal(o.dia.P, 94); // 1,4 × 67
+});
+
+test('perfil: tipo de ejercicio (sin ejercicio, «no»; los perfiles de antes, fuerza)', () => {
+  assert.equal(perfil({ entreno: 'no', ejercicio: 'cardio' }).ejercicio, 'no');
+  assert.equal(perfil({ entreno: '3_4' }).ejercicio, 'fuerza');
+  assert.equal(perfil({ entreno: '3_4', ejercicio: 'cardio' }).ejercicio, 'cardio');
+  assert.equal(perfil({}).andar, false);
+  assert.equal(P.tipoEjercicio_({ entreno: '1_2' }), 'fuerza');
+  assert.equal(P.tipoEjercicio_(undefined), 'no');
 });
 
 test('reparto: cada macro entre las comidas como en el plan de Fran', () => {
@@ -156,13 +194,14 @@ test('raciones: cada ingrediente escala con el macro de su grupo y las piezas si
 });
 
 test('raciones: los platos se ajustan a objetivos muy distintos de los de Fran', () => {
-  // Mujer que quiere perder grasa (1.200 kcal) y hombre que entrena y pierde grasa (2.700 kcal).
+  // Mujer que quiere perder grasa (1.200 kcal y solo 63 g de proteína: el caso más difícil para una biblioteca
+  // con mucha proteína) y hombre que entrena y pierde grasa (2.570 kcal).
   [perfil({ sexo: 'mujer', nacimiento: '1966-01-01', altura_cm: 150, peso_kg: 45 }), perfil({ peso_kg: 95, altura_cm: 188, entreno: '5_mas' })]
     .forEach(p => {
       const o = P.calcularObjetivos_(p, HOY);
       const plan = generarPlan_({ inicio: '2026-10-19', recetas: SEMILLA.recetas, alimentos, objetivos: o.comidas,
         tolerancias: P.TOLERANCIAS_INICIALES, config: {}, azar: azarConSemilla_(1) });
-      assert.ok(plan.dias.filter(d => d.revisar).length <= 2, `${o.kcal} kcal: ${plan.dias.filter(d => d.revisar).length} días a revisar`);
+      assert.ok(plan.dias.filter(d => d.revisar).length <= 3, `${o.kcal} kcal: ${plan.dias.filter(d => d.revisar).length} días a revisar`);
     });
 });
 
@@ -201,9 +240,11 @@ test('ajuste al ganar músculo: lento → +120; en ventana → igual (alternativ
 
 test('ajuste: perder grasa sigue la regla de siempre; la proteína mínima depende del objetivo', () => {
   assert.equal(Pr.proponerAjuste_(datos({ meta: 'perder', ritmo: { ritmo_pct: -0.1 } })).motivo, 'lento');
-  assert.equal(P.proteinaMinimaGKg_('perder'), 1.6);
-  assert.equal(P.proteinaMinimaGKg_(undefined), 1.6);
-  assert.equal(P.proteinaMinimaGKg_('ganar'), 1.2);
+  assert.equal(P.proteinaMinimaGKg_(undefined), 1.6); // sin perfil (Fran): perder grasa con fuerza
+  assert.equal(P.proteinaMinimaGKg_({ meta: 'perder', entreno: '3_4' }), 1.6);
+  assert.equal(P.proteinaMinimaGKg_({ meta: 'perder', entreno: 'no' }), 1.2);
+  assert.equal(P.proteinaMinimaGKg_({ meta: 'perder', entreno: '3_4', ejercicio: 'cardio' }), 1.2);
+  assert.equal(P.proteinaMinimaGKg_({ meta: 'ganar', entreno: '3_4' }), 1.2);
   // 131,8 g de proteína son 1,46 g/kg con 90 kg: bloquea bajar al perder, no al mantener.
   assert.ok(Pr.proponerAjuste_(datos({ peso: 90, proteinaMinima: 1.6 })).opciones[1].bloqueada);
   assert.equal(Pr.proponerAjuste_(datos({ meta: 'mantener', ritmo: { ritmo_pct: 0.4 }, peso: 90, proteinaMinima: 1.2 })).opciones[0].bloqueada, null);

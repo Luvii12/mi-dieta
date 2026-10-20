@@ -1,5 +1,5 @@
 // Perfil de cada persona (fase M4, docs/NUTRICION.md › «Objetivos según el perfil»): con sus datos (sexo,
-// edad, altura, peso, trabajo, días de entrenamiento y objetivo) calcula sus kcal y macros del día y los
+// edad, altura, peso, trabajo, ejercicio (días y tipo), si anda a diario y objetivo) calcula sus kcal y macros del día y los
 // reparte entre sus comidas (las 4, o sin desayuno o sin merienda) con las proporciones del plan de Fran
 // (REFERENCIA_COMIDAS, Nutricion.js). Se usa al darse de alta y cada vez que alguien cambia de objetivo.
 // Funciones puras.
@@ -11,25 +11,41 @@ const TOLERANCIAS_INICIALES = {
   comida: { kcal: 12, P: 15, C: 15, G: 20 },
 };
 
-// Factor de actividad = el del trabajo + lo que suma el entrenamiento (de 1,2 a 1,9).
+// Factor de actividad (PAL, FAO/OMS/UNU 2004: una vida sedentaria es 1,40–1,69) = el del trabajo + lo que suma
+// el ejercicio (unos 0,2 por una hora diaria de ejercicio moderado o intenso: se reparte por los días que se
+// hace) + andar a diario (≈ 1 hora o 10.000 pasos). De 1,4 a 1,95.
 const TRABAJOS = {
-  sentado: { factor: 1.2, nombre: 'Sentado', nota: 'Oficina, estudios, conducir' },
-  de_pie: { factor: 1.3, nombre: 'De pie', nota: 'Tienda, hostelería, enseñanza' },
-  fisico: { factor: 1.45, nombre: 'Físico', nota: 'Obra, almacén, campo' },
+  sentado: { factor: 1.4, nombre: 'Sentado', nota: 'Oficina, estudios, conducir' },
+  de_pie: { factor: 1.55, nombre: 'De pie', nota: 'Tienda, hostelería, enseñanza' },
+  fisico: { factor: 1.7, nombre: 'Físico', nota: 'Obra, almacén, campo' },
 };
 const ENTRENOS = {
-  no: { factor: 0, proteina: 0, nombre: 'No entreno' },
-  '1_2': { factor: 0.15, proteina: 0.2, nombre: '1–2 días' },
-  '3_4': { factor: 0.3, proteina: 0.4, nombre: '3–4 días' },
-  '5_mas': { factor: 0.45, proteina: 0.4, nombre: '5 o más' },
+  no: { factor: 0, nombre: 'No hago ejercicio' },
+  '1_2': { factor: 0.05, nombre: '1–2 días' },
+  '3_4': { factor: 0.1, nombre: '3–4 días' },
+  '5_mas': { factor: 0.15, nombre: '5 o más' },
 };
+const EJERCICIOS = {
+  fuerza: { nombre: 'Fuerza', nota: 'Pesas, máquinas, calistenia (aunque también hagas cardio)' },
+  cardio: { nombre: 'Cardio o deporte', nota: 'Correr, bici, nadar, pádel, fútbol…' },
+};
+const FACTOR_ANDAR = 0.1;
 
 // kcal sobre el gasto: perder −20 % (como mucho −500), ganar +10 % (como mucho +300).
-// Proteína (g por kg) de partida según el objetivo; el entrenamiento suma (ENTRENOS) hasta 2,2 g/kg.
+// `proteina_minima`: la del ajuste quincenal (no se bajan kcal si la proteína queda por debajo).
 const METAS = {
-  perder: { nombre: 'Perder grasa', pct: -20, tope: 500, proteina: 1.8, proteina_minima: 1.6 },
-  mantener: { nombre: 'Mantener', pct: 0, tope: 0, proteina: 1.4, proteina_minima: 1.2 },
-  ganar: { nombre: 'Ganar músculo', pct: 10, tope: 300, proteina: 1.6, proteina_minima: 1.2 },
+  perder: { nombre: 'Perder grasa', pct: -20, tope: 500, proteina_minima: 1.6, proteina_minima_sin_fuerza: 1.2 },
+  mantener: { nombre: 'Mantener', pct: 0, tope: 0, proteina_minima: 1.2 },
+  ganar: { nombre: 'Ganar músculo', pct: 10, tope: 300, proteina_minima: 1.2 },
+};
+// Proteína (g por kg) según el objetivo y el ejercicio: sin ejercicio (o solo andar), y con cardio o con fuerza
+// [1–2 días, 3 o más]. Perder grasa sin fuerza: 1,2–1,6 g/kg basta para el apetito y el control del peso
+// (Leidy 2015); con fuerza, más para no perder músculo (ISSN 2017). Mantener y ganar, como antes de separar
+// el tipo de ejercicio (la biblioteca de recetas lleva mucha proteína: con menos, los planes no cuadran).
+const PROTEINA_G_KG = {
+  perder: { no: 1.4, cardio: [1.4, 1.6], fuerza: [2.0, 2.2] },
+  mantener: { no: 1.4, cardio: [1.6, 1.8], fuerza: [1.6, 1.8] },
+  ganar: { no: 1.6, cardio: [1.8, 2.0], fuerza: [1.8, 2.0] },
 };
 const PROTEINA_MAXIMA_G_KG = 2.2;
 
@@ -57,7 +73,8 @@ function pesoReferencia_(pesoKg, alturaCm) {
 }
 
 // Comprueba los datos del perfil y los devuelve limpios. Lanza un Error con el primer problema.
-// perfil: {nombre, sexo, nacimiento, altura_cm, peso_kg, trabajo, entreno, meta, comidas?}. Sin `comidas`, las 4.
+// perfil: {nombre, sexo, nacimiento, altura_cm, peso_kg, trabajo, entreno (días de ejercicio), ejercicio (fuerza /
+// cardio; sin él, fuerza), andar (sí/no), meta, comidas?}. Sin `comidas`, las 4.
 function validarPerfil_(perfil, hoyIso) {
   const p = perfil || {};
   const numero = v => Number(String(v === undefined || v === null ? '' : v).replace(',', '.'));
@@ -73,10 +90,26 @@ function validarPerfil_(perfil, hoyIso) {
   const peso = redondearPerfil_(numero(p.peso_kg), 1);
   if (!(peso >= 35 && peso <= 250)) throw new Error('El peso debe estar entre 35 y 250 kg.');
   if (!TRABAJOS[p.trabajo]) throw new Error('Elige cómo es tu trabajo.');
-  if (!ENTRENOS[p.entreno]) throw new Error('Elige cuántos días entrenas.');
+  if (!ENTRENOS[p.entreno]) throw new Error('Elige cuántos días haces ejercicio.');
+  if (p.entreno !== 'no' && p.ejercicio && !EJERCICIOS[p.ejercicio]) throw new Error('Elige qué tipo de ejercicio haces.');
   if (!METAS[p.meta]) throw new Error('Elige tu objetivo.');
   return { nombre: nombre, sexo: p.sexo, nacimiento: p.nacimiento, altura_cm: altura, peso_kg: peso,
-    trabajo: p.trabajo, entreno: p.entreno, meta: p.meta, comidas: comidasValidas_(p.comidas) };
+    trabajo: p.trabajo, entreno: p.entreno, ejercicio: tipoEjercicio_(p), andar: p.andar === true, meta: p.meta,
+    comidas: comidasValidas_(p.comidas) };
+}
+
+// 'no', 'fuerza' o 'cardio'. Los perfiles de antes de separar el tipo de ejercicio entrenaban fuerza.
+function tipoEjercicio_(perfil) {
+  if (!perfil || !ENTRENOS[perfil.entreno] || perfil.entreno === 'no') return 'no';
+  return EJERCICIOS[perfil.ejercicio] ? perfil.ejercicio : 'fuerza';
+}
+
+// Proteína (g/kg) que le toca a un perfil según su objetivo y su ejercicio.
+function proteinaGKg_(perfil) {
+  const tabla = PROTEINA_G_KG[perfil.meta];
+  const tipo = tipoEjercicio_(perfil);
+  if (tipo === 'no') return tabla.no;
+  return Math.min(PROTEINA_MAXIMA_G_KG, tabla[tipo][perfil.entreno === '1_2' ? 0 : 1]);
 }
 
 // Las comidas que hace la persona, en orden: el almuerzo y la cena siempre; el desayuno y la merienda, si
@@ -94,14 +127,14 @@ function calcularObjetivos_(perfil, hoyIso, kcalMinimas) {
   const edad = edad_(perfil.nacimiento, hoyIso);
   // Mifflin-St Jeor: gasto en reposo.
   const tmb = 10 * perfil.peso_kg + 6.25 * perfil.altura_cm - 5 * edad + (perfil.sexo === 'hombre' ? 5 : -161);
-  const gasto = tmb * (TRABAJOS[perfil.trabajo].factor + ENTRENOS[perfil.entreno].factor);
+  const gasto = tmb * (TRABAJOS[perfil.trabajo].factor + ENTRENOS[perfil.entreno].factor + (perfil.andar ? FACTOR_ANDAR : 0));
   const meta = METAS[perfil.meta];
   const cambio = Math.sign(meta.pct) * Math.min(Math.abs(gasto * meta.pct / 100), meta.tope);
   const minimas = Number(kcalMinimas) || KCAL_MINIMAS_SEXO[perfil.sexo];
   const kcal = Math.max(minimas, Math.round((gasto + cambio) / 10) * 10);
 
   const pesoRef = pesoReferencia_(perfil.peso_kg, perfil.altura_cm);
-  const proteinaKg = Math.min(PROTEINA_MAXIMA_G_KG, meta.proteina + ENTRENOS[perfil.entreno].proteina);
+  const proteinaKg = proteinaGKg_(perfil);
   const P = Math.round(proteinaKg * pesoRef);
   const kcalGrasa = Math.max(kcal * GRASA_PCT_MINIMA / 100, Math.min(kcal * GRASA_PCT / 100, kcal - P * 4 - HIDRATOS_MINIMOS_G * 4));
   const G = Math.round(kcalGrasa / 9);
@@ -118,8 +151,8 @@ function calcularObjetivos_(perfil, hoyIso, kcalMinimas) {
     comidas[c] = { kcal: Math.round(o.P * 4 + o.C * 4 + o.G * 9), P: o.P, C: o.C, G: o.G };
   });
   let aviso = null;
-  if (perfil.meta === 'ganar' && perfil.entreno === 'no') {
-    aviso = 'Para ganar músculo hace falta entrenar fuerza: sin entrenar, lo que subas será sobre todo grasa.';
+  if (perfil.meta === 'ganar' && tipoEjercicio_(perfil) !== 'fuerza') {
+    aviso = 'Para ganar músculo hace falta entrenar fuerza: sin ella, lo que subas será sobre todo grasa.';
   } else if (perfil.meta === 'perder' && gasto + cambio < minimas) {
     aviso = `Tu déficit queda limitado por el mínimo de ${String(minimas).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} kcal al día: perderás algo más despacio.`;
   }
@@ -128,14 +161,18 @@ function calcularObjetivos_(perfil, hoyIso, kcalMinimas) {
     comidas: comidas, aviso: aviso };
 }
 
-// Proteína mínima (g/kg) para poder bajar calorías en el ajuste quincenal, según el objetivo (sin perfil: perder).
-function proteinaMinimaGKg_(meta) {
-  return (METAS[meta] || METAS.perder).proteina_minima;
+// Proteína mínima (g/kg) para poder bajar calorías en el ajuste quincenal, según el objetivo y si hace fuerza
+// (sin perfil: perder grasa con fuerza, como Fran).
+function proteinaMinimaGKg_(perfil) {
+  const meta = METAS[(perfil || {}).meta];
+  if (!meta) return METAS.perder.proteina_minima;
+  return tipoEjercicio_(perfil) !== 'fuerza' && meta.proteina_minima_sin_fuerza ? meta.proteina_minima_sin_fuerza : meta.proteina_minima;
 }
 
 if (typeof module !== 'undefined') {
   module.exports = {
-    TOLERANCIAS_INICIALES, TRABAJOS, ENTRENOS, METAS, KCAL_MINIMAS_SEXO, COMIDAS_OPCIONALES, edad_, pesoReferencia_,
-    validarPerfil_, comidasValidas_, calcularObjetivos_, proteinaMinimaGKg_,
+    TOLERANCIAS_INICIALES, TRABAJOS, ENTRENOS, EJERCICIOS, FACTOR_ANDAR, METAS, PROTEINA_G_KG, KCAL_MINIMAS_SEXO,
+    COMIDAS_OPCIONALES, edad_, pesoReferencia_, validarPerfil_, tipoEjercicio_, proteinaGKg_, comidasValidas_,
+    calcularObjetivos_, proteinaMinimaGKg_,
   };
 }

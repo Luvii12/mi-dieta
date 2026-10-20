@@ -13,12 +13,16 @@ const CACHE_CONFIG = 'dieta.config';
 const COLOR_COMIDA = { Desayuno: 'texto-primario', Almuerzo: 'texto-secundario', Merienda: 'texto-terciario', Cena: 'texto-primario-contenedor' };
 
 export const METAS = {
-  perder: { nombre: 'Perder grasa', nota: 'Comes algo menos de lo que gastas, con mucha proteína para no perder músculo.', icono: 'trending_down' },
+  perder: { nombre: 'Perder grasa', nota: 'Comes algo menos de lo que gastas. Si haces fuerza, con más proteína para no perder músculo.', icono: 'trending_down' },
   mantener: { nombre: 'Mantener', nota: 'Comes lo que gastas para quedarte en tu peso.', icono: 'trending_flat' },
   ganar: { nombre: 'Ganar músculo', nota: 'Comes un poco más de lo que gastas. Hace falta entrenar fuerza.', icono: 'trending_up' },
 };
-export const ENTRENOS = { no: 'No entreno', '1_2': '1–2 días', '3_4': '3–4 días', '5_mas': '5 o más días' };
+export const ENTRENOS = { no: 'Sin ejercicio', '1_2': '1–2 días', '3_4': '3–4 días', '5_mas': '5 o más días' };
 const BOTONES_ENTRENO = { no: 'No', '1_2': '1–2', '3_4': '3–4', '5_mas': '5 o más' };
+export const EJERCICIOS = {
+  fuerza: { nombre: 'Fuerza', nota: 'Pesas, máquinas o calistenia (aunque también hagas cardio). Lleva más proteína para no perder músculo.' },
+  cardio: { nombre: 'Cardio o deporte', nota: 'Correr, bici, nadar, pádel, fútbol…' },
+};
 const TRABAJOS = {
   sentado: { nombre: 'Sentado', nota: 'Oficina, estudios, conducir…' },
   de_pie: { nombre: 'De pie', nota: 'Tienda, hostelería, enseñanza…' },
@@ -107,8 +111,9 @@ function pesoConocido(perfil) {
 export function pintarPerfil(contenedor, alta, terminar) {
   const config = leerLocal(CACHE_CONFIG) || {};
   const perfil = config.perfil || {};
-  datos = { meta: perfil.meta, entreno: perfil.entreno, trabajo: perfil.trabajo || 'sentado', sexo: perfil.sexo,
-    comidas: perfil.comidas || COMIDAS.slice() };
+  // Los perfiles de antes de preguntar el tipo de ejercicio entrenaban fuerza.
+  datos = { meta: perfil.meta, entreno: perfil.entreno, ejercicio: perfil.ejercicio || (perfil.entreno && perfil.entreno !== 'no' ? 'fuerza' : undefined),
+    andar: perfil.andar === true, trabajo: perfil.trabajo || 'sentado', sexo: perfil.sexo, comidas: perfil.comidas || COMIDAS.slice() };
 
   const resultado = h('div', { class: 'perfil-resultado' });
   const olvidar = () => resultado.replaceChildren();
@@ -120,6 +125,26 @@ export function pintarPerfil(contenedor, alta, terminar) {
   [nombre, nacimiento, altura, peso].forEach(i => i.addEventListener('input', olvidar));
 
   const notaTrabajo = h('p', { class: 'texto-ayuda' }, TRABAJOS[datos.trabajo].nota);
+  // El tipo de ejercicio solo se pregunta si hace ejercicio.
+  const notaEjercicio = h('p', { class: 'texto-ayuda' });
+  const campoEjercicio = h('div', { class: 'campo' }, h('span', { class: 'campo-etiqueta' }, 'Tipo de ejercicio'),
+    selector('ejercicio', Object.fromEntries(Object.entries(EJERCICIOS).map(([k, e]) => [k, e.nombre])), 'Tipo de ejercicio', () => {
+      pintarEjercicio();
+      olvidar();
+    }),
+    notaEjercicio);
+  const pintarEjercicio = () => {
+    campoEjercicio.hidden = !datos.entreno || datos.entreno === 'no';
+    notaEjercicio.textContent = datos.ejercicio ? EJERCICIOS[datos.ejercicio].nota : 'Si haces de los dos, elige fuerza.';
+  };
+  pintarEjercicio();
+  const andar = h('button', { type: 'button', class: 'interruptor', role: 'switch', 'aria-checked': String(datos.andar),
+    'aria-labelledby': 'perfil-andar', 'aria-describedby': 'perfil-andar-nota',
+    onclick: () => {
+      datos.andar = !datos.andar;
+      andar.setAttribute('aria-checked', String(datos.andar));
+      olvidar();
+    } }, h('span', { class: 'interruptor-bola' }));
   const alCambiarTrabajo = () => {
     notaTrabajo.textContent = TRABAJOS[datos.trabajo].nota;
     olvidar();
@@ -129,7 +154,8 @@ export function pintarPerfil(contenedor, alta, terminar) {
   const calcular = h('button', { type: 'submit', class: 'boton boton-primario' }, icono('local_fire_department'), textoCalcular);
 
   const leerPerfil = () => ({ nombre: nombre.value, sexo: datos.sexo, nacimiento: nacimiento.value, altura_cm: altura.value,
-    peso_kg: peso.value, trabajo: datos.trabajo, entreno: datos.entreno, meta: datos.meta, comidas: datos.comidas });
+    peso_kg: peso.value, trabajo: datos.trabajo, entreno: datos.entreno, ejercicio: datos.entreno === 'no' ? undefined : datos.ejercicio,
+    andar: datos.andar, meta: datos.meta, comidas: datos.comidas });
 
   const formulario = h('form', { class: 'form-perfil', novalidate: true,
     onsubmit: async evento => {
@@ -137,7 +163,8 @@ export function pintarPerfil(contenedor, alta, terminar) {
       estado.textContent = '';
       const p = leerPerfil();
       if (!p.meta) return mostrarError('Elige tu objetivo.');
-      if (!p.entreno) return mostrarError('Elige cuántos días entrenas.');
+      if (!p.entreno) return mostrarError('Elige cuántos días haces ejercicio.');
+      if (p.entreno !== 'no' && !p.ejercicio) return mostrarError('Elige qué tipo de ejercicio haces.');
       if (!p.sexo) return mostrarError('Elige hombre o mujer.');
       calcular.disabled = true;
       textoCalcular.textContent = 'Calculando…';
@@ -155,8 +182,17 @@ export function pintarPerfil(contenedor, alta, terminar) {
   seccion('perfil-titulo-meta', 'flag', '¿Cuál es tu objetivo?', opcionesMeta(olvidar)),
   seccion('perfil-titulo-actividad', 'fitness_center', 'Tu actividad',
     h('div', { class: 'tarjeta tarjeta-ajuste' },
-      h('div', { class: 'campo' }, h('span', { class: 'campo-etiqueta', id: 'etiqueta-entreno' }, 'Días de entrenamiento por semana'),
-        selector('entreno', BOTONES_ENTRENO, 'Días de entrenamiento por semana', olvidar)),
+      h('div', { class: 'campo' }, h('span', { class: 'campo-etiqueta', id: 'etiqueta-entreno' }, 'Días de ejercicio por semana'),
+        selector('entreno', BOTONES_ENTRENO, 'Días de ejercicio por semana', () => {
+          pintarEjercicio();
+          olvidar();
+        })),
+      campoEjercicio,
+      h('div', { class: 'preferencia' },
+        h('div', { class: 'preferencia-texto' },
+          h('span', { class: 'preferencia-titulo', id: 'perfil-andar' }, 'Ando a diario'),
+          h('span', { class: 'texto-ayuda', id: 'perfil-andar-nota' }, 'Unos 10.000 pasos o una hora andando al día.')),
+        andar),
       h('div', { class: 'campo' }, h('span', { class: 'campo-etiqueta' }, 'Tu trabajo'),
         selector('trabajo', Object.fromEntries(Object.entries(TRABAJOS).map(([k, t]) => [k, t.nombre])), 'Tu trabajo', alCambiarTrabajo),
         notaTrabajo))),

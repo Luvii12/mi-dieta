@@ -850,6 +850,7 @@ body[data-vista="receta"] .vista { padding-top: 0; }
 
 .conexion { display: flex; flex-direction: column; gap: 16px; padding: 16px; border-color: var(--borde-suave); }
 .campo { display: flex; flex-direction: column; gap: 6px; }
+.campo[hidden] { display: none; }
 .campo-etiqueta { font-size: 10px; line-height: 14px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--texto-suave); }
 .campo-caja { position: relative; display: flex; align-items: center; }
 .campo-icono { position: absolute; left: 12px; font-size: 18px; color: var(--contorno); pointer-events: none; }
@@ -918,6 +919,7 @@ body[data-vista="receta"] .vista { padding-top: 0; }
 .boton-discontinuo:hover { background: color-mix(in srgb, var(--primario-fijo) 30%, transparent); }
 
 .preferencia { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; padding: 16px; }
+.tarjeta-ajuste .preferencia { padding: 0; }
 .preferencia-texto { display: flex; flex-direction: column; gap: 4px; }
 .preferencia-titulo { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-weight: 700; }
 .preferencia-titulo .insignia { font-size: 10px; line-height: 14px; padding: 1px 8px; }
@@ -1190,6 +1192,15 @@ a.objetivo-boton { color: inherit; text-decoration: none; }
 .acciones-receta { display: flex; flex-direction: column; gap: 10px; }
 .boton-peligro { justify-content: center; min-height: 44px; margin-right: 0; color: var(--error); }
 .boton-peligro:hover { color: var(--error); }
+
+/* ---------- Cambiar cantidades (panel desde «Receta») ---------- */
+
+.hoja-inferior .preferencia { padding: 0; }
+.cantidades-resumen { display: flex; flex-direction: column; gap: 6px; }
+.cantidades-resumen:empty { display: none; }
+.ingrediente-elegido .fila-alimento-detalle { color: var(--primario); font-weight: 600; }
+.ingrediente-editor .hueco-boton { flex-shrink: 0; margin-right: -4px; }
+.acciones-cantidades { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
 /* ---------- Pedir recetas a la IA (#pedir) ---------- */
 

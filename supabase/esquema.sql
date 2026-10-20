@@ -129,6 +129,7 @@ create table if not exists public.plan_comidas (
   "G" numeric,
   hecha text not null default 'no',
   cambiada_por text,
+  fijados jsonb,
   primary key (user_id, plan_id, fecha, comida),
   foreign key (user_id, plan_id) references public.planes (user_id, plan_id) on delete cascade
 );
@@ -137,6 +138,8 @@ create table if not exists public.plan_comidas (
 -- existen ('saltada': marcada como no hecha, desde 2026-10-19).
 alter table public.plan_comidas drop constraint if exists plan_comidas_hecha_check;
 alter table public.plan_comidas add constraint plan_comidas_hecha_check check (hecha in ('si', 'no', 'libre', 'saltada'));
+-- Gramos que ha elegido la persona en esa comida ({"alimento": g}; el resto lo cuadra el optimizador). 2026-10-20.
+alter table public.plan_comidas add column if not exists fijados jsonb;
 
 create table if not exists public.pesos (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,

@@ -10,6 +10,7 @@ const CACHE_PLAN = 'dieta.plan';
 const CACHE_RECETAS = 'dieta.recetas';
 const CACHE_PROPUESTAS = 'dieta.propuestas';
 const CACHE_PROPIAS = 'dieta.recetasPropias';
+const CACHE_CONFIG = 'dieta.config';
 
 export const leerPlan = () => leerLocal(CACHE_PLAN);
 export const guardarPlan = datos => guardarLocal(CACHE_PLAN, datos);
@@ -166,6 +167,34 @@ export async function cambiarPlato(planId, fecha, comida, recetaId) {
     dia.evaluacion = nuevo.evaluacion;
     dia.revisar = nuevo.revisar;
   });
+}
+
+// Gramos elegidos de una comida ({alimento: g}; vacío = lo que calcula la app). Con `probar` solo dice cómo
+// quedaría. Al guardar sustituye el día guardado; si cambia «Siempre en esta receta», también hay otras comidas
+// del plan y otros gramos en la biblioteca: se vuelven a pedir.
+export async function ajustarGramos(planId, fecha, comida, gramos, { siempre = false, probar = false } = {}) {
+  const peticion = { plan_id: planId, fecha, comida, gramos, siempre, probar };
+  if (probar) return llamar('ajustarGramos', peticion);
+  const r = await llamar('ajustarGramos', peticion);
+  modificarDias((id, dia) => {
+    if (id !== planId || dia.fecha !== fecha) return;
+    dia.comidas = r.dia.comidas;
+    dia.macros = r.dia.macros;
+    dia.evaluacion = r.dia.evaluacion;
+    dia.revisar = r.dia.revisar;
+  });
+  const config = leerLocal(CACHE_CONFIG) || {};
+  if (JSON.stringify(config.gramos_receta || {}) !== JSON.stringify(r.gramos_receta)) {
+    guardarLocal(CACHE_CONFIG, Object.assign(config, { gramos_receta: r.gramos_receta }));
+    guardarRecetas(null);
+    try {
+      guardarPlan(await llamar('plan'));
+      avisarCambio();
+    } catch (err) {
+      // Se actualizará al abrir Plan.
+    }
+  }
+  return r;
 }
 
 // ---------- Recetas propuestas por la IA ----------

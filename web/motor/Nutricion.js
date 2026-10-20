@@ -145,15 +145,19 @@ function evaluarComida_(macros, objetivo, tol) {
   return { ok: NUTRIENTES.every(n => detalle[n].ok), detalle: detalle };
 }
 
-// ¿Cumple un día su tolerancia? Además, la proteína nunca puede quedar más de P_margen_g por debajo.
+// ¿Cumple un día su tolerancia? La proteína puede pasarse hasta P_exceso % (por defecto 15: las recetas llevan
+// mucha y pasarse un poco no es un problema), pero nunca quedar más de P_margen_g por debajo.
 function evaluarDia_(macros, objetivo, tol) {
   const evaluacion = evaluarComida_(macros, objetivo, tol);
-  if (tol.P_margen_g != null && macros.P < objetivo.P - tol.P_margen_g) {
-    evaluacion.detalle.P.ok = false;
-    evaluacion.ok = false;
-  }
+  const P = evaluacion.detalle.P;
+  if (P.desvio_pct > 0) P.ok = P.desvio_pct <= excesoProteinaDia_(tol) + 1e-9;
+  if (tol.P_margen_g != null && macros.P < objetivo.P - tol.P_margen_g) P.ok = false;
+  evaluacion.ok = NUTRIENTES.every(n => evaluacion.detalle[n].ok);
   return evaluacion;
 }
+
+const EXCESO_PROTEINA_DIA = 15;
+const excesoProteinaDia_ = tol => (tol.P_exceso != null ? Number(tol.P_exceso) : EXCESO_PROTEINA_DIA);
 
 // Cuánto se escala un alimento de una receta de `comida` para `objetivo` frente al plan de Fran (1 = nada),
 // según el macro de su grupo; entre ESCALA_MINIMA y ESCALA_MAXIMA.
@@ -194,20 +198,27 @@ function racionesReceta_(receta, objetivo, alimentos) {
 // Ajusta una receta a un objetivo: escala sus raciones, optimiza, redondea piezas y las fija, reoptimiza el resto,
 // redondea todo y recalcula los macros con los gramos finales.
 // receta: {id, nombre, comida, ingredientes_fijos: [{alimento, gramos}], ingredientes_escalables: [...]}
-function ajustarReceta_(original, objetivo, alimentos, tolComida) {
+// fijados: {alimento: gramos} que ha elegido la persona (p. ej. su bollo de pan pesa 50 g). Se usan tal cual,
+// fuera de límites y sin redondear (0 = sin ese ingrediente), y el optimizador cuadra el resto. Los que no
+// están en la receta se ignoran. El resultado lleva `fijados`: los que se han usado.
+function ajustarReceta_(original, objetivo, alimentos, tolComida, fijados) {
   const receta = racionesReceta_(original, objetivo, alimentos);
+  const propios = fijadosDeReceta_(receta, fijados);
   const fijos = {};
-  receta.ingredientes_fijos.forEach(f => { fijos[f.alimento] = f.gramos; });
+  receta.ingredientes_fijos.forEach(f => { fijos[f.alimento] = f.alimento in propios ? propios[f.alimento] : f.gramos; });
   const escalables = receta.ingredientes_escalables;
+  const elegidos = {};
+  escalables.forEach(e => { if (e.alimento in propios) elegidos[e.alimento] = propios[e.alimento]; });
 
-  let gramos = optimizarGramos_(fijos, escalables, objetivo, alimentos);
-  const piezas = {};
-  escalables.filter(e => e.unidad).forEach(e => { piezas[e.alimento] = redondearGramos_(gramos[e.alimento], e, alimentos); });
+  let gramos = optimizarGramos_(fijos, escalables, objetivo, alimentos, elegidos);
+  const piezas = Object.assign({}, elegidos);
+  escalables.filter(e => e.unidad && !(e.alimento in elegidos)).forEach(e => { piezas[e.alimento] = redondearGramos_(gramos[e.alimento], e, alimentos); });
   gramos = optimizarGramos_(fijos, escalables, objetivo, alimentos, piezas);
 
-  const ingredientes = receta.ingredientes_fijos.map(f => ({ alimento: f.alimento, gramos: f.gramos, escalable: false }));
+  const ingredientes = receta.ingredientes_fijos.filter(f => fijos[f.alimento] > 0)
+    .map(f => ({ alimento: f.alimento, gramos: fijos[f.alimento], escalable: false }));
   escalables.forEach(e => {
-    const g = redondearGramos_(gramos[e.alimento], e, alimentos);
+    const g = e.alimento in elegidos ? elegidos[e.alimento] : redondearGramos_(gramos[e.alimento], e, alimentos);
     if (g <= 0) return;
     const ingrediente = { alimento: e.alimento, gramos: g, escalable: true };
     if (e.unidad) ingrediente.piezas = Math.round(g / alimentos[e.alimento].gramos_unidad);
@@ -218,6 +229,7 @@ function ajustarReceta_(original, objetivo, alimentos, tolComida) {
     i.nombre = a.nombre;
     i.estado = a.estado;
     i.grupo = a.grupo;
+    if (i.alimento in propios) i.fijado = true;
   });
 
   const gramosFinales = {};
@@ -230,12 +242,24 @@ function ajustarReceta_(original, objetivo, alimentos, tolComida) {
     macros: macros,
     objetivo: objetivo,
     evaluacion: tolComida ? evaluarComida_(macros, objetivo, tolComida) : null,
+    fijados: propios,
   };
+}
+
+// Los gramos elegidos por la persona que son de esta receta, como números ≥ 0.
+function fijadosDeReceta_(receta, fijados) {
+  const ids = receta.ingredientes_fijos.concat(receta.ingredientes_escalables).map(i => i.alimento);
+  const propios = {};
+  Object.keys(fijados || {}).forEach(id => {
+    const g = Number(fijados[id]);
+    if (ids.indexOf(id) >= 0 && g >= 0) propios[id] = g;
+  });
+  return propios;
 }
 
 if (typeof module !== 'undefined') {
   module.exports = {
     NUTRIENTES, REFERENCIA_COMIDAS, indexarAlimentos_, calcularMacros_, redondearMacros_, sumarMacros_, minimosCuadradosAcotados_, optimizarGramos_,
-    redondearGramos_, evaluarComida_, evaluarDia_, factorRacion_, racionesReceta_, ajustarReceta_,
+    redondearGramos_, evaluarComida_, evaluarDia_, excesoProteinaDia_, factorRacion_, racionesReceta_, ajustarReceta_, fijadosDeReceta_,
   };
 }

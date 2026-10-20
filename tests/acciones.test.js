@@ -264,6 +264,95 @@ test('cambiarPlato en el borrador: activarlo con ajuste recalcula los gramos con
   assert.equal(cena.receta_id, nueva.receta_id);
 });
 
+// Pone la tosta de salmón (D4: pan, queso batido y salmón escalables) de desayuno en esos días del plan activo.
+function conTostaDeSalmon(gas, plan, fechas) {
+  fechas.forEach(fecha => {
+    const r = gas.llamar('cambiarPlato', { plan_id: plan.plan_id, fecha, comida: 'Desayuno', receta_id: 'D4' });
+    assert.equal(r.ok, true, r.error);
+  });
+  return fecha => filas(gas, 'plan_comidas').find(f => f.plan_id === plan.plan_id && f.fecha === fecha && f.comida === 'Desayuno');
+}
+
+test('ajustarGramos: los gramos elegidos se respetan y el optimizador cuadra el resto', () => {
+  const { gas, plan } = planActivoEnMiercoles();
+  const fila = conTostaDeSalmon(gas, plan, ['2026-10-22']);
+  const base = { plan_id: plan.plan_id, fecha: '2026-10-22', comida: 'Desayuno' };
+  const antes = JSON.parse(fila('2026-10-22').gramos);
+  assert.ok(antes.pan_masa_madre > 50, JSON.stringify(antes));
+
+  const prueba = gas.llamar('ajustarGramos', { ...base, gramos: { pan_masa_madre: 50 }, probar: true });
+  assert.equal(prueba.ok, true, prueba.error);
+  const pan = prueba.datos.comida.ingredientes.find(i => i.alimento === 'pan_masa_madre');
+  assert.deepEqual([pan.gramos, pan.fijado], [50, true]);
+  const queso = prueba.datos.comida.ingredientes.find(i => i.alimento === 'queso_fresco_batido');
+  assert.ok(queso.gramos > antes.queso_fresco_batido && !queso.fijado, 'sube otro escalable para cuadrar');
+  assert.ok(prueba.datos.dia.evaluacion, 'dice cómo queda el día');
+  assert.deepEqual(JSON.parse(fila('2026-10-22').gramos), antes, 'probar no guarda');
+
+  const r = gas.llamar('ajustarGramos', { ...base, gramos: { pan_masa_madre: '50' } });
+  assert.equal(r.ok, true, r.error);
+  assert.deepEqual(r.datos.dia.comidas.find(c => c.comida === 'Desayuno').fijados, { pan_masa_madre: 50 });
+  assert.deepEqual(r.datos.gramos_receta, {}, 'sin «siempre» no se guarda para la receta');
+  assert.equal(JSON.parse(fila('2026-10-22').gramos).pan_masa_madre, 50);
+  assert.deepEqual(JSON.parse(fila('2026-10-22').fijados), { pan_masa_madre: 50 });
+
+  // Se mantiene al recalcular la comida (p. ej. al activar un plan con otras calorías).
+  const recalculadas = gas.contexto.reoptimizarComidas_([fila('2026-10-22')], { Desayuno: { kcal: 500, P: 30, C: 60, G: 14 } },
+    gas.contexto.leerRecetasPorId_(), gas.contexto.indexarAlimentos_(gas.contexto.leerTabla_('alimentos')));
+  assert.equal(recalculadas[0].gramos.pan_masa_madre, 50);
+
+  // Sin gramos vuelve a lo calculado.
+  assert.equal(gas.llamar('ajustarGramos', { ...base, gramos: {} }).ok, true);
+  assert.equal(fila('2026-10-22').fijados, '');
+  assert.deepEqual(JSON.parse(fila('2026-10-22').gramos), antes);
+});
+
+test('ajustarGramos: comprueba alimentos, gramos y días', () => {
+  const { gas, plan } = planActivoEnMiercoles();
+  conTostaDeSalmon(gas, plan, ['2026-10-22']);
+  const base = { plan_id: plan.plan_id, fecha: '2026-10-22', comida: 'Desayuno' };
+  assert.match(gas.llamar('ajustarGramos', { ...base, gramos: { pasta: 50 } }).error, /no lleva pasta/);
+  assert.match(gas.llamar('ajustarGramos', { ...base, gramos: { pan_masa_madre: 3000 } }).error, /entre 0 y 2\.000/);
+  assert.match(gas.llamar('ajustarGramos', { ...base, gramos: { pan_masa_madre: 'mucho' } }).error, /entre 0 y 2\.000/);
+  assert.match(gas.llamar('ajustarGramos', { ...base, fecha: '2026-10-20', gramos: {} }).error, /ya ha pasado/);
+  // 0 g quita el ingrediente.
+  const sinPepino = gas.llamar('ajustarGramos', { ...base, gramos: { pepino: 0 } }).datos.dia;
+  assert.ok(!sinPepino.comidas.find(c => c.comida === 'Desayuno').ingredientes.some(i => i.alimento === 'pepino'));
+});
+
+test('ajustarGramos siempre: en las demás comidas con esa receta y en los planes nuevos; al quitarlo, vuelven', () => {
+  const { gas, plan } = planActivoEnMiercoles();
+  const fila = conTostaDeSalmon(gas, plan, ['2026-10-22', '2026-10-24']);
+  const base = { plan_id: plan.plan_id, fecha: '2026-10-22', comida: 'Desayuno' };
+  const calculado = JSON.parse(fila('2026-10-24').gramos);
+
+  const r = gas.llamar('ajustarGramos', { ...base, gramos: { pan_masa_madre: 50 }, siempre: true });
+  assert.equal(r.ok, true, r.error);
+  assert.deepEqual(r.datos.gramos_receta, { D4: { pan_masa_madre: 50 } });
+  assert.deepEqual(gas.llamar('config').datos.gramos_receta, { D4: { pan_masa_madre: 50 } });
+  assert.equal(JSON.parse(fila('2026-10-24').gramos).pan_masa_madre, 50, 'otro día con la misma receta');
+  assert.deepEqual(JSON.parse(fila('2026-10-24').fijados), { pan_masa_madre: 50 });
+
+  // Al cambiar a esa receta, en el borrador nuevo y en la biblioteca.
+  assert.equal(gas.llamar('cambiarPlato', { ...base, fecha: '2026-10-26', receta_id: 'D4' }).ok, true);
+  assert.equal(JSON.parse(fila('2026-10-26').gramos).pan_masa_madre, 50);
+  const borrador = gas.llamar('generarPlan').datos;
+  const tostas = borrador.dias.map(d => d.comidas.find(c => c.receta_id === 'D4')).filter(Boolean);
+  assert.ok(tostas.length > 0);
+  tostas.forEach(t => assert.equal(t.ingredientes.find(i => i.alimento === 'pan_masa_madre').gramos, 50));
+  const biblioteca = gas.llamar('recetas').datos.find(x => x.id === 'D4');
+  assert.equal(biblioteca.ajuste.gramos.pan_masa_madre, 50);
+
+  // Quitar «siempre» desde otra comida: las que tenían esos gramos vuelven a lo calculado.
+  const quitar = gas.llamar('ajustarGramos', { ...base, gramos: { pan_masa_madre: 60 }, siempre: false });
+  assert.equal(quitar.ok, true, quitar.error);
+  assert.deepEqual(quitar.datos.gramos_receta, {});
+  assert.equal(gas.llamar('config').datos.gramos_receta, undefined);
+  assert.equal(fila('2026-10-24').fijados, '');
+  assert.deepEqual(JSON.parse(fila('2026-10-24').gramos), calculado);
+  assert.equal(JSON.parse(fila('2026-10-22').gramos).pan_masa_madre, 60, 'la comida cambiada se queda con lo suyo');
+});
+
 test('marcarComida saltada: hoy o antes, cuenta en contra en la adherencia pero no como sin marcar', () => {
   const { gas, plan } = planActivoEnMiercoles();
   const marcar = (fecha, comida, hecha) => gas.llamar('marcarComida', { plan_id: plan.plan_id, fecha, comida, hecha });

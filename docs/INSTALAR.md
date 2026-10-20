@@ -22,7 +22,7 @@ Es una web que se instala como una app (no está en la tienda).
 Si algún día la olvidas, pídele a Fran una temporal nueva.
 
 ## 3. Tu perfil
-La primera vez la app te pregunta tu objetivo (perder grasa, mantener o ganar músculo), los días que entrenas, tu trabajo, si desayunas y meriendas, sexo, fecha de nacimiento, altura y peso. Con eso calcula tus calorías y macros. Los puedes cambiar cuando quieras en **Ajustes › Mi objetivo**.
+La primera vez la app te pregunta tu objetivo (perder grasa, mantener o ganar músculo), los días que haces ejercicio y de qué tipo (fuerza o cardio y deporte), si andas a diario, tu trabajo, si desayunas y meriendas, sexo, fecha de nacimiento, altura y peso. Con eso calcula tus calorías y macros. Los puedes cambiar cuando quieras en **Ajustes › Mi objetivo**.
 
 Al pulsar **Empezar** prepara tu primer plan, que empieza **mañana**. Puedes revisarlo en la pestaña **Plan** y pulsar **Activar plan**; si no, se activa solo.
 
@@ -31,6 +31,7 @@ Es una estimación con fórmulas generales: la app no sustituye a un dietista-nu
 ## 4. El día a día
 - **Hoy**: las comidas del día con sus gramos. Marca cada una como **hecha** al comerla; si te saltas una (por ejemplo, no meriendas), en «Cambiar plato» elige **«No la he hecho»**.
 - **Cambiar plato**: si no te apetece una comida, elige otra; la app recalcula los gramos para que el día siga cuadrando. Para cambiar un plato de otro día (también del plan siguiente o del borrador), ábrelo en **Plan** y toca «Cambiar plato» debajo de la receta.
+- **Cambiar cantidades**: si una cantidad no te encaja (por ejemplo, tu bollo de pan pesa 50 g y la receta dice 80), abre la receta, toca «Cambiar cantidades» y pon tus gramos: la app recalcula el resto de ingredientes. Activa «Siempre en esta receta» para que lo haga también las próximas veces que te salga ese plato.
 - **Valora** los platos al abrir una receta (😍 Me encanta, 👌 Normal, 🤔 No repetiría): los que te encantan salen más y los que no repetirías dejan de salir.
 - **Progreso**: pésate y apúntalo, mejor por la mañana y en ayunas. Con tu peso y lo que marcas, la app propone el ajuste del siguiente plan.
 - **Ajustes**: alimentos que no quieres que salgan, la comida libre semanal y tu peso objetivo.

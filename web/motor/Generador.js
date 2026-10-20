@@ -86,7 +86,7 @@ function prepararCandidatas_(recetas, datos) {
     if (valor === 'no_repetir') return descartadas.push({ id: r.id, motivo: 'valorada «No lo repetiría»' });
     let ajuste;
     try {
-      ajuste = ajustarReceta_(r, datos.objetivos[r.comida], datos.alimentos);
+      ajuste = ajustarReceta_(r, datos.objetivos[r.comida], datos.alimentos, null, (datos.gramosReceta || {})[r.id]);
     } catch (err) {
       return descartadas.push({ id: r.id, motivo: err.message });
     }
@@ -109,15 +109,20 @@ function reglasRepeticion_(comida, numRecetas, config) {
 }
 
 // Suma de desvíos relativos frente a la tolerancia del día: 0 = perfecto; < 1 en todo = dentro.
+// La proteína de más se mide con su propio margen (P_exceso).
 function puntuacionDia_(evaluacion, tolDia) {
-  return NUTRIENTES.reduce((s, n) => s + Math.abs(evaluacion.detalle[n].desvio_pct) / tolDia[n], 0);
+  return NUTRIENTES.reduce((s, n) => {
+    const desvio = evaluacion.detalle[n].desvio_pct;
+    return s + Math.abs(desvio) / (n === 'P' && desvio > 0 ? excesoProteinaDia_(tolDia) : tolDia[n]);
+  }, 0);
 }
 
 // ---------- Generación ----------
 
 // datos: {inicio, recetas, alimentos, objetivos: {Desayuno: {...}}, tolerancias: {dia, comida}, config,
-//         valoraciones, preferencias, recetasPlanAnterior: [ids], azar}. Las comidas del plan son las que
-//         tienen objetivo (quien no desayuna no tiene objetivo de desayuno).
+//         valoraciones, preferencias, recetasPlanAnterior: [ids], gramosReceta, azar}. Las comidas del plan son las
+//         que tienen objetivo (quien no desayuna no tiene objetivo de desayuno). `gramosReceta`: los gramos que la
+//         persona quiere siempre en una receta ({receta_id: {alimento: g}}, config.gramos_receta).
 // Devuelve {inicio, fin, objetivoDia, dias: [{fecha, comidas, macros, evaluacion, revisar}], descartadas}.
 function generarPlan_(datos) {
   const azar = datos.azar || Math.random;
@@ -195,6 +200,7 @@ function intentarPlan_(inicio, comidas, porComida, reglas, objetivoDia, tolDia, 
         receta_id: mejor.eleccion[c].id,
         nombre: mejor.eleccion[c].nombre,
         gramos: mejor.eleccion[c].ajuste.gramos,
+        fijados: mejor.eleccion[c].ajuste.fijados,
         macros: mejor.eleccion[c].macros,
       })),
       macros: mejor.macros,

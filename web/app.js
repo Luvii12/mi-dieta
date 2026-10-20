@@ -14,6 +14,7 @@ import { cargarPedir } from './pedir.js';
 import { cargarAjustes, prepararAjustes } from './ajustes.js';
 import { cargarProgreso, prepararProgreso, precargarProgreso } from './progreso.js';
 import { prepararPanel } from './cambiar.js';
+import { prepararCantidades } from './cantidades.js';
 import { pintarEntrar } from './entrar.js';
 import { pintarPerfil, CLAVE_ALTA } from './perfil.js';
 
@@ -108,6 +109,7 @@ async function alEntrar() {
 prepararAjustes();
 prepararProgreso();
 prepararPanel();
+prepararCantidades();
 document.addEventListener('datos-cambiados', repintar);
 document.addEventListener('sesion-cerrada', mostrarVista);
 window.addEventListener('hashchange', mostrarVista);
