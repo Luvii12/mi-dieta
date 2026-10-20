@@ -3,7 +3,7 @@
 > Memoria entre sesiones. Claude Code lo lee al empezar y lo actualiza al terminar cada tarea o antes de `/clear`. Mantenerlo por debajo de ~80 líneas: resumir lo antiguo.
 
 ## Estado actual
-- **Fase:** multiusuario M6 publicada (2026-10-18); desde entonces, mejoras pedidas por Fran (ver Hecho). 162 tests. Activador quitado por Fran. **Siguiente:** que Fran dé las altas; M6 queda hecha cuando los tres usen la app una semana sin incidencias.
+- **Fase:** multiusuario M6 publicada (2026-10-18); desde entonces, mejoras pedidas por Fran (ver Hecho). 162 tests. Activador quitado por Fran. **Siguiente:** altas hechas (hermano y Natalia, 18–19-10); M6 queda hecha cuando los tres usen la app una semana sin incidencias. Después: recetas con más hidratos y desayunos nuevos que de verdad se coman.
 - **URLs:** PWA https://luvii12.github.io/mi-dieta/ · repo https://github.com/Luvii12/mi-dieta · Supabase `umzalhsxowdwteqursyc`. La hoja de Google es solo copia de seguridad (hasta 18-10).
 - **Pendiente de Fran:** subir `dietista.zip` a claude.ai; que Natalia rellene y guarde Ajustes › Mi objetivo (tipo de ejercicio y «Ando a diario»); su hermano aún no ha hecho el perfil; `npm run cambiar-contrasena` en una terminal propia (la cuenta real aún tiene la contraseña débil de pruebas; no cambiarla desde la app, o los scripts dejan de entrar); opcional, hacerse administrador por SQL (`docs/SUPABASE.md` §8).
 - **Publicar:** push a `main` (sube `VERSION` en `web/sw.js`).
