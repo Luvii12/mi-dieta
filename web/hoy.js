@@ -63,7 +63,17 @@ function resumen(hoy) {
       h('div', { class: 'resumen-macros' }, MACROS.map(m => barraMacro(m, comido[m.clave], objetivo[m.clave])))));
 }
 
-// Botón de la izquierda del pie de cada comida: marca, desmarca o deshace la comida libre o «No la he hecho».
+// Botones de la izquierda del pie de cada comida: el estado (marca, desmarca o deshace la comida libre o «No la
+// has hecho») y, si está pendiente, «No la hice» al lado.
+function botonesEstado(hoy, c) {
+  const estado = botonEstado(hoy, c);
+  if (c.hecha !== 'no') return estado;
+  const saltar = () => marcarComida(hoy.plan_id, hoy.fecha, c.comida, 'saltada').catch(err => avisar(err.message));
+  return h('div', { class: 'comida-estados' }, estado,
+    h('button', { type: 'button', class: 'boton-estado boton-saltar', 'data-foco': `saltar-${c.comida}`, onclick: saltar },
+      h('span', { class: 'circulo' }, icono('remove')), h('span', null, 'No la hice')));
+}
+
 function botonEstado(hoy, c) {
   const marcar = hecha => () => marcarComida(hoy.plan_id, hoy.fecha, c.comida, hecha).catch(err => avisar(err.message));
   const foco = `estado-${c.comida}`;
@@ -103,9 +113,9 @@ function tarjetaComida(hoy, c) {
         h('h3', { class: 'comida-nombre' }, h('a', { href: enlace }, c.nombre)),
         pastillasMacros(c.macros))),
     h('div', { class: 'comida-pie' },
-      botonEstado(hoy, c),
+      botonesEstado(hoy, c),
       h('button', { type: 'button', class: 'boton-texto', 'data-foco': `cambiar-${c.comida}`,
-        onclick: () => abrirCambiarPlato(hoy.plan_id, hoy.fecha, c, { libre: true, saltar: true }) }, 'Cambiar plato')));
+        onclick: () => abrirCambiarPlato(hoy.plan_id, hoy.fecha, c, { libre: true }) }, 'Cambiar plato')));
 }
 
 function pintar(contenedor, hoy) {

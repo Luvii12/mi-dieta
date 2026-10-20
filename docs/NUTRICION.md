@@ -52,7 +52,7 @@ Al darse de alta, y cada vez que alguien cambia de objetivo en Ajustes › Mi ob
 ## Ajuste cada 2 semanas
 1. Media de peso de los últimos 7 días frente a la de 7 días, 14 días antes.
 2. Ritmo semanal = diferencia / 2 / peso medio (en %).
-3. Adherencia = comidas marcadas hechas / comidas planificadas (las marcadas «No la he hecho» cuentan como no hechas).
+3. Adherencia = comidas marcadas hechas / comidas planificadas (las marcadas «No la hice» cuentan como no hechas).
 4. Reglas:
    - Adherencia < 80 %: no tocar calorías; proponer recetas más sencillas o más días flexibles.
    - Ritmo entre 0,5 % y 1 % semanal: mantener.

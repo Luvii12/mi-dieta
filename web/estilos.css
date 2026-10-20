@@ -347,7 +347,6 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 .tesela-merienda { background: var(--tesela-merienda); color: var(--terciario); }
 .tesela-cena { background: var(--tesela-cena); color: var(--primario-contenedor); }
 .tesela-libre { background: var(--superficie-media); color: var(--terciario); }
-.tesela-saltada { background: var(--superficie-media); color: var(--texto-suave); }
 
 .boton {
   display: inline-flex;
@@ -524,6 +523,14 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 .circulo.lleno { background: var(--secundario); border-color: var(--secundario); color: #ffffff; }
 .circulo.libre { background: var(--terciario-suave); border-color: transparent; color: var(--terciario); }
 .circulo.saltada { background: var(--superficie-media); border-color: transparent; color: var(--texto-suave); }
+.comida-estados { display: flex; align-items: center; gap: 12px; }
+.boton-saltar { color: var(--texto-suave); }
+.boton-saltar .circulo { color: var(--contorno); }
+.boton-saltar:hover .circulo { border-color: var(--texto-suave); }
+/* Si no cabe todo en una fila (móviles estrechos), «Cambiar plato» pasa a la siguiente, a la derecha. */
+.comida-pie { flex-wrap: wrap; row-gap: 0; }
+.comida-pie .boton-estado, .comida-pie .boton-texto { white-space: nowrap; }
+.comida-pie .boton-texto { margin-left: auto; }
 .boton-texto {
   min-height: 44px;
   padding: 0 8px;

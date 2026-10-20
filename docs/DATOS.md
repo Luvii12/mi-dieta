@@ -29,7 +29,7 @@ Carga inicial: `data/recetas_semilla.json`.
 `plan_id`, `inicio`, `fin`, `estado` (borrador / siguiente / activo / archivado; «siguiente» = ya activado, empieza al acabar el activo y pasa a activo ese día), `objetivos` (JSON copiado al crear), `creado`.
 
 ### `plan_comidas`
-`plan_id`, `fecha`, `comida`, `receta_id`, `gramos` (JSON `{"alimento": g}`), `kcal`, `P`, `C`, `G`, `hecha` (si/no/libre/saltada; saltada = «No la he hecho»), `cambiada_por` (receta_id o vacío), `fijados` (JSON `{"alimento": g}` con los gramos que eligió la persona, o vacío; el resto de `gramos` lo calcula el optimizador y se respetan al recalcular).
+`plan_id`, `fecha`, `comida`, `receta_id`, `gramos` (JSON `{"alimento": g}`), `kcal`, `P`, `C`, `G`, `hecha` (si/no/libre/saltada; saltada = «No la hice»), `cambiada_por` (receta_id o vacío), `fijados` (JSON `{"alimento": g}` con los gramos que eligió la persona, o vacío; el resto de `gramos` lo calcula el optimizador y se respetan al recalcular).
 
 ### `pesos`
 `fecha`, `peso_kg`, `cintura_cm`.

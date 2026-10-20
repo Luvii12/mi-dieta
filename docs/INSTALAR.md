@@ -29,7 +29,7 @@ Al pulsar **Empezar** prepara tu primer plan, que empieza **mañana**. Puedes re
 Es una estimación con fórmulas generales: la app no sustituye a un dietista-nutricionista.
 
 ## 4. El día a día
-- **Hoy**: las comidas del día con sus gramos. Marca cada una como **hecha** al comerla; si te saltas una (por ejemplo, no meriendas), en «Cambiar plato» elige **«No la he hecho»**.
+- **Hoy**: las comidas del día con sus gramos. Marca cada una como **hecha** al comerla; si te saltas una (por ejemplo, no meriendas), toca **«No la hice»**, al lado.
 - **Cambiar plato**: si no te apetece una comida, elige otra; la app recalcula los gramos para que el día siga cuadrando. Para cambiar un plato de otro día (también del plan siguiente o del borrador), ábrelo en **Plan** y toca «Cambiar plato» debajo de la receta.
 - **Cambiar cantidades**: si una cantidad no te encaja (por ejemplo, tu bollo de pan pesa 50 g y la receta dice 80), abre la receta, toca «Cambiar cantidades» y pon tus gramos: la app recalcula el resto de ingredientes. Activa «Siempre en esta receta» para que lo haga también las próximas veces que te salga ese plato.
 - **Valora** los platos al abrir una receta (😍 Me encanta, 👌 Normal, 🤔 No repetiría): los que te encantan salen más y los que no repetirías dejan de salir.

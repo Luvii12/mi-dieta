@@ -1,5 +1,5 @@
 // Panel «Cambiar plato»: otras recetas de la misma comida con los gramos recalculados y, si se pide,
-// «Comida libre» y «No la he hecho».
+// «Comida libre».
 
 import { leerLocal } from './api.js';
 import { $, h, icono, numero, tesela, pastillasMacros } from './comun.js';
@@ -23,8 +23,8 @@ async function aplicar(accion) {
   }
 }
 
-// opciones: {libre, saltar}: ofrecer también «Comida libre» y «No la he hecho» (solo hoy, en el plan activo).
-export async function abrirCambiarPlato(planId, fecha, comida, { libre: conLibre = false, saltar = false } = {}) {
+// opciones: {libre}: ofrecer también «Comida libre» (solo hoy, en el plan activo).
+export async function abrirCambiarPlato(planId, fecha, comida, { libre: conLibre = false } = {}) {
   const panel = $('panel-cambiar');
   const lista = $('panel-lista');
   $('panel-titulo').textContent = `Cambiar ${comida.comida.toLowerCase()}`;
@@ -39,13 +39,7 @@ export async function abrirCambiarPlato(planId, fecha, comida, { libre: conLibre
       h('span', { class: 'alternativa-nombre' }, 'Comida libre'),
       h('span', { class: 'alternativa-nota' }, 'Comes fuera del plan. Cuenta como hecha.')),
   ], () => aplicar(() => marcarComida(planId, fecha, comida.comida, 'libre')));
-  const saltada = !saltar || comida.hecha === 'saltada' ? null : opcion([
-    h('span', { class: 'tesela tesela-saltada', 'aria-hidden': 'true' }, icono('block')),
-    h('span', { class: 'alternativa-texto' },
-      h('span', { class: 'alternativa-nombre' }, 'No la he hecho'),
-      h('span', { class: 'alternativa-nota' }, 'Cuenta como no hecha en tu adherencia.')),
-  ], () => aplicar(() => marcarComida(planId, fecha, comida.comida, 'saltada')));
-  const extra = [libre, saltada].filter(Boolean);
+  const extra = [libre].filter(Boolean);
 
   let opciones;
   try {

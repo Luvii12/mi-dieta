@@ -115,7 +115,7 @@ export function buscarComida(planId, fecha, comida) {
   return null;
 }
 
-// hecha: 'si', 'no', 'libre' o 'saltada' («No la he hecho»).
+// hecha: 'si', 'no', 'libre' o 'saltada' («No la hice»).
 export async function marcarComida(planId, fecha, comida, hecha) {
   const encontrada = buscarComida(planId, fecha, comida);
   const antes = encontrada ? encontrada.comida.hecha : 'no';

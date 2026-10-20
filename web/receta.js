@@ -1,5 +1,5 @@
 // Pantalla «Receta»: macros, ingredientes pesados para tus objetivos, preparación, valoración y, si es una
-// comida del plan activo, «Marcar como hecha» y, hasta hoy, «No la he hecho»; «Cambiar cantidades» y «Cambiar
+// comida del plan activo, «Marcar como hecha» y, hasta hoy, «No la hice»; «Cambiar cantidades» y «Cambiar
 // plato» en el plan activo de hoy en adelante y en el siguiente y el borrador (design/mi_dieta_receta_pollo_al_curry).
 // Rutas: #receta/<plan_id>/<fecha>/<comida> (comida de un plan) y #receta/<id> (biblioteca de recetas, con
 // «Hacer mi versión» y, en las propias, «Editar» y «Borrar»; o propuesta de la IA: en lugar de valorar,
