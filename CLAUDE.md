@@ -14,7 +14,7 @@ App instalada en el móvil Android como PWA. Su trabajo principal es **generar a
 | Independencia | **App separada**: su propio repositorio y su propio Supabase. No tocar, integrar ni reutilizar la app de fitness/rutinas que el usuario ya tiene |
 | Datos | **Supabase gratis** desde M3 (2026-10-18; `docs/PLAN_MULTIUSUARIO.md`, `docs/SUPABASE.md`). La hoja de Google queda como copia de seguridad: no se escribe en ella |
 | Servidor | Ninguno propio: la PWA habla con Supabase por `fetch` y ejecuta el motor en el navegador (también la generación automática del siguiente plan, al abrirla). Apps Script retirado en M6 (en el historial de git) |
-| Acceso | Email y contraseña (Supabase Auth), registro cerrado: altas con `npm run invitar` (contraseña temporal que se cambia en Ajustes); reglas por fila (RLS) |
+| Acceso | Email y contraseña (Supabase Auth). Cada persona se registra sola en «Crear cuenta» con un **código de invitación** que comprueba la base (hook *Before User Created*, `docs/SUPABASE.md` §12; desde 2026-11-11); `npm run invitar` queda para contraseñas olvidadas. Sin correos. Reglas por fila (RLS) |
 | Secretos | La clave de la API de Claude **nunca** va en el repo ni en el frontend (GitHub Pages es público) |
 | Generación | **Híbrida**: platos de una biblioteca de recetas (más adelante propuestos por IA) + **gramos calculados por código** con un optimizador. La IA nunca da valores nutricionales |
 | Macros | Siempre calculados en código a partir de la tabla `alimentos` |

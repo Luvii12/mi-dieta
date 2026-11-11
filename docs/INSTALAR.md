@@ -1,6 +1,6 @@
 # Mi Dieta: cómo empezar
 
-Mi Dieta te prepara un plan de comidas de 14 días con tus calorías y tus macros, y cada dos semanas hace el siguiente según cómo vas. Fran te ha mandado el enlace, tu email y una contraseña temporal.
+Mi Dieta te prepara un plan de comidas de 14 días con tus calorías y tus macros, y cada dos semanas hace el siguiente según cómo vas. Necesitas el enlace de la app y el **código de invitación** que te ha pasado Fran.
 
 ## 1. Instalarla en el móvil
 Es una web que se instala como una app (no está en la tienda).
@@ -15,11 +15,12 @@ Es una web que se instala como una app (no está en la tienda).
 2. Botón **Compartir** (el cuadrado con la flecha) → **Añadir a pantalla de inicio** → **Añadir**.
 3. Ábrela desde el icono de Mi Dieta.
 
-## 2. Entrar y cambiar la contraseña
-1. Entra con tu email y la contraseña temporal.
-2. Ve a **Ajustes › Cuenta › Cambiar contraseña** y pon una tuya (8 caracteres o más).
+## 2. Crear tu cuenta
+1. En la pantalla de entrada toca **Crear cuenta**.
+2. Escribe tu email, una contraseña (8 caracteres o más) y el código de invitación.
+3. Pulsa **Crear cuenta**: entras directamente, sin correos de confirmación.
 
-Si algún día la olvidas, pídele a Fran una temporal nueva.
+Las próximas veces entra con tu email y tu contraseña. Si algún día la olvidas, pídele a Fran una temporal nueva y cámbiala después en **Ajustes › Cuenta › Cambiar contraseña**.
 
 ## 3. Tu perfil
 La primera vez la app te pregunta tu objetivo (perder grasa, mantener o ganar músculo), los días que haces ejercicio y de qué tipo (fuerza o cardio y deporte), si andas a diario, tu trabajo, si desayunas y meriendas, sexo, fecha de nacimiento, altura y peso. Con eso calcula tus calorías y macros. Los puedes cambiar cuando quieras en **Ajustes › Mi objetivo**.

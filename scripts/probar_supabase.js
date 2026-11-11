@@ -1,24 +1,15 @@
-// Prueba la capa de datos (web/supabase.js) contra el Supabase de verdad con un usuario de pruebas: genera y
+// Prueba la capa de datos (web/supabase.js) contra el Supabase de verdad con una cuenta temporal: genera y
 // activa un plan, sigue su primer día (marcar, cambiar plato, valorar, peso, excluidos…) y comprueba que cada
 // respuesta y las filas que quedan en la base son las mismas que da el motor solo, en memoria.
-// Necesita la biblioteca y la configuración del usuario (npm run supabase-semilla). Al empezar y al acabar
-// borra los datos personales del usuario de pruebas menos su configuración (con --dejar, al acabar no).
-// Conexión en .supabase.local.json (ver docs/SUPABASE.md).
+// La cuenta se crea con la configuración de partida (objetivos de «Ajustes Fran. Déficit»), usa la biblioteca
+// común y se borra al acabar con todos sus datos. Conexión en .supabase.local.json (ver docs/SUPABASE.md).
 //
-// Uso: npm run probar-supabase [-- <nº de usuario de pruebas: 1 o 2, por defecto 2>] [--dejar]
-const fs = require('fs');
-const path = require('path');
+// Uso: npm run probar-supabase
 const assert = require('node:assert/strict');
-const { cargarMotor } = require('../tests/motor_navegador.js');
+const { cargarMotor, tablasIniciales } = require('../tests/motor_navegador.js');
+const { leerArchivo, cuentasTemporales } = require('./cuenta_supabase.js');
 
-const ARCHIVO = process.env.SUPABASE || path.join(__dirname, '..', '.supabase.local.json');
 const ORDEN = ['alimentos', 'recetas', 'config', 'planes', 'plan_comidas', 'pesos', 'valoraciones', 'preferencias', 'ajustes_historial'];
-const PERSONALES_SIN_CONFIG = ['ajustes_historial', 'preferencias', 'valoraciones', 'pesos', 'plan_comidas', 'planes'];
-
-function salir(mensaje) {
-  console.error(mensaje);
-  process.exit(1);
-}
 
 // Para comparar: los textos JSON como objetos con las claves ordenadas y las filas ordenadas. Sin `creado`
 // de los planes: la base pone la hora de verdad y aquí el motor va con la fecha simulada del primer día.
@@ -31,27 +22,34 @@ const canonico = v => {
 const comparables = filas => filas.map(canonico).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
 
 async function main() {
-  if (!fs.existsSync(ARCHIVO)) salir('Falta .supabase.local.json (ver docs/SUPABASE.md).');
-  const c = JSON.parse(fs.readFileSync(ARCHIVO, 'utf8'));
-  const n = Number(process.argv.slice(2).find(a => /^\d$/.test(a)) || 2);
-  const dejar = process.argv.includes('--dejar');
-  const prueba = (c.pruebas || [])[n - 1];
-  if (!prueba) salir('.supabase.local.json no tiene ese usuario en "pruebas".');
-  if (c.cuenta && c.cuenta.email === prueba.email) salir(`${prueba.email} es tu cuenta de verdad: esta prueba borra sus datos. Usa el otro usuario de pruebas.`);
-  const sb = await import('../web/supabase.js');
-  const con = { url: c.url.replace(/\/+$/, ''), clave: c.clave, fetch };
-  const sesion = await sb.entrar(con, prueba.email, prueba.password);
-  console.log(`Usuario de pruebas: ${sesion.usuario.email}`);
+  const temporal = await cuentasTemporales(leerArchivo(), 1);
+  let fallos = 0;
+  try {
+    fallos = await probar(temporal.sb, temporal.con, temporal.sesiones[0]);
+  } catch (err) {
+    console.error(err.stack || String(err));
+    fallos++;
+  } finally {
+    await temporal.borrar();
+  }
+  console.log(fallos ? `\n${fallos} comprobaciones fallidas.` : '\nTodo correcto: Supabase da lo mismo que el motor solo.');
+  process.exit(fallos ? 1 : 0);
+}
 
-  const borrarPersonales = async () => {
-    for (const nombre of PERSONALES_SIN_CONFIG) {
-      const r = await fetch(`${con.url}/rest/v1/${nombre}?user_id=eq.${sesion.usuario.id}`, {
-        method: 'DELETE', headers: { apikey: con.clave, Authorization: 'Bearer ' + sesion.access_token } });
-      if (!r.ok) salir(`No se pudo vaciar ${nombre}: ${r.status} ${await r.text()}`);
-    }
-  };
-  await borrarPersonales();
+// Configuración de partida para la cuenta temporal, como la de una cuenta sin perfil.
+async function anadirConfig(sb, con, sesion) {
+  const r = await fetch(`${con.url}/rest/v1/config`, {
+    method: 'POST',
+    headers: { apikey: con.clave, Authorization: 'Bearer ' + sesion.access_token, 'Content-Type': 'application/json' },
+    body: JSON.stringify(tablasIniciales().config.map(f => sb.aBase('config', f, sesion.usuario.id))),
+  });
+  if (!r.ok) throw new Error(`No se pudo guardar la configuración: ${r.status} ${await r.text()}`);
+}
 
+// Devuelve el número de comprobaciones fallidas.
+async function probar(sb, con, sesion) {
+  console.log(`Cuenta temporal: ${sesion.usuario.email}`);
+  await anadirConfig(sb, con, sesion);
   let fallos = 0;
   let referencia = null;
   let navegador = null;
@@ -84,11 +82,10 @@ async function main() {
   const ahora = new Date().toISOString();
   navegador = cargarMotor(ahora, {});
   const inicial = await celdasDeBase(navegador.motor);
-  if (!inicial.config.length) salir('El usuario no tiene configuración: ejecuta antes npm run supabase-semilla.');
-  if (!inicial.recetas.length) salir('No hay recetas en la base: ejecuta antes npm run supabase-semilla.');
+  if (!inicial.recetas.length) throw new Error('No hay recetas en la base.');
   referencia = cargarMotor(ahora, inicial);
   const generado = await paso('generarPlan', {}, r => assert.equal(r.datos.dias.length, 14));
-  if (!generado.ok) salir('No se pudo generar el plan: ' + generado.error);
+  if (!generado.ok) throw new Error('No se pudo generar el plan: ' + generado.error);
   await paso('activarPlan', { plan_id: generado.datos.plan_id });
 
   // El primer día del plan, a mediodía.
@@ -140,9 +137,7 @@ async function main() {
   });
   console.log(`Filas en la base: ${ORDEN.map(t => `${t} ${enBase[t].length}`).join(' · ')}`);
 
-  if (!dejar) await borrarPersonales();
-  console.log(fallos ? `\n${fallos} comprobaciones fallidas.` : `\nTodo correcto: Supabase da lo mismo que el motor solo.${dejar ? ' Los datos se quedan en la base.' : ''}`);
-  process.exit(fallos ? 1 : 0);
+  return fallos;
 }
 
-main().catch(e => salir(e.stack || String(e)));
+main();

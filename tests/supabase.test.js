@@ -23,7 +23,7 @@ async function preparar() {
   const p = inicio.llamar('generarPlan').datos;
   inicio.llamar('activarPlan', { plan_id: p.plan_id });
   const tablas = todasLasTablas(inicio.contexto);
-  const falso = crearSupabaseFalso({ usuarios: USUARIOS, ahora: () => new Date(MIERCOLES) });
+  const falso = crearSupabaseFalso({ usuarios: USUARIOS, codigos: ['AMIGOS-2026'], ahora: () => new Date(MIERCOLES) });
   ORDEN.forEach(nombre => {
     falso.cargar(nombre, tablas[nombre].map(f => {
       const fila = sb.aBase(nombre, f, 'u1');
@@ -317,4 +317,35 @@ test('alta con contraseña temporal (scripts/invitar.js): entra, la cambia y se 
   assert.equal(otra.nueva, false);
   await assert.rejects(sb.entrar(con, 'novia@mi-dieta.test', 'una-clave-suya'), /incorrectos/);
   assert.equal((await sb.entrar(con, 'novia@mi-dieta.test', otra.password)).usuario.email, 'novia@mi-dieta.test');
+});
+
+test('crear cuenta desde la app con el código de invitación: sin código válido no se crea', async () => {
+  const { sb, con } = await preparar();
+  await assert.rejects(sb.registrarse(con, 'amigo@mi-dieta.test', 'clave-del-amigo', 'MAL'), /código de invitación no es válido/);
+  await assert.rejects(sb.entrar(con, 'amigo@mi-dieta.test', 'clave-del-amigo'), /incorrectos/, 'la cuenta no existe');
+  await assert.rejects(sb.registrarse(con, 'prueba1@mi-dieta.test', 'otra-clave', 'AMIGOS-2026'), /Ya hay una cuenta/);
+  await assert.rejects(sb.registrarse(con, 'sin-arroba', 'clave-del-amigo', 'AMIGOS-2026'), /no es válido/);
+  await assert.rejects(sb.registrarse(con, 'amigo@mi-dieta.test', '123', 'AMIGOS-2026'), /demasiado débil/);
+
+  const sesion = await sb.registrarse(con, 'amigo@mi-dieta.test', 'clave-del-amigo', 'AMIGOS-2026');
+  assert.equal(sesion.usuario.email, 'amigo@mi-dieta.test');
+  const nube = enNube(sb, con, sesion, cargarMotor(MIERCOLES, {}).motor);
+  assert.match((await nube('hoy')).datos.mensaje, /no hay un plan activo/, 'empieza sin nada y no ve lo de Fran');
+  assert.equal((await sb.entrar(con, 'amigo@mi-dieta.test', 'clave-del-amigo')).usuario.id, sesion.usuario.id);
+});
+
+test('borrar una cuenta (clave secreta): se van sus datos y lo que añadió a la biblioteca se queda', async () => {
+  const { sb, falso, con } = await preparar();
+  await assert.rejects(sb.borrarCuenta(con, 'mala', 'prueba1@mi-dieta.test'), /La clave secreta no vale/);
+  await assert.rejects(sb.borrarCuenta(con, 'clave-secreta-falsa', 'nadie@mi-dieta.test'), /No hay ninguna cuenta/);
+  const cuenta = await sb.crearCuenta(con, 'clave-secreta-falsa', 'temporal@mi-dieta.test', 'clave-temporal');
+  const sesion = await sb.entrar(con, 'temporal@mi-dieta.test', 'clave-temporal');
+  const nube = enNube(sb, con, sesion, cargarMotor(MIERCOLES, {}).motor);
+  assert.equal((await nube('registrarPeso', { peso_kg: 70 })).ok, true);
+  assert.equal(falso.tablas.pesos.filter(f => f.user_id === cuenta.id).length, 1);
+  assert.deepEqual(await sb.borrarCuenta(con, 'clave-secreta-falsa', 'temporal@mi-dieta.test'), cuenta);
+  await assert.rejects(sb.entrar(con, 'temporal@mi-dieta.test', 'clave-temporal'), /incorrectos/);
+  assert.equal(falso.tablas.pesos.filter(f => f.user_id === cuenta.id).length, 0, 'sus datos se borran');
+  const fran = await sb.entrar(con, 'prueba1@mi-dieta.test', 'secreta1');
+  assert.ok((await sb.leerTablas(con, fran)).recetas.length > 0, 'la biblioteca sigue');
 });

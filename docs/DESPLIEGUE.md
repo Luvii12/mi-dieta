@@ -19,7 +19,7 @@ El script enseña el mensaje para mandarle (enlace, email, contraseña temporal 
 ## 3. Probar en el ordenador
 - Tests: `npm test`
 - PWA sin red: `npm run servidor` (Supabase falsa en memoria; entra con `prueba@mi-dieta.test` / `prueba`). Con `-- borrador` o `-- fin`, otros estados del plan; con `-- real`, el Supabase de verdad.
-- Si cambian `data/alimentos.csv` o `data/recetas_semilla.json`: `npm run semilla` (regenera `data/semilla.js`). Para pasar alimentos o recetas nuevos a Supabase: `npm run supabase-semilla` (solo añade lo que falta).
+- Si cambian `data/alimentos.csv` o `data/recetas_semilla.json`: `npm run semilla` (regenera `data/semilla.js`). Los alimentos y recetas nuevos van a Supabase desde la app o con `scripts/recetas_ia.js`.
 
 ## 4. La hoja de Google (copia de seguridad)
 Hasta el 18-10-2026 los datos estaban en una hoja de Google con un Apps Script como API (fases 0–5). Se migró a Supabase en M3 y Apps Script se retiró en M6: ni la app ni los scripts usan ya la hoja, que queda como copia de seguridad de solo lectura. El código de Apps Script (`apps-script/`, clasp) y el script de migración están en el historial de git (hasta el commit `3a81c73`).

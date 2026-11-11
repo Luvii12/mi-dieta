@@ -1,7 +1,9 @@
 // Supabase falsa en memoria, para los tests y para `npm run servidor`. Imita lo que usa la app:
 //   · Auth: entrar con email y contraseña, renovar la sesión (cada renovación se puede usar una vez), cambiar
-//     la contraseña y salir. Con la clave secreta, lo que usan los scripts (admin): listar, crear y cambiar la
-//     contraseña de usuarios, y generar un enlace mágico, que se canjea por una sesión (verify).
+//     la contraseña y salir. Crear cuenta (signup) con un código de invitación de `codigos`, como la regla
+//     antes_de_crear_usuario de supabase/esquema.sql. Con la clave secreta, lo que usan los scripts (admin):
+//     listar, crear, borrar y cambiar la contraseña de usuarios, y generar un enlace mágico, que se canjea por
+//     una sesión (verify).
 //   · REST: leer (order, offset, limit), añadir, añadir o actualizar (merge-duplicates), cambiar y borrar con
 //     los filtros que genera web/supabase.js (col=eq., col=in.(…), or=(and(…),…)).
 // Con las reglas de supabase/esquema.sql: columnas y valores permitidos, claves, valores por defecto,
@@ -110,7 +112,7 @@ function filtroDe(params) {
   return f => condiciones.every(c => c(f));
 }
 
-function crearSupabaseFalso({ clave = 'clave-falsa', claveSecreta = 'clave-secreta-falsa', usuarios = [], administradores = [], ahora = () => new Date() } = {}) {
+function crearSupabaseFalso({ clave = 'clave-falsa', claveSecreta = 'clave-secreta-falsa', usuarios = [], administradores = [], codigos = [], ahora = () => new Date() } = {}) {
   usuarios = usuarios.map(u => Object.assign({}, u)); // las altas y los cambios de contraseña no tocan los del test
   const tablas = Object.fromEntries(Object.keys(ESQUEMA).map(n => [n, []]));
   const accesos = new Map(); // token de acceso → user_id
@@ -325,6 +327,20 @@ function crearSupabaseFalso({ clave = 'clave-falsa', claveSecreta = 'clave-secre
       }
       return [204, null];
     }
+    if (metodo === 'POST' && url.pathname === '/auth/v1/signup') {
+      const email = String((cuerpo || {}).email || '').trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return [400, { code: 400, error_code: 'email_address_invalid', msg: 'Email address is invalid' }];
+      if (usuarios.some(x => x.email === email)) return [422, { code: 422, error_code: 'user_already_exists', msg: 'User already registered' }];
+      const codigo = String(((cuerpo.data || {}).codigo) || '').trim().toUpperCase();
+      if (!codigos.includes(codigo)) {
+        return [403, { code: 403, error_code: 'unexpected_failure', msg: 'El código de invitación no es válido. Pídeselo a quien te ha pasado la app.' }];
+      }
+      const u = { id: `00000000-0000-4000-8000-${String(900 + usuarios.length).padStart(12, '0')}`, email };
+      const r = claveNueva(u, cuerpo.password);
+      if (r) return r;
+      usuarios.push(u);
+      return [200, sesionPara(u)];
+    }
     if (metodo === 'PUT' && url.pathname === '/auth/v1/user') {
       const u = usuarios.find(x => x.id === accesos.get(String(cabeceras.authorization || '').replace(/^Bearer /, '')));
       if (!u) return [401, { code: 401, error_code: 'bad_jwt', msg: 'invalid JWT' }];
@@ -348,6 +364,17 @@ function crearSupabaseFalso({ clave = 'clave-falsa', claveSecreta = 'clave-secre
       return [200, { id: u.id, email: u.email, email_confirmed_at: cuerpo.email_confirm ? ahora().toISOString() : null }];
     }
     const editar = url.pathname.match(/^\/auth\/v1\/admin\/users\/([^/]+)$/);
+    if (metodo === 'DELETE' && editar) {
+      const i = usuarios.findIndex(x => x.id === editar[1]);
+      if (i < 0) return [404, { code: 404, error_code: 'user_not_found', msg: 'User not found' }];
+      usuarios.splice(i, 1);
+      // Como las claves ajenas de supabase/esquema.sql: lo personal se borra, lo común se queda sin autor.
+      Object.keys(tablas).forEach(n => {
+        if (COMUNES.includes(n)) tablas[n].forEach(f => { if (f.creado_por === editar[1]) f.creado_por = null; });
+        else tablas[n] = tablas[n].filter(f => f.user_id !== editar[1]);
+      });
+      return [200, {}];
+    }
     if (metodo === 'PUT' && editar) {
       const u = usuarios.find(x => x.id === editar[1]);
       if (!u) return [404, { code: 404, error_code: 'user_not_found', msg: 'User not found' }];

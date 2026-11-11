@@ -196,3 +196,46 @@ begin
     execute format('create policy propias on public.%I for all to authenticated using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()))', t);
   end loop;
 end $$;
+
+-- ---------------------------------------------------------------------------------------------------
+-- Registro con código de invitación (2026-11-11). El registro de Auth está abierto, pero esta función
+-- (Authentication › Hooks › Before User Created) no deja crear una cuenta sin un código activo de
+-- `invitaciones`: el código lo escribe la persona en «Crear cuenta» y llega en user_metadata.codigo.
+-- Las cuentas que crean los scripts con la clave secreta (npm run invitar, cuentas temporales de las pruebas)
+-- llevan app_metadata.alta = 'script', que nadie puede ponerse al registrarse, y pasan sin código.
+-- Los códigos se ven, añaden y desactivan desde el editor SQL (docs/SUPABASE.md §12); la app no puede leerlos.
+create table if not exists public.invitaciones (
+  codigo text primary key check (codigo = upper(btrim(codigo)) and codigo <> ''),
+  activo boolean not null default true,
+  nota text,
+  creado timestamptz not null default now()
+);
+alter table public.invitaciones enable row level security;
+revoke all on public.invitaciones from anon, authenticated;
+grant usage on schema public to supabase_auth_admin;
+grant select on public.invitaciones to supabase_auth_admin;
+drop policy if exists leer_al_registrar on public.invitaciones;
+create policy leer_al_registrar on public.invitaciones for select to supabase_auth_admin using (true);
+
+create or replace function public.antes_de_crear_usuario(event jsonb)
+returns jsonb
+language plpgsql
+stable
+set search_path = ''
+as $$
+declare
+  v_codigo text := upper(btrim(coalesce(event->'user'->'user_metadata'->>'codigo', '')));
+begin
+  if event->'user'->'app_metadata'->>'alta' = 'script' then
+    return '{}'::jsonb;
+  end if;
+  if v_codigo <> '' and exists (select 1 from public.invitaciones i where i.codigo = v_codigo and i.activo) then
+    return '{}'::jsonb;
+  end if;
+  return jsonb_build_object('error', jsonb_build_object(
+    'http_code', 403,
+    'message', 'El código de invitación no es válido. Pídeselo a quien te ha pasado la app.'));
+end;
+$$;
+grant execute on function public.antes_de_crear_usuario(jsonb) to supabase_auth_admin;
+revoke execute on function public.antes_de_crear_usuario(jsonb) from authenticated, anon, public;

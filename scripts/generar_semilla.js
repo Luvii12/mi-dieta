@@ -1,5 +1,5 @@
 // Convierte data/alimentos.csv y data/recetas_semilla.json en data/semilla.js: la biblioteca de partida
-// (y los objetivos iniciales) que usan los tests, el servidor local y scripts/supabase_semilla.js.
+// (y los objetivos iniciales) que usan los tests, el servidor local y scripts/probar_supabase.js.
 // Uso: node scripts/generar_semilla.js
 
 const fs = require('fs');

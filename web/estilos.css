@@ -882,6 +882,9 @@ body[data-vista="receta"] .vista { padding-top: 0; }
 
 /* Pantalla de entrada: misma tarjeta que la conexión, con letra normal (16 px: el móvil no hace zoom). */
 .form-entrar .campo input { font-family: inherit; font-size: 16px; line-height: 22px; }
+.entrar-cambio { display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 8px; font-size: 12px; line-height: 16px; color: var(--texto-suave); }
+.entrar-cambio .boton-texto { margin-right: 0; color: var(--primario); }
+#entrar-codigo { text-transform: uppercase; }
 
 .estado-conexion { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; border-radius: var(--radio-md); background: var(--superficie-baja); border: 1px solid var(--borde-suave); }
 .estado-texto { display: flex; align-items: center; gap: 10px; min-width: 0; }

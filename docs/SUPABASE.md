@@ -19,25 +19,19 @@ Pasos que hace Fran en el panel de Supabase, una sola vez. Ningún dato secreto 
 ## 3. Cargar el esquema
 **SQL Editor → New query**: pega el contenido entero de `supabase/esquema.sql` y pulsa **Run**. Tiene que acabar con «Success. No rows returned». Si algún día cambia el esquema, se vuelve a ejecutar: no borra datos.
 
-## 4. Dos usuarios de prueba
-**Authentication → Users → Add user → Create new user**, dos veces:
-- `prueba1@mi-dieta.test` y `prueba2@mi-dieta.test`, cada uno con una contraseña inventada.
-- Marca **Auto Confirm User**.
-
-Tu cuenta de verdad se crea más adelante (fase M3), no ahora. (Al final, en M3, la cuenta real es `franluvi2015@gmail.com`, que era uno de los usuarios de pruebas.)
+## 4. Cuentas de prueba
+No hay cuentas de prueba fijas (hasta el 11-11-2026 había dos en `"pruebas"`; una acabó siendo la cuenta real). Los scripts que prueban contra el Supabase de verdad (§6 y §7) crean cuentas temporales `prueba-xxxx@mi-dieta.test` con la clave secreta y las borran al acabar con todos sus datos. Si una prueba se corta a medias, puede quedar alguna: se ve en **Authentication → Users** y se borra desde ahí (o con `borrarCuenta` de `web/supabase.js`).
 
 ## 5. Conexión para los scripts
-**Project Settings → API Keys** (o *Data API*): copia la **URL del proyecto** (`https://xxxx.supabase.co`) y la clave **publishable** (`sb_publishable_…`; si solo aparece la antigua, la **anon public**). Aquí **no** copies la `secret` ni la `service_role` (solo hace falta para pedir recetas para otra persona, §9, y nunca va en la PWA).
+**Project Settings → API Keys** (o *Data API*): copia la **URL del proyecto** (`https://xxxx.supabase.co`) y la clave **publishable** (`sb_publishable_…`; si solo aparece la antigua, la **anon public**). Copia también la clave **secret** (`sb_secret_…`, o la antigua `service_role`) como `clave_secreta`: la usan las altas, las pruebas, la copia de seguridad y las recetas para otra persona (§9). **Nunca** va en la PWA ni en el repo.
 
 Crea en la raíz del repo el archivo `.supabase.local.json` (está en `.gitignore`):
 ```json
 {
   "url": "https://xxxx.supabase.co",
   "clave": "sb_publishable_…",
-  "pruebas": [
-    {"email": "prueba1@mi-dieta.test", "password": "…"},
-    {"email": "prueba2@mi-dieta.test", "password": "…"}
-  ]
+  "clave_secreta": "sb_secret_…",
+  "cuenta": {"email": "franluvi2015@gmail.com", "password": "…"}
 }
 ```
 
@@ -45,18 +39,17 @@ Crea en la raíz del repo el archivo `.supabase.local.json` (está en `.gitignor
 ```
 npm run probar-rls
 ```
-Tiene que terminar con «Todo correcto: cada usuario solo ve lo suyo». Con eso la fase M0 está hecha.
+Tiene que terminar con «Todo correcto: cada usuario solo ve lo suyo» (con dos cuentas temporales). Repetirlo después de cambiar `esquema.sql`.
 
 ## 7. Probar la app con Supabase (fase M2)
 ```
-npm run supabase-semilla     # biblioteca común (alimentos y recetas semilla) y config del 2.º usuario de pruebas; no pisa nada
-npm run probar-supabase      # un día completo con el 2.º usuario de pruebas; compara con el motor solo y lo deja limpio (--dejar: no)
-npm run servidor -- real     # la PWA en http://localhost:8099 contra el Supabase de verdad (entra con un usuario de pruebas)
+npm run probar-supabase      # un día completo con una cuenta temporal; compara con el motor solo y la borra al acabar
+npm run servidor -- real     # la PWA en http://localhost:8099 contra el Supabase de verdad (entra con tu cuenta)
 ```
 Sin red: `npm run servidor` (base falsa en memoria; entra con `prueba@mi-dieta.test` / `prueba`).
 
 ## 8. Cuenta real (fase M3)
-En `.supabase.local.json`, la cuenta real va aparte de las de pruebas (los scripts de Claude Code entran con ella):
+En `.supabase.local.json`, `"cuenta"` es la cuenta real (los scripts de Claude Code entran con ella):
 ```json
   "cuenta": {"email": "franluvi2015@gmail.com", "password": "…"},
 ```
@@ -64,7 +57,7 @@ En `.supabase.local.json`, la cuenta real va aparte de las de pruebas (los scrip
 npm run cambiar-contrasena     # en una terminal propia: nueva contraseña de la cuenta real (la guarda en el archivo)
 ```
 Tu contraseña cámbiala así y no desde la app: los scripts entran con la que hay en el archivo.
-Los datos de la hoja de Google se copiaron a esta cuenta el 18-10-2026 (`scripts/migrar_sheets.js`, retirado en M6 junto con Apps Script; está en el historial de git). `npm run probar-supabase` se niega a usar la cuenta real (borra los datos del usuario con el que prueba).
+Los datos de la hoja de Google se copiaron a esta cuenta el 18-10-2026 (`scripts/migrar_sheets.js`, retirado en M6 junto con Apps Script; está en el historial de git).
 
 **Administrador** (para cambiar alimentos y recetas que haya añadido otra persona): en el SQL Editor,
 `insert into public.administradores (user_id) select id from auth.users where email = 'franluvi2015@gmail.com';`
@@ -78,7 +71,8 @@ Los datos de la hoja de Google se copiaron a esta cuenta el 18-10-2026 (`scripts
 ```
 Esta clave se salta todas las reglas por fila: **solo** en ese archivo (está en `.gitignore`), nunca en el repo, en la PWA ni en un chat. Si se filtra, en el mismo sitio del panel se borra y se crea otra. El script solo la usa para comprobar que la cuenta existe y abrir una sesión como ella (un enlace mágico que canjea él mismo, sin enviar correos); todo lo demás va con esa sesión, con las mismas reglas que en su móvil.
 
-## 10. Dar de alta a alguien (fase M6)
+## 10. Dar de alta a alguien a mano (fase M6)
+Desde el 11-11-2026 cada persona se da de alta sola con el código de invitación (§12). El script sigue sirviendo para dar una contraseña temporal a quien olvide la suya, o para crear una cuenta sin código.
 ```
 npm run invitar -- email@de.la.persona                # cuenta nueva, ya confirmada, con una contraseña temporal
 npm run invitar -- email@de.la.persona --nueva-clave  # otra temporal, si ha olvidado la suya
@@ -87,3 +81,19 @@ Usa la clave secreta (§9). La contraseña temporal solo sale en tu terminal, de
 
 ## 11. Copia de seguridad
 El plan gratis no hace copias y pausa el proyecto tras una semana sin uso (se reactiva desde el panel; los datos se conservan). `npm run copia` guarda todo en `~/Escritorio/claude/copias-mi-dieta/AAAA-MM-DD/` (o en la carpeta que se le pase): `cuentas.json`, `comunes/` (alimentos y recetas) y una carpeta por email con sus tablas, tal como están en la base. Entra como cada cuenta con la `clave_secreta` (como §9): la clave secreta no tiene permiso de lectura directo en las tablas y así no hace falta SQL. Lleva datos personales: nunca al repo. Hacerla antes de cambios grandes (altas, tandas de recetas).
+
+## 12. Registro con código de invitación
+La app tiene **Crear cuenta** (email, contraseña y código). El código lo comprueba la base con la función `antes_de_crear_usuario` de `esquema.sql` antes de crear la cuenta: sin un código activo, no se crea. Sin correos (el correo gratis de Supabase solo llega a los miembros del proyecto).
+
+Configuración, una sola vez, en el panel:
+1. **SQL Editor**: ejecuta `supabase/esquema.sql` entero (crea `invitaciones` y la función) y después el primer código:
+   `insert into public.invitaciones (codigo, nota) values ('DIETA-XXXX', 'amigos');`
+2. **Authentication → Hooks → Add hook → Before User Created**: tipo **Postgres**, esquema `public`, función `antes_de_crear_usuario`. Guardar.
+3. **Authentication → Sign In / Providers**: activa **Allow new users to sign up** y, en **Email**, desactiva **Confirm email**. Guardar.
+
+Códigos (en el SQL Editor; la app no puede leerlos):
+- Ver: `select * from public.invitaciones;`
+- Uno nuevo: `insert into public.invitaciones (codigo, nota) values ('OTRO-CODIGO', 'para quién');` (en mayúsculas)
+- Que deje de valer (si se ha filtrado): `update public.invitaciones set activo = false where codigo = 'DIETA-XXXX';`
+
+Quien ya tiene cuenta no se ve afectado al desactivar un código. Para echar a alguien: §10 (*Delete user*).

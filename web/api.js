@@ -3,7 +3,7 @@
 // los datos de Supabase (ver supabase.js).
 
 import { SUPABASE } from './conexion.js';
-import { entrar as entrarSupabase, renovar, salir, cambiarClave, ejecutar, editaAlimentos, recetasPropias, ErrorSesion, ErrorToken } from './supabase.js';
+import { entrar as entrarSupabase, registrarse as registrarseSupabase, renovar, salir, cambiarClave, ejecutar, editaAlimentos, recetasPropias, ErrorSesion, ErrorToken } from './supabase.js';
 
 const CLAVE_SESION = 'dieta.sesion';
 const RENOVAR_ANTES = 5 * 60000; // la sesión dura 1 hora: se renueva si le quedan menos de 5 minutos
@@ -46,7 +46,15 @@ export const leerSesion = () => leerLocal(CLAVE_SESION);
 export const haySesion = () => Boolean(leerSesion());
 
 export async function entrar(email, password) {
-  const sesion = await entrarSupabase(conexion(), email.trim(), password);
+  guardarSesion(await entrarSupabase(conexion(), email.trim(), password));
+}
+
+// Cuenta nueva con el código de invitación; queda con la sesión abierta (después toca el alta del perfil).
+export async function registrarse(email, password, codigo) {
+  guardarSesion(await registrarseSupabase(conexion(), email.trim().toLowerCase(), password, codigo.trim().toUpperCase()));
+}
+
+function guardarSesion(sesion) {
   const anterior = leerSesion();
   if (!anterior || anterior.usuario.id !== sesion.usuario.id) borrarCopiaLocal();
   guardarLocal(CLAVE_SESION, sesion);

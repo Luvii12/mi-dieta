@@ -91,6 +91,22 @@ export async function entrar(con, email, password) {
   throw new Error(mensajeDe(r));
 }
 
+// Cuenta nueva desde la app con el código de invitación. Lo comprueba la base antes de crear la cuenta
+// (antes_de_crear_usuario en supabase/esquema.sql): desde el móvil no se puede saltar. Sin confirmación por
+// email, así que devuelve la sesión ya abierta.
+export async function registrarse(con, email, password, codigo) {
+  const r = await pedir(con, 'POST', '/auth/v1/signup', { cuerpo: { email, password, data: { codigo } } });
+  if (r.ok && r.datos && r.datos.access_token) return aSesion(r.datos);
+  if (r.ok) throw new Error('Cuenta creada, pero falta confirmarla: avisa a quien te ha invitado.');
+  const codigoError = r.datos && (r.datos.error_code || r.datos.code);
+  if (r.estado === 429) throw new Error('Demasiados intentos. Espera un poco y vuelve a probar.');
+  if (codigoError === 'user_already_exists' || codigoError === 'email_exists') throw new Error('Ya hay una cuenta con ese email: entra con tu contraseña.');
+  if (codigoError === 'weak_password') throw new Error('Esa contraseña es demasiado débil: prueba con una más larga.');
+  if (codigoError === 'email_address_invalid' || codigoError === 'validation_failed') throw new Error('Ese email no es válido.');
+  if (codigoError === 'signup_disabled') throw new Error('El registro está cerrado ahora mismo: avisa a quien te ha invitado.');
+  throw new Error(mensajeDe(r));
+}
+
 // Sesión nueva a partir de la anterior. Lanza ErrorSesion si ya no se puede renovar.
 export async function renovar(con, sesion) {
   const r = await pedir(con, 'POST', '/auth/v1/token?grant_type=refresh_token', { cuerpo: { refresh_token: sesion.refresh_token } });
@@ -133,15 +149,27 @@ async function buscarCuenta(con, claveSecreta, email) {
   return (usuarios.datos.users || []).find(u => String(u.email).toLowerCase() === buscado) || null;
 }
 
-// Cuenta nueva ya confirmada (el registro libre está cerrado y la app no recoge enlaces de invitación).
-// Devuelve {id, email}.
+// Cuenta nueva ya confirmada, sin código de invitación (npm run invitar y las cuentas temporales de las
+// pruebas). `app_metadata.alta = 'script'` solo lo puede poner la clave secreta: con eso la base la deja pasar
+// sin código (supabase/esquema.sql). Devuelve {id, email}.
 export async function crearCuenta(con, claveSecreta, email, password) {
   if (await buscarCuenta(con, claveSecreta, email)) throw new Error(`Ya hay una cuenta con el email ${email}.`);
   const admin = { url: con.url, clave: claveSecreta, fetch: con.fetch };
   const r = await pedir(admin, 'POST', '/auth/v1/admin/users', { token: claveSecreta,
-    cuerpo: { email: String(email).trim().toLowerCase(), password, email_confirm: true } });
+    cuerpo: { email: String(email).trim().toLowerCase(), password, email_confirm: true, app_metadata: { alta: 'script' } } });
   if (!r.ok) throw new Error(mensajeDe(r));
   return { id: r.datos.id, email: r.datos.email };
+}
+
+// Borra una cuenta y, en cascada, todos sus datos personales (lo que añadió a alimentos y recetas se queda,
+// sin autor). Devuelve {id, email}.
+export async function borrarCuenta(con, claveSecreta, email) {
+  const cuenta = await buscarCuenta(con, claveSecreta, email);
+  if (!cuenta) throw new Error(`No hay ninguna cuenta con el email ${email}.`);
+  const admin = { url: con.url, clave: claveSecreta, fetch: con.fetch };
+  const r = await pedir(admin, 'DELETE', '/auth/v1/admin/users/' + cuenta.id, { token: claveSecreta });
+  if (!r.ok) throw new Error(mensajeDe(r));
+  return { id: cuenta.id, email: cuenta.email };
 }
 
 // Pone otra contraseña a una cuenta que ya existe (si la persona la ha olvidado).

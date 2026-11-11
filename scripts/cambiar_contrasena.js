@@ -1,5 +1,5 @@
-// Cambia la contraseña de la cuenta real ("cuenta" en .supabase.local.json) y la guarda en ese archivo (y en
-// "pruebas", si la cuenta también está ahí), para que los scripts sigan entrando. La pide sin enseñarla.
+// Cambia la contraseña de la cuenta real ("cuenta" en .supabase.local.json) y la guarda en ese archivo, para
+// que los scripts sigan entrando. La pide sin enseñarla.
 // Hay que ejecutarlo en una terminal propia (no con «!» en Claude Code): necesita teclado.
 //
 // Uso: npm run cambiar-contrasena
@@ -43,7 +43,6 @@ async function main() {
     salir(`Supabase no la ha aceptado: ${d.msg || d.message || d.error_description || r.status}`);
   }
   c.cuenta.password = nueva;
-  (c.pruebas || []).filter(u => u.email === c.cuenta.email).forEach(u => { u.password = nueva; });
   fs.writeFileSync(ARCHIVO, JSON.stringify(c, null, 2) + '\n');
   console.log('Contraseña cambiada y guardada en .supabase.local.json. En el móvil entra con la nueva.');
 }

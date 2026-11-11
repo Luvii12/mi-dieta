@@ -1,47 +1,18 @@
 // Comprueba en el proyecto real de Supabase que las reglas por fila (RLS) de supabase/esquema.sql funcionan:
 // sin sesión no se ve nada, cada usuario solo ve y cambia lo suyo, y los dos ven las tablas comunes.
-// Usa dos usuarios de prueba (nunca la cuenta de Fran) y deja todo como estaba al acabar.
+// Usa dos cuentas temporales que crea y borra al acabar (nunca las de las personas) y deja todo como estaba.
 //
-// La conexión se lee de .supabase.local.json, que no se sube al repo:
-//   {"url": "https://<proyecto>.supabase.co", "clave": "<clave publishable o anon>",
-//    "pruebas": [{"email": "...", "password": "..."}, {"email": "...", "password": "..."}]}
+// La conexión se lee de .supabase.local.json, que no se sube al repo ("url", "clave" y "clave_secreta").
 //
 // Uso: npm run probar-rls
-const fs = require('fs');
-const path = require('path');
+const { leerArchivo, cuentasTemporales, salir } = require('./cuenta_supabase.js');
 
-const ARCHIVO = process.env.SUPABASE || path.join(__dirname, '..', '.supabase.local.json');
 const FECHA_PRUEBA = '2000-01-01';
 const PLAN_PRUEBA = 'prueba_rls';
 const ALIMENTO_PRUEBA = 'prueba_rls_alimento';
 
-function salir(mensaje) {
-  console.error(mensaje);
-  process.exit(1);
-}
-
-function conexion() {
-  if (!fs.existsSync(ARCHIVO)) salir('Falta .supabase.local.json (ver docs/SUPABASE.md).');
-  const c = JSON.parse(fs.readFileSync(ARCHIVO, 'utf8'));
-  if (!c.url || !c.clave || !Array.isArray(c.pruebas) || c.pruebas.length < 2) {
-    salir('.supabase.local.json necesita "url", "clave" y dos usuarios en "pruebas".');
-  }
-  c.url = c.url.replace(/\/+$/, '');
-  return c;
-}
-
-const c = conexion();
-
-async function entrar(usuario) {
-  const r = await fetch(`${c.url}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: { apikey: c.clave, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: usuario.email, password: usuario.password }),
-  });
-  const datos = await r.json();
-  if (!r.ok) salir(`No se pudo entrar como ${usuario.email}: ${datos.error_description || datos.msg || r.status}`);
-  return { email: usuario.email, id: datos.user.id, token: datos.access_token };
-}
+const c = leerArchivo();
+c.url = c.url.replace(/\/+$/, '');
 
 // Llamada a la API REST. Devuelve {estado, datos}; sin sesión si `quien` es null.
 async function api(quien, metodo, ruta, cuerpo) {
@@ -72,11 +43,19 @@ async function limpiar(quien) {
 }
 
 async function main() {
-  const [a, b] = [await entrar(c.pruebas[0]), await entrar(c.pruebas[1])];
-  if (a.id === b.id) salir('Los dos usuarios de prueba son el mismo.');
-  await limpiar(a);
-  await limpiar(b);
+  const temporales = await cuentasTemporales(c, 2);
+  const [a, b] = temporales.sesiones.map(s => ({ email: s.usuario.email, id: s.usuario.id, token: s.access_token }));
+  try {
+    await comprobarTodo(a, b);
+  } finally {
+    await limpiar(a); // el alimento de prueba es común: no se va con la cuenta
+    await temporales.borrar();
+  }
+  console.log(fallos ? `\n${fallos} comprobaciones fallidas.` : '\nTodo correcto: cada usuario solo ve lo suyo.');
+  process.exit(fallos ? 1 : 0);
+}
 
+async function comprobarTodo(a, b) {
   console.log('— Sin sesión');
   for (const tabla of ['alimentos', 'recetas', 'config', 'pesos', 'planes']) {
     const r = await api(null, 'GET', `${tabla}?select=*&limit=1`);
@@ -129,12 +108,8 @@ async function main() {
   comprobar('nadie puede hacerse administrador desde la app', !ok(hacerse), hacerse);
 
   await limpiar(a);
-  await limpiar(b);
   const resto = await api(a, 'GET', `alimentos?id=eq.${ALIMENTO_PRUEBA}&select=id`);
-  comprobar('datos de prueba borrados', vacio(resto), resto);
-
-  console.log(fallos ? `\n${fallos} comprobaciones fallidas.` : '\nTodo correcto: cada usuario solo ve lo suyo.');
-  process.exit(fallos ? 1 : 0);
+  comprobar('alimento de prueba borrado', vacio(resto), resto);
 }
 
 main().catch(e => salir(e.stack || String(e)));
