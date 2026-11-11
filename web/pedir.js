@@ -7,7 +7,7 @@
 // Lo escrito se guarda en el móvil: al volver del chat (aunque Android haya cerrado la app) sigue ahí.
 
 import { llamar, leerLocal, guardarLocal } from './api.js';
-import { h, icono, numero, avisar, COMIDAS } from './comun.js';
+import { h, icono, numero, avisar, copiar, COMIDAS } from './comun.js';
 import { guardarPropuestas } from './datos.js';
 
 const CLAVE = 'dieta.pedirIA';
@@ -38,22 +38,6 @@ function selector(etiqueta, opciones, valor, alElegir) {
       alElegir(v);
     } }, texto)));
   return grupo;
-}
-
-// Copia al portapapeles; si el navegador no deja, con un área de texto temporal.
-async function copiar(texto) {
-  try {
-    await navigator.clipboard.writeText(texto);
-    return true;
-  } catch (err) {
-    const area = h('textarea', { class: 'copia-oculta', 'aria-hidden': 'true' });
-    area.value = texto;
-    document.body.append(area);
-    area.select();
-    const hecho = document.execCommand('copy');
-    area.remove();
-    return hecho;
-  }
 }
 
 // El encargo para lo elegido (se pide al motor si ha cambiado algo desde el último).

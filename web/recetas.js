@@ -3,9 +3,10 @@
 // Al tocar una receta se abre #receta/<id>.
 // Arriba, «Crear receta» (#nueva, editor.js), «Pedir a la IA» (#pedir, pedir.js) y las recetas propuestas por
 // la IA pendientes de revisar (llegan de pedir.js o de scripts/recetas_ia.js; aquí se añaden o se descartan).
+// El buscador filtra al escribir por nombre o ingrediente (sin tildes ni mayúsculas; todas las palabras).
 
 import { llamar } from './api.js';
-import { h, icono, numero, tesela, avisar, abrirFormulario, COMIDAS } from './comun.js';
+import { h, icono, numero, tesela, avisar, abrirFormulario, normalizar, COMIDAS } from './comun.js';
 import { leerRecetas, guardarRecetas, leerPropuestas, guardarPropuestas, anadirAlimento, actualizarPropias } from './datos.js';
 import { vacio } from './hoy.js';
 
@@ -73,7 +74,46 @@ function seccionPropuestas(propuestas) {
     h('div', { class: 'lista-comidas lista-plan' }, propuestas.map(tarjetaPropuesta)));
 }
 
+let busqueda = '';
+
+// ¿Tiene la receta todas las palabras buscadas en su nombre, su comida o sus ingredientes?
+function coincide(r, palabras) {
+  const ingredientes = ((r.ajuste && r.ajuste.ingredientes) || []).map(i => i.nombre);
+  const texto = normalizar([r.nombre, r.comida, ...ingredientes].join(' '));
+  return palabras.every(p => texto.includes(p));
+}
+
+function gruposRecetas(recetas) {
+  return COMIDAS.map(comida => {
+    const deComida = recetas.filter(r => r.comida === comida);
+    if (!deComida.length) return '';
+    return h('section', { class: 'grupo-recetas', 'aria-labelledby': 'recetas-' + comida },
+      h('div', { class: 'titulo-seccion' },
+        h('h2', { id: 'recetas-' + comida }, comida),
+        h('span', null, deComida.length === 1 ? '1 receta' : `${deComida.length} recetas`)),
+      h('div', { class: 'lista-comidas lista-plan' }, deComida.map(tarjeta)));
+  });
+}
+
 function pintar(contenedor, recetas, propuestas) {
+  const resultados = h('div', { class: 'resultados-recetas' });
+  const estado = h('p', { class: 'subtitulo buscador-estado', role: 'status' });
+  const rellenar = () => {
+    const palabras = normalizar(busqueda).split(/\s+/).filter(Boolean);
+    if (!palabras.length) {
+      estado.textContent = '';
+      resultados.replaceChildren(seccionPropuestas(propuestas || []), ...gruposRecetas(recetas));
+      return;
+    }
+    const halladas = recetas.filter(r => coincide(r, palabras));
+    estado.textContent = halladas.length
+      ? `${halladas.length === 1 ? '1 receta' : `${halladas.length} recetas`} con «${busqueda.trim()}»`
+      : `Ninguna receta con «${busqueda.trim()}». Prueba con otra palabra o un ingrediente.`;
+    resultados.replaceChildren(...gruposRecetas(halladas));
+  };
+  const campo = h('input', { type: 'search', autocomplete: 'off', enterkeyhint: 'search', placeholder: 'Buscar por nombre o ingrediente',
+    'aria-label': 'Buscar recetas por nombre o ingrediente', oninput: e => { busqueda = e.target.value; rellenar(); } });
+  campo.value = busqueda;
   contenedor.replaceChildren(
     h('div', { class: 'cabecera-vista' },
       h('div', null,
@@ -83,16 +123,11 @@ function pintar(contenedor, recetas, propuestas) {
     h('div', { class: 'acciones-recetas' },
       h('a', { class: 'boton boton-discontinuo', href: '#nueva' }, icono('add'), 'Crear receta'),
       h('a', { class: 'boton boton-discontinuo', href: '#pedir' }, icono('auto_awesome'), 'Pedir a la IA')),
-    seccionPropuestas(propuestas || []),
-    ...COMIDAS.map(comida => {
-      const deComida = recetas.filter(r => r.comida === comida);
-      if (!deComida.length) return '';
-      return h('section', { class: 'grupo-recetas', 'aria-labelledby': 'recetas-' + comida },
-        h('div', { class: 'titulo-seccion' },
-          h('h2', { id: 'recetas-' + comida }, comida),
-          h('span', null, deComida.length === 1 ? '1 receta' : `${deComida.length} recetas`)),
-        h('div', { class: 'lista-comidas lista-plan' }, deComida.map(tarjeta)));
-    }));
+    h('div', { class: 'campo buscador-recetas' },
+      h('span', { class: 'campo-caja' }, h('span', { class: 'icono campo-icono', 'aria-hidden': 'true' }, 'search'), campo)),
+    estado,
+    resultados);
+  rellenar();
 }
 
 export function pintarRecetas(contenedor) {

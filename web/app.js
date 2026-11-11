@@ -1,5 +1,5 @@
 // Arranque y navegación entre pantallas (#hoy, #plan, #recetas, #receta/…, #nueva, #editar/…, #pedir, #progreso,
-// #ajustes, #perfil). Sin
+// #compra, #ajustes, #perfil). Sin
 // sesión, solo la pantalla de entrada; con una cuenta que aún no tiene objetivos, solo el alta.
 
 import { haySesion, llamar, leerLocal, guardarLocal } from './api.js';
@@ -11,6 +11,7 @@ import { cargarReceta, pintarReceta, recordarAnterior } from './receta.js';
 import { cargarRecetas, pintarRecetas, precargarRecetas } from './recetas.js';
 import { cargarEditor } from './editor.js';
 import { cargarPedir } from './pedir.js';
+import { cargarCompra } from './compra.js';
 import { cargarAjustes, prepararAjustes } from './ajustes.js';
 import { cargarProgreso, prepararProgreso, precargarProgreso } from './progreso.js';
 import { prepararPanel } from './cambiar.js';
@@ -18,7 +19,7 @@ import { prepararCantidades } from './cantidades.js';
 import { pintarEntrar } from './entrar.js';
 import { pintarPerfil, CLAVE_ALTA } from './perfil.js';
 
-const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'editor', 'pedir', 'progreso', 'ajustes', 'perfil', 'entrar', 'alta'];
+const VISTAS = ['hoy', 'plan', 'recetas', 'receta', 'editor', 'pedir', 'compra', 'progreso', 'ajustes', 'perfil', 'entrar', 'alta'];
 // Rutas que no se llaman como su pantalla: el editor de recetas (crear, mi versión y editar).
 const RUTAS = { nueva: 'editor', editar: 'editor' };
 
@@ -40,7 +41,8 @@ function mostrarVista() {
   document.body.dataset.vista = vista;
   // Pestaña activa de la barra inferior (la receta no tiene: tapa la barra con su botón).
   document.querySelectorAll('.navegacion a').forEach(a => {
-    if (a.dataset.vista === (vista === 'editor' || vista === 'pedir' ? 'recetas' : vista)) a.setAttribute('aria-current', 'page');
+    const pestana = vista === 'editor' || vista === 'pedir' ? 'recetas' : vista === 'compra' ? 'plan' : vista;
+    if (a.dataset.vista === pestana) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
   window.scrollTo(0, 0);
@@ -59,6 +61,7 @@ function mostrarVista() {
   if (vista === 'receta') cargarReceta($('vista-receta'));
   if (vista === 'editor') cargarEditor($('vista-editor'));
   if (vista === 'pedir') cargarPedir($('vista-pedir'));
+  if (vista === 'compra') cargarCompra($('vista-compra'));
   if (vista === 'progreso') cargarProgreso($('vista-progreso'));
   if (vista === 'ajustes') cargarAjustes();
 }

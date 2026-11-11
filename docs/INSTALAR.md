@@ -35,11 +35,14 @@ Es una estimación con fórmulas generales: la app no sustituye a un dietista-nu
 - **Cambiar cantidades**: si una cantidad no te encaja (por ejemplo, tu bollo de pan pesa 50 g y la receta dice 80), abre la receta, toca «Cambiar cantidades» y pon tus gramos: la app recalcula el resto de ingredientes. Activa «Siempre en esta receta» para que lo haga también las próximas veces que te salga ese plato.
 - **Valora** los platos al abrir una receta (😍 Me encanta, 👌 Normal, 🤔 No repetiría): los que te encantan salen más y los que no repetirías dejan de salir.
 - **Progreso**: pésate y apúntalo, mejor por la mañana y en ayunas. Con tu peso y lo que marcas, la app propone el ajuste del siguiente plan.
-- **Ajustes**: alimentos que no quieres que salgan, la comida libre semanal y tu peso objetivo.
+- **Lista de la compra**: en **Plan**, toca «Lista de la compra» y elige la semana. Sale todo lo que llevan los platos de esa semana, sumado y por tipo de alimento. Toca un alimento para tacharlo cuando lo tengas, y con «Compartir» la mandas por WhatsApp.
+- **Ajustes**: alimentos que no quieres que salgan, la comida libre semanal, tu peso objetivo y el modo claro u oscuro.
 
 Cuando a tu plan le quedan 2 días, la app prepara sola el siguiente al abrirla y te avisa en **Hoy**. Si quieres, revísalo en **Plan** y elige el ajuste de calorías; si no haces nada, empieza solo con las mismas calorías.
 
 ## 5. Tus recetas
+Para encontrar un plato, escribe en el buscador de **Recetas** su nombre o un ingrediente («pollo», «garbanzos»).
+
 En **Recetas › Crear receta** puedes añadir las tuyas: nombre, comida, ingredientes con los gramos de una ración como la harías y la preparación. Pulsa **Calcular para mi objetivo** y la app ajusta los gramos a tus macros; si no cuadra, te dice qué cambiar (aunque puedes guardarla igualmente). Si un alimento no está, añádelo con los valores de su etiqueta.
 
 En cualquier receta tienes **Hacer mi versión** para cambiarle lo que quieras: la original deja de salirte. Las que creas tú las puedes **Editar** o **Borrar**.

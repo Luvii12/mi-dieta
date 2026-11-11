@@ -49,6 +49,7 @@ function ingredientesDeComida_(gramos, receta, alimentos, fijados) {
     const a = alimentos[id] || { nombre: id, estado: '', grupo: '' };
     const ing = { alimento: id, nombre: a.nombre, estado: a.estado, grupo: a.grupo, gramos: gramos[id], escalable: Boolean(escalables[id]) };
     if (escalables[id] && escalables[id].unidad && a.gramos_unidad) ing.piezas = Math.round(gramos[id] / a.gramos_unidad);
+    if (a.gramos_unidad) ing.gramos_unidad = a.gramos_unidad; // para la lista de la compra (piezas)
     if (fijados && id in fijados) ing.fijado = true;
     return ing;
   }).sort((x, y) => posicion(x.alimento) - posicion(y.alimento));

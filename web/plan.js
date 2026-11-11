@@ -1,5 +1,5 @@
 // Pantalla «Plan»: los 14 días del plan activo o del siguiente, navegables por día
-// (design/mi_dieta_plan_14_d_as), y el borrador como «Nuevo plan» (nuevoplan.js). Desde aquí se genera
+// (design/mi_dieta_plan_14_d_as), y el borrador como «Nuevo plan» (nuevoplan.js). «Lista de la compra» abre #compra (compra.js). Desde aquí se genera
 // y se activa el plan.
 
 import { llamar, guardarLocal } from './api.js';
@@ -136,6 +136,7 @@ function pintar(contenedor, datos) {
           ? h('span', { class: 'insignia insignia-activo' }, h('span', { class: 'punto-activo' }), 'Activo')
           : h('span', { class: 'insignia insignia-borrador' }, 'Siguiente')),
       h('p', { class: 'subtitulo' }, `Semana ${indice < 7 ? 1 : 2} de 2 · ${plan.dias.length} días personalizados`)),
+    h('a', { class: 'boton boton-secundario', href: '#compra' }, icono('shopping_cart'), 'Lista de la compra'),
     tiraDias(plan, elegido),
     h('div', { class: 'dia-cabecera' },
       h('h2', null, fechaTitulo(dia.fecha)),

@@ -5,8 +5,8 @@ Generar cada 14 días un plan con 4 comidas diarias (desayuno, almuerzo, meriend
 
 ## Pantallas (móvil primero)
 1. **Hoy**: las comidas del día con nombre del plato, ingredientes en gramos, macros de cada comida y total del día frente al objetivo. Botones para marcar cada comida como hecha o como no hecha («No la hice», junto al anterior mientras está pendiente) y botón «cambiar plato» (otra receta de la misma comida con gramos recalculados o «Comida libre»). Desde la receta de cualquier comida del plan activo (de hoy en adelante), del siguiente o del borrador también se puede cambiar el plato o **cambiar las cantidades** (la persona pone los gramos de algún ingrediente, p. ej. lo que pesa su pan, y la app recalcula el resto; con «Siempre en esta receta», también en sus próximas comidas con ese plato y en los planes nuevos); en el activo, hasta hoy, marcarla como no hecha («No la hice»).
-2. **Plan**: los 14 días del bloque actual, navegables por día.
-3. **Recetas**: biblioteca de recetas activas por comida, con gramos ajustados al objetivo y su valoración; cada una abre su Receta. Arriba, «Crear receta» y «Pedir a la IA» (encargo para pegar en el chat de IA de cada uno y su respuesta pegada de vuelta, que queda en Propuestas); en cada receta de la biblioteca, «Hacer mi versión» y, en las propias, «Editar» y «Borrar» (ver `RECETAS.md` › Recetas propias).
+2. **Plan**: los 14 días del bloque actual, navegables por día. Botón «Lista de la compra» (#compra, 2026-11-12): suma los gramos de los platos de una semana del plan (Semana 1/2 del activo y del siguiente; la semana entera, con los platos cambiados y sin la comida libre), por tipo de alimento, con piezas si el alimento las tiene y los platos que lo llevan; tachar lo comprado (en el móvil, por semana) y compartir o copiar lo que falta.
+3. **Recetas**: biblioteca de recetas activas por comida, con gramos ajustados al objetivo y su valoración; cada una abre su Receta. Buscador por nombre o ingrediente (sin tildes ni mayúsculas, todas las palabras; 2026-11-12). Arriba, «Crear receta» y «Pedir a la IA» (encargo para pegar en el chat de IA de cada uno y su respuesta pegada de vuelta, que queda en Propuestas); en cada receta de la biblioteca, «Hacer mi versión» y, en las propias, «Editar» y «Borrar» (ver `RECETAS.md` › Recetas propias).
 3. **Receta**: ingredientes (escalables en negrita, fijos aparte; los elegidos por la persona, «elegido por ti»), preparación y valoración (Me encanta / Normal / No lo repetiría).
 4. **Progreso**: registro de peso (fecha, kg, opcional cintura), gráfica con la media móvil de 7 días y adherencia del bloque.
 5. **Ajustes**: objetivos por comida, tolerancias, alimentos excluidos, favoritos, días flexibles, número de repeticiones permitidas. Apariencia: Automático / Claro / Oscuro, por móvil (2026-11-11).
@@ -31,4 +31,4 @@ Generar cada 14 días un plan con 4 comidas diarias (desayuno, almuerzo, meriend
 ## Fases posteriores (no ahora)
 - IA (API de Claude) que propone recetas nuevas en JSON con ingredientes fijos/escalables; el código las valida y calcula.
 - Chat de dudas.
-- Fotos de platos, lista de la compra agregada de 14 días, recordatorios.
+- Fotos de platos, recordatorios.

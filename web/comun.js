@@ -143,3 +143,24 @@ export function avisar(texto) {
   clearTimeout(temporizador);
   temporizador = setTimeout(() => { aviso.hidden = true; }, 5000);
 }
+
+// ---------- Portapapeles ----------
+
+// Copia al portapapeles; si el navegador no deja, con un área de texto temporal.
+export async function copiar(texto) {
+  try {
+    await navigator.clipboard.writeText(texto);
+    return true;
+  } catch (err) {
+    const area = h('textarea', { class: 'copia-oculta', 'aria-hidden': 'true' });
+    area.value = texto;
+    document.body.append(area);
+    area.select();
+    const hecho = document.execCommand('copy');
+    area.remove();
+    return hecho;
+  }
+}
+
+// Texto para buscar sin tener en cuenta tildes ni mayúsculas («Plátano» → «platano»).
+export const normalizar = texto => String(texto || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();

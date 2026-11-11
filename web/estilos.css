@@ -1287,3 +1287,30 @@ a.objetivo-boton { color: inherit; text-decoration: none; }
 .resultado-receta:last-child { padding-bottom: 0; }
 .resultado-receta .insignia { flex-shrink: 0; }
 .copia-oculta { position: fixed; top: -1000px; left: 0; opacity: 0; }
+
+/* ---------- Lista de la compra (#compra) ---------- */
+
+.cabecera-con-volver { justify-content: flex-start; }
+.cabecera-con-volver .boton-icono { margin: 0 0 0 -10px; color: var(--texto); }
+.selector-semanas { grid-template-columns: 1fr 1fr; }
+.selector-semanas .selector-opcion { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 52px; padding: 6px 4px; }
+.selector-titulo { font-size: 12px; line-height: 16px; font-weight: 700; }
+.selector-fechas { font-size: 11px; line-height: 14px; font-weight: 500; color: var(--texto-suave); }
+.compra-resumen { margin-top: -4px; }
+.compra-item { width: 100%; min-height: 56px; font: inherit; color: var(--texto); text-align: left; cursor: pointer; transition: opacity 150ms, transform 150ms; }
+.compra-item:active { transform: scale(0.99); }
+.compra-item .pesado-texto { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+.compra-item .circulo { flex-shrink: 0; }
+.compra-platos { display: block; margin-top: 2px; font-size: 11px; line-height: 15px; color: var(--texto-suave); }
+.compra-item[aria-pressed="true"] { opacity: 0.55; }
+.compra-item[aria-pressed="true"] .pesado-texto, .compra-item[aria-pressed="true"] .pesado-cantidad { text-decoration: line-through; }
+.compra-item[aria-pressed="true"] .circulo { background: var(--secundario); border-color: var(--secundario); color: #ffffff; }
+
+/* ---------- Buscador de Recetas ---------- */
+
+.buscador-recetas input { padding-right: 16px; border-radius: 999px; background: var(--cristal); border-color: var(--cristal-borde); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); font-family: inherit; font-size: 16px; line-height: 20px; min-height: 48px; }
+.buscador-recetas .campo-icono { left: 16px; z-index: 1; font-size: 20px; }
+.buscador-recetas input { padding-left: 44px; }
+.buscador-estado:empty { display: none; }
+.resultados-recetas { display: flex; flex-direction: column; gap: 16px; }
+.resultados-recetas:empty { display: none; }

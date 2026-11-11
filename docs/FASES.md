@@ -36,4 +36,4 @@ Cada fase termina con algo usable en el móvil. Parar al final de cada una.
 - **Hecho cuando**: la biblioteca crece con recetas IA que pasan el optimizador.
 
 ## Fase 6 · Extras
-Fotos de platos, lista de la compra, recordatorios, exportar datos, chat.
+Fotos de platos, recordatorios, exportar datos, chat.

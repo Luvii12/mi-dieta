@@ -5,7 +5,7 @@ App instalada en el móvil Android como PWA. Su trabajo principal es **generar a
 
 ## Fuera de alcance por ahora
 - ~~Login y multiusuario~~: ahora sí, en migración (2026-10-18, ver `docs/PLAN_MULTIUSUARIO.md`).
-- Imágenes de platos, lista de la compra y recordatorios: fases finales.
+- Imágenes de platos y recordatorios: fases finales. La lista de la compra ya está hecha (2026-11-12, `web/compra.js`).
 
 ## Decisiones ya tomadas (no cambiar sin preguntar)
 | Tema | Decisión |
@@ -30,14 +30,14 @@ App instalada en el móvil Android como PWA. Su trabajo principal es **generar a
 - `docs/FASES.md` — orden de desarrollo y criterios de «terminado».
 - `data/alimentos.csv` — tabla de alimentos inicial (valores **aproximados**, `verificado = no`).
 - `data/recetas_semilla.json` — 22 recetas probadas con el optimizador y sus macros de prueba. `data/semilla.js` se genera de los dos con `npm run semilla` (lo usan los tests y los scripts).
-- `web/` — PWA sin build: `app.js` (navegación), `comun.js` (utilidades), `datos.js` (copia local + acciones), `api.js` (sesión y `llamar(accion)`), `supabase.js` (Auth y REST por `fetch`, guarda solo las filas cambiadas), `conexion.js` (URL y clave pública de Supabase), una pantalla por archivo (`entrar.js`, `perfil.js` (alta y Mi objetivo), `hoy.js`, `plan.js`, `recetas.js`, `receta.js`, `editor.js` (crear, mi versión y editar recetas), `pedir.js` (pedir recetas al chat de IA de cada uno), `cambiar.js`, `ajustes.js`). Al cambiar algo de `web/`, subir `VERSION` en `sw.js` y añadir archivos nuevos a su lista. `web/package.json` (`type: module`) y `web/motor/package.json` (`commonjs`) solo sirven para Node.
+- `web/` — PWA sin build: `app.js` (navegación), `comun.js` (utilidades), `datos.js` (copia local + acciones), `api.js` (sesión y `llamar(accion)`), `supabase.js` (Auth y REST por `fetch`, guarda solo las filas cambiadas), `conexion.js` (URL y clave pública de Supabase), una pantalla por archivo (`entrar.js`, `perfil.js` (alta y Mi objetivo), `hoy.js`, `plan.js`, `recetas.js`, `receta.js`, `editor.js` (crear, mi versión y editar recetas), `pedir.js` (pedir recetas al chat de IA de cada uno), `compra.js` (lista de la compra por semana, desde Plan), `cambiar.js`, `ajustes.js`). Al cambiar algo de `web/`, subir `VERSION` en `sw.js` y añadir archivos nuevos a su lista. `web/package.json` (`type: module`) y `web/motor/package.json` (`commonjs`) solo sirven para Node.
 - `web/motor/` — motor (desde M1): `Acciones.js` (lo que hace cada petición), `Nutricion` (incluye el escalado de raciones), `Perfil` (objetivos según el perfil), `Generador`, `Planes`, `Progreso`, `RecetasIA`, `MisRecetas` (recetas creadas en la app), `Util` y `Memoria.js` (el almacén: las tablas del usuario en memoria). Solo JavaScript estándar. La PWA lo carga con `<script>` y ejecuta las acciones en el navegador sobre Supabase; `tests/acciones.test.js` prueba las acciones, `tests/supabase.test.js` exige que con Supabase den lo mismo que el motor solo, y `tests/motor_navegador.js` lo carga en Node (también para los scripts y `npm run servidor`).
 - `prototipo/` — prototipo en Python que ya funciona: `semana.py` (optimizador de gramos con mínimos cuadrados acotados) y `dietas_entrenador.py` (cálculo de macros de las dietas originales). Úsalo como referencia y para tests de regresión: el port a JS debe dar resultados equivalentes.
 
 ## Diseño de la interfaz (desde la Fase 3)
 **Fuente de verdad:** `design/<pantalla>/screen.png` (cómo se ve) + `design/<pantalla>/code.html` (estructura y clases) + `design/mediterranean_culinary/DESIGN.md` (colores, tipografía, radios, espaciados). **Desde el lavado de cara (2026-11-11)** las capturas mandan en la estructura de cada pantalla, pero el acabado (cristal translúcido, barras flotantes, botones en píldora, radios grandes, selector de tema) es el de la sección «Lavado de cara» de `DESIGN.md`, que manda donde choque. El **estilo visual** se sigue fielmente (colores, tipografía, componentes, espaciado, estructura de cada pantalla): no rediseñar ni «mejorar». Pero los **botones y datos de las capturas son orientativos**: solo se implementa lo que tiene datos o función real y aporta; lo demás se omite (nada de botones decorativos ni de «Próximamente»). Prioridad: no sobrecargar la app. Ante la duda sobre un elemento, preguntar.
 
-Decidido (2026-10-16): sin fotos de platos hasta la Fase 6 (en su hueco, tesela de color con el icono de la comida); sin horas de comida; sin lista de la compra, «Reordenar», favorito/compartir, tiempo/dificultad, consejo de saciedad, avatar ni versión.
+Decidido (2026-10-16): sin fotos de platos hasta la Fase 6 (en su hueco, tesela de color con el icono de la comida); sin horas de comida; sin «Reordenar», favorito/compartir, tiempo/dificultad, consejo de saciedad, avatar ni versión.
 
 | Pantalla de la app | Carpeta de `design/` | Fase |
 | --- | --- | --- |
