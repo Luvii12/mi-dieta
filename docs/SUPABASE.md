@@ -84,3 +84,6 @@ npm run invitar -- email@de.la.persona                # cuenta nueva, ya confirm
 npm run invitar -- email@de.la.persona --nueva-clave  # otra temporal, si ha olvidado la suya
 ```
 Usa la clave secreta (§9). La contraseña temporal solo sale en tu terminal, dentro de un mensaje listo para mandar por un canal privado (con el enlace de la app y la guía `docs/INSTALAR.md`). Al entrar, la persona la cambia en **Ajustes › Cuenta › Cambiar contraseña** y se da de alta (perfil y objetivo). Si quieres que deje de entrar: *Authentication → Users →* su cuenta *→ Delete user* (se borran también sus datos personales).
+
+## 11. Copia de seguridad
+El plan gratis no hace copias y pausa el proyecto tras una semana sin uso (se reactiva desde el panel; los datos se conservan). `npm run copia` guarda todo en `~/Escritorio/claude/copias-mi-dieta/AAAA-MM-DD/` (o en la carpeta que se le pase): `cuentas.json`, `comunes/` (alimentos y recetas) y una carpeta por email con sus tablas, tal como están en la base. Entra como cada cuenta con la `clave_secreta` (como §9): la clave secreta no tiene permiso de lectura directo en las tablas y así no hace falta SQL. Lleva datos personales: nunca al repo. Hacerla antes de cambios grandes (altas, tandas de recetas).

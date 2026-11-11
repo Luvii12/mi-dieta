@@ -1,12 +1,9 @@
 # App de dieta personal — contexto para Claude Code
 
 ## Qué es
-App personal (un solo usuario, Fran) instalada en el móvil Android como PWA. Su trabajo principal es **generar automáticamente cada 2 semanas un plan de dieta de 14 días** con platos apetecibles que cumplan unos objetivos de calorías y macros, y registrar el progreso (peso y adherencia) para ajustar el siguiente plan.
-
-El usuario venía de un entrenador personal que le daba dietas en PDF. La app las sustituye: mantiene sus objetivos nutricionales pero cambia los platos por otros más ricos y variados.
+App instalada en el móvil Android como PWA. Su trabajo principal es **generar automáticamente cada 2 semanas un plan de dieta de 14 días** con platos apetecibles que cumplan unos objetivos de calorías y macros, y registrar el progreso (peso y adherencia) para ajustar el siguiente plan.
 
 ## Fuera de alcance por ahora
-- **Chat con IA**: se hará más adelante, cuando la app funcione. No implementarlo.
 - ~~Login y multiusuario~~: ahora sí, en migración (2026-10-18, ver `docs/PLAN_MULTIUSUARIO.md`).
 - Imágenes de platos, lista de la compra y recordatorios: fases finales.
 
