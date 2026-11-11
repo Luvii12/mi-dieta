@@ -226,10 +226,11 @@ export async function leerTablas(con, sesion) {
   return Object.fromEntries(nombres.map((n, i) => [n, filas[i].map(f => (ajena(n, f, sesion.usuario.id) ? Object.assign({}, f, { activa: 'descartada' }) : f))]));
 }
 
-// ¿Puede cambiar los nombres de los alimentos comunes? Solo quien añadió alimentos a la biblioteca (Fran):
-// la base no deja cambiar los de otra persona.
+// ¿Puede cambiar los nombres de los alimentos comunes? Solo quien creó la biblioteca (Fran): se mira quién
+// añadió el primer alimento de data/alimentos.csv. Quien añade un alimento suelto no ve «Nombres de alimentos».
+const ALIMENTO_ORIGINAL = 'pan_molde_integral';
 export async function editaAlimentos(con, sesion) {
-  const filas = await rest(con, sesion, 'GET', `alimentos?select=id&creado_por=eq.${sesion.usuario.id}&limit=1`);
+  const filas = await rest(con, sesion, 'GET', `alimentos?select=id&id=eq.${ALIMENTO_ORIGINAL}&creado_por=eq.${sesion.usuario.id}`);
   return filas.length > 0;
 }
 

@@ -1,12 +1,10 @@
-// Vista «Nuevo plan» del borrador, dentro de la pestaña Plan: balance del bloque que termina, propuesta
-// de ajuste (2 opciones) y los días del menú para revisar y activar (design/mi_dieta_nuevo_plan_fin_de_bloque).
+// Vista «Nuevo plan» del borrador, dentro de la pestaña Plan: cuántos días quedan para elegir, balance del
+// bloque que termina y propuesta de ajuste (2 opciones) para activar (design/mi_dieta_nuevo_plan_fin_de_bloque).
 
-import { h, icono, numero, fechaTitulo, fechaCorta, enlaceReceta } from './comun.js';
+import { h, icono, numero, fechaTitulo, fechaCorta, hoyIso, diasEntre } from './comun.js';
 
-const DIAS_VISIBLES = 3;
-// Opción elegida por plan (kcal de ajuste) y si se ven todos los días.
+// Opción elegida por plan (kcal de ajuste).
 const eleccion = {};
-const todos = {};
 
 const TITULOS = {
   en_ritmo: 'Mantener calorías: vas al ritmo objetivo',
@@ -32,13 +30,25 @@ function banner(balance) {
       h('p', { class: 'banner-texto' }, `Has seguido el ${a.pct} % de las comidas del plan.`)));
 }
 
+// Días que quedan para elegir el ajuste: el día que empieza, el borrador se activa solo con las mismas calorías.
+function contador(plan) {
+  const dias = Math.max(0, diasEntre(hoyIso(), plan.inicio));
+  const titulo = dias === 0 ? 'Empieza hoy' : dias === 1 ? 'Falta 1 día para elegir' : `Faltan ${dias} días para elegir`;
+  return h('section', { class: 'banner-contador' },
+    h('span', { class: 'contador-dias', 'aria-hidden': 'true' }, String(dias)),
+    h('div', null,
+      h('p', { class: 'banner-titulo' }, titulo),
+      h('p', { class: 'banner-texto' },
+        `El ${fechaTitulo(plan.inicio).toLowerCase()} empieza el nuevo plan. Si no lo activas antes, se activará solo sin cambiar las calorías.`)));
+}
+
 function tarjetaBalance(balance) {
   const a = balance.adherencia;
   const r = balance.ritmo;
   const tendencia = !r ? null : r.cambio_kg < -0.05 ? 'trending_down' : r.cambio_kg > 0.05 ? 'trending_up' : 'trending_flat';
   const nota = a.sin_marcar
     ? h('div', { class: 'nota-balance' }, icono('error', 'texto-terciario'),
-      h('p', null, `Quedan ${a.sin_marcar} comidas sin marcar. Si las hiciste, márcalas en el plan activo: cuentan para la adherencia.`))
+      h('p', null, `${a.sin_marcar === 1 ? 'Queda 1 comida' : `Quedan ${a.sin_marcar} comidas`} sin marcar. Si las hiciste, márcalas en el plan activo: cuentan para la adherencia.`))
     : h('div', { class: 'nota-balance' }, icono('check_circle', 'texto-secundario'),
       h('p', null, `Has marcado todas las comidas del bloque y te has pesado ${balance.pesajes} ${balance.pesajes === 1 ? 'vez' : 'veces'}.`));
   return h('section', { class: 'tarjeta tarjeta-bloque', 'aria-labelledby': 'balance-titulo' },
@@ -106,24 +116,10 @@ function tarjetaPropuesta(plan, repintar) {
     h('a', { class: 'enlace-suave', href: '#ajustes' }, icono('tune'), 'Personalizar macronutrientes manualmente'));
 }
 
-function tarjetaDia(plan, dia, n) {
-  return h('article', { class: 'tarjeta dia-menu' },
-    h('div', { class: 'dia-menu-cabecera' },
-      h('span', { class: 'dia-menu-titulo' }, h('span', { class: 'dia-menu-numero', 'aria-hidden': 'true' }, String(n)),
-        `Día ${n} · ${fechaTitulo(dia.fecha)}`),
-      h('span', { class: 'dia-menu-kcal' + (dia.revisar ? ' texto-error' : '') }, dia.revisar ? icono('error') : null, `${numero(dia.macros.kcal)} kcal`)),
-    h('ul', { class: 'dia-menu-lista' }, dia.comidas.map(c => h('li', null,
-      h('span', { class: 'dia-menu-comida' }, `${c.comida}:`),
-      h('a', { href: enlaceReceta(plan.plan_id, dia.fecha, c.comida) }, c.nombre)))));
-}
-
 // Partes de la vista. acciones: {activar(ajusteKcal), regenerar(), repintar()}.
 export function vistaNuevoPlan(plan, acciones) {
   const balance = plan.balance;
   if (balance && !(plan.plan_id in eleccion)) eleccion[plan.plan_id] = balance.propuesta.opciones[0].delta;
-  const verTodos = todos[plan.plan_id];
-  const dias = verTodos ? plan.dias : plan.dias.slice(0, DIAS_VISIBLES);
-  const restantes = plan.dias.length - DIAS_VISIBLES;
 
   return [
     h('div', { class: 'cabecera-vista' },
@@ -131,23 +127,14 @@ export function vistaNuevoPlan(plan, acciones) {
         h('h1', { class: 'titulo-pantalla' }, 'Nuevo plan'),
         h('p', { class: 'subtitulo' }, `${plan.bloque ? `Bloque ${plan.bloque} · ` : ''}Del ${fechaCorta(plan.inicio)} al ${fechaCorta(plan.fin)}`)),
       h('span', { class: 'insignia insignia-borrador' }, 'Borrador')),
+    contador(plan),
     balance ? banner(balance) : null,
     balance ? tarjetaBalance(balance) : null,
     balance ? tarjetaPropuesta(plan, acciones.repintar) : null,
-    h('section', { class: 'menu-dias', 'aria-labelledby': 'menu-titulo' },
-      h('div', { class: 'bloque-cabecera' },
-        h('div', null,
-          h('h2', { id: 'menu-titulo', class: 'propuesta-titulo' }, verTodos ? 'Días del menú' : 'Primeros días del menú'),
-          h('p', { class: 'texto-ayuda' }, 'Toca un plato para ver la receta.')),
-        h('span', { class: 'icono-redondo', 'aria-hidden': 'true' }, icono('restaurant_menu'))),
-      h('div', { class: 'lista-dias-menu' }, dias.map(d => tarjetaDia(plan, d, plan.dias.indexOf(d) + 1))),
-      restantes > 0 ? h('button', { type: 'button', class: 'boton-texto ver-mas', 'aria-expanded': verTodos ? 'true' : 'false', 'data-foco': 'ver-mas',
-        onclick: () => { todos[plan.plan_id] = !verTodos; acciones.repintar(); } },
-      verTodos ? 'Ver solo los primeros días' : `Ver los ${restantes} días restantes del plan`, icono('expand_more', verTodos ? 'girado' : '')) : null),
     h('div', { class: 'acciones-plan' },
       h('button', { type: 'button', class: 'boton boton-primario boton-grande', onclick: () => acciones.activar(balance ? eleccion[plan.plan_id] : 0) },
         icono('event_available'), 'Activar plan', icono('arrow_forward')),
-      h('p', { class: 'nota-activar' }, `Empieza el ${fechaTitulo(plan.inicio).toLowerCase()} · Si no lo activas antes, ese día se activará solo sin cambiar las calorías`),
+      h('p', { class: 'nota-activar' }, `Empieza el ${fechaTitulo(plan.inicio).toLowerCase()}`),
       h('button', { type: 'button', class: 'boton boton-secundario', onclick: acciones.regenerar }, 'Generar otro borrador')),
   ];
 }

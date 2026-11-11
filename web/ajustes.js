@@ -1,5 +1,5 @@
 // Pantalla «Ajustes»: mi objetivo (perfil.js), objetivos por comida, alimentos que no como, comida libre
-// semanal, peso objetivo, nombres de alimentos (solo quien creó la biblioteca) y cuenta (design/mi_dieta_ajustes).
+// semanal, peso objetivo, nombres de alimentos (solo Fran, que creó la biblioteca) y cuenta (design/mi_dieta_ajustes).
 
 import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion, cambiarContrasena, puedoEditarAlimentos } from './api.js';
 import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';

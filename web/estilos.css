@@ -1047,6 +1047,11 @@ button.fila-alimento:hover { background: var(--superficie-baja); }
 .banner-titulo { font-size: 14px; line-height: 18px; font-weight: 700; color: var(--secundario); }
 .banner-texto { font-size: 12px; line-height: 16px; color: var(--sobre-secundario-contenedor); }
 
+.banner-contador { display: flex; align-items: center; gap: 12px; padding: 14px; border-radius: var(--radio-lg); border: 1px solid var(--terciario-suave); background: var(--terciario-suave); }
+.banner-contador .banner-titulo { color: var(--terciario); }
+.banner-contador .banner-texto { color: var(--texto-suave); }
+.contador-dias { width: 40px; height: 40px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--terciario); color: var(--superficie); font-size: 20px; line-height: 24px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
 .tarjeta-bloque, .tarjeta-propuesta { display: flex; flex-direction: column; gap: 14px; padding: 16px; }
 .tarjeta-propuesta { border: 2px solid var(--primario-suave); }
 .bloque-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -1095,24 +1100,6 @@ button.fila-alimento:hover { background: var(--superficie-baja); }
 .enlace-suave:hover { color: var(--primario); }
 .enlace-suave .icono { font-size: 16px; }
 
-.menu-dias { display: flex; flex-direction: column; gap: 12px; padding-top: 4px; }
-.icono-redondo { width: 32px; height: 32px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--superficie-alta); color: var(--texto-suave); }
-.icono-redondo .icono { font-size: 18px; }
-.lista-dias-menu { display: flex; flex-direction: column; gap: 10px; }
-.dia-menu { padding: 14px; border-color: var(--borde-suave); }
-.dia-menu-cabecera { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-bottom: 8px; margin-bottom: 8px; border-bottom: 1px solid var(--superficie-alta); }
-.dia-menu-titulo { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 18px; font-weight: 700; letter-spacing: 0.01em; }
-.dia-menu-numero { width: 24px; height: 24px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: var(--primario-suave); color: var(--primario); font-size: 10px; font-weight: 700; }
-.dia-menu-kcal { display: inline-flex; align-items: center; gap: 2px; font-size: 12px; line-height: 16px; font-weight: 700; color: var(--texto-suave); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.dia-menu-kcal .icono { font-size: 14px; }
-.dia-menu-lista { display: flex; flex-direction: column; font-size: 12px; line-height: 16px; color: var(--texto-suave); }
-.dia-menu-lista li { display: flex; align-items: center; gap: 6px; min-width: 0; }
-.dia-menu-comida { flex-shrink: 0; font-weight: 600; color: var(--texto); }
-.dia-menu-lista a { flex: 1; min-width: 0; padding: 6px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; }
-.dia-menu-lista a:hover { color: var(--primario); }
-.ver-mas { align-self: center; display: inline-flex; align-items: center; gap: 4px; margin: 0; color: var(--primario); }
-.ver-mas .icono { font-size: 18px; transition: transform 150ms; }
-.ver-mas .icono.girado { transform: rotate(180deg); }
 .nota-activar { text-align: center; font-size: 10px; line-height: 14px; font-weight: 600; letter-spacing: 0.04em; color: var(--texto-suave); }
 
 /* ---------- Hoy: aviso de nuevo plan ---------- */
