@@ -1,5 +1,5 @@
 // Pantalla «Ajustes»: mi objetivo (perfil.js), objetivos por comida, alimentos que no como, comida libre
-// semanal, peso objetivo, nombres de alimentos (solo Fran, que creó la biblioteca) y cuenta (design/mi_dieta_ajustes).
+// semanal, peso objetivo, nombres de alimentos (solo Fran, que creó la biblioteca), apariencia (tema) y cuenta (design/mi_dieta_ajustes).
 
 import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion, cambiarContrasena, puedoEditarAlimentos } from './api.js';
 import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';
@@ -327,6 +327,43 @@ async function salirDeLaCuenta() {
 }
 
 // Estos botones necesitan la configuración, que se baja al abrir Ajustes.
+// ---------- Apariencia: Automático (el modo del móvil), Claro u Oscuro ----------
+// Se guarda fuera de las claves `dieta.` para que «Cerrar sesión» no lo borre (es del móvil, no de la cuenta).
+// index.html lo aplica al arrancar, antes de pintar.
+const CLAVE_TEMA = 'mi-dieta.tema';
+const COLOR_BARRA = { claro: '#fdf8f6', oscuro: '#181716' };
+
+function leerTema() {
+  try {
+    const t = localStorage.getItem(CLAVE_TEMA);
+    return t === 'claro' || t === 'oscuro' ? t : 'auto';
+  } catch (err) {
+    return 'auto';
+  }
+}
+
+function aplicarTema(tema) {
+  const raiz = document.documentElement;
+  if (tema === 'auto') delete raiz.dataset.tema;
+  else raiz.dataset.tema = tema;
+  // Color de la barra del sistema: con un tema elegido, el mismo en los dos <meta theme-color>.
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => {
+    const propio = m.media.includes('dark') ? COLOR_BARRA.oscuro : COLOR_BARRA.claro;
+    m.content = tema === 'auto' ? propio : COLOR_BARRA[tema];
+  });
+  document.querySelectorAll('#selector-tema button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tema === tema)));
+}
+
+function elegirTema(tema) {
+  try {
+    if (tema === 'auto') localStorage.removeItem(CLAVE_TEMA);
+    else localStorage.setItem(CLAVE_TEMA, tema);
+  } catch (err) {
+    // Sin almacenamiento: se aplica solo mientras la app esté abierta.
+  }
+  aplicarTema(tema);
+}
+
 const conConfig = accion => () => {
   if (!config) {
     avisar('Aún no se han cargado tus datos. Comprueba la conexión a internet.');
@@ -336,6 +373,8 @@ const conConfig = accion => () => {
 };
 
 export function prepararAjustes() {
+  aplicarTema(leerTema());
+  document.querySelectorAll('#selector-tema button').forEach(b => b.addEventListener('click', () => elegirTema(b.dataset.tema)));
   $('boton-contrasena').addEventListener('click', editarContrasena);
   $('boton-salir').addEventListener('click', salirDeLaCuenta);
   $('interruptor-libre').addEventListener('click', conConfig(alternarLibre));

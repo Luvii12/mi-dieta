@@ -1,0 +1,27 @@
+/* Forma común del lavado de cara: cristal, píldoras, radios grandes, barra flotante. */
+:root { --radio-md: 1rem; --radio-lg: 1.5rem; --cristal: color-mix(in srgb, var(--superficie) 72%, transparent); --cristal-borde: rgba(255,255,255,0.7); }
+@media (prefers-color-scheme: dark) { :root { --cristal: color-mix(in srgb, var(--superficie) 62%, transparent); --cristal-borde: rgba(255,255,255,0.08); } }
+body {
+  background:
+    radial-gradient(60% 40% at 100% 0%, color-mix(in srgb, var(--primario) 16%, transparent), transparent 70%),
+    radial-gradient(55% 35% at 0% 45%, color-mix(in srgb, var(--secundario) 14%, transparent), transparent 70%),
+    radial-gradient(60% 40% at 100% 100%, color-mix(in srgb, var(--terciario) 12%, transparent), transparent 70%),
+    var(--fondo);
+  background-attachment: fixed;
+}
+.tarjeta { background: var(--cristal); -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4); border: 1px solid var(--cristal-borde); box-shadow: 0 8px 32px -8px rgba(40, 30, 20, 0.12); }
+@media (prefers-color-scheme: dark) { .tarjeta { box-shadow: 0 8px 32px -8px rgba(0,0,0,0.5); } }
+.barra-superior { background: color-mix(in srgb, var(--fondo) 60%, transparent); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); }
+.navegacion { left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 6px; border-radius: 999px; background: var(--cristal); -webkit-backdrop-filter: blur(24px) saturate(1.6); backdrop-filter: blur(24px) saturate(1.6); border: 1px solid var(--cristal-borde); box-shadow: 0 10px 30px -6px rgba(40, 30, 20, 0.22); }
+.navegacion a { border-radius: 999px; min-height: 52px; }
+.navegacion a[aria-current] { background: var(--primario-suave); }
+body { padding-bottom: calc(var(--alto-nav) + 40px + env(safe-area-inset-bottom)); }
+.boton, .boton-grande { border-radius: 999px; }
+.boton-primario { background: linear-gradient(135deg, var(--primario-contenedor), var(--primario)); box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primario) 60%, transparent); }
+.boton-secundario, .boton-contorno { background: var(--cristal); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border: 1px solid var(--cristal-borde); }
+.barra-accion { left: 12px; right: 12px; bottom: calc(10px + env(safe-area-inset-bottom)); padding: 8px; border-radius: 999px; background: var(--cristal); border: 1px solid var(--cristal-borde); }
+.barra-accion > * { gap: 8px; }
+.tesela, [class*="tesela-"] { border-radius: 20px; }
+.receta-portada { border-radius: 0 0 32px 32px; }
+.valoracion-opcion, .caja-balance { border-radius: 18px; }
+.insignia { backdrop-filter: blur(8px); }

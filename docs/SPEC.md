@@ -9,7 +9,7 @@ Generar cada 14 días un plan con 4 comidas diarias (desayuno, almuerzo, meriend
 3. **Recetas**: biblioteca de recetas activas por comida, con gramos ajustados al objetivo y su valoración; cada una abre su Receta. Arriba, «Crear receta» y «Pedir a la IA» (encargo para pegar en el chat de IA de cada uno y su respuesta pegada de vuelta, que queda en Propuestas); en cada receta de la biblioteca, «Hacer mi versión» y, en las propias, «Editar» y «Borrar» (ver `RECETAS.md` › Recetas propias).
 3. **Receta**: ingredientes (escalables en negrita, fijos aparte; los elegidos por la persona, «elegido por ti»), preparación y valoración (Me encanta / Normal / No lo repetiría).
 4. **Progreso**: registro de peso (fecha, kg, opcional cintura), gráfica con la media móvil de 7 días y adherencia del bloque.
-5. **Ajustes**: objetivos por comida, tolerancias, alimentos excluidos, favoritos, días flexibles, número de repeticiones permitidas.
+5. **Ajustes**: objetivos por comida, tolerancias, alimentos excluidos, favoritos, días flexibles, número de repeticiones permitidas. Apariencia: Automático / Claro / Oscuro, por móvil (2026-11-11).
 6. **Nuevo plan**: cuenta atrás de los días que quedan para elegir (el día que empieza se activa solo con las mismas calorías), resumen del bloque que termina (peso, adherencia) y propuesta de ajuste de calorías (2 opciones) para activar. Sin la lista de días del menú (quitada el 2026-11-11).
 
 ## Flujo de generación de un plan de 14 días

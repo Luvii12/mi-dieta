@@ -201,6 +201,17 @@ The layout is built for fluid touch interaction on mobile devices with an 8pt-de
 - **Touch Targets**: Minimum interactive tap footprint is strictly 44x44px, despite compact visual label styling.
 - **Vertical Rhythm**: Related elements (e.g., ingredient + calorie chip) use `space-xs` (4px) to `space-sm` (8px). Distinct meal items within a card use `space-md` (16px). Major day sections use `space-xl` (32px).
 
+## Lavado de cara (2026-11-11) — manda sobre lo de abajo donde choque
+
+Decidido por Fran: misma paleta terracota/oliva y tipografía, con un aspecto más moderno. Muestras y capturas en `design/lavado/`.
+
+- **Fondo**: `--fondo` con tres manchas radiales suaves (primario 16 %, secundario 14 %, terciario 12 %), fijas al hacer scroll.
+- **Cristal**: tarjetas, cabecera y barras translúcidas (`--cristal` = superficie al 72 % en claro, 62 % en oscuro) con `backdrop-filter: blur(18–24px) saturate(1.4–1.6)`, borde `--cristal-borde` (blanco 70 % / 8 %) y sombra `--sombra-cristal`.
+- **Barras flotantes**: la navegación inferior y la barra de acción de Receta son píldoras separadas 12 px de los lados y 10 px del borde inferior, con `--sombra-flotante`; la pestaña activa lleva fondo `--primario-suave`.
+- **Botones**: siempre píldora (`999px`). Primario con degradado de `--primario-contenedor` a `--primario` y sombra de su color; secundarios translúcidos (cristal).
+- **Radios**: `--radio-md` 16 px (teselas, cajas, valoraciones) y `--radio-lg` 24 px (tarjetas). Portada de Receta con las esquinas inferiores a 32 px.
+- **Tema**: Ajustes › Apariencia (Automático / Claro / Oscuro), guardado en el móvil (`mi-dieta.tema`) y aplicado con `data-tema` en `<html>`.
+
 ## Elevation & Depth
 
 Visual hierarchy uses **warm ambient shadows** and **tonal contrast** instead of cold, sharp drop shadows.

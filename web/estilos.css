@@ -51,19 +51,25 @@
   --sombra-1: 0 4px 16px -2px rgba(66, 48, 32, 0.05), 0 1px 3px 0 rgba(66, 48, 32, 0.03);
   --sombra-2: 0 12px 28px -4px rgba(66, 48, 32, 0.12), 0 4px 8px -2px rgba(66, 48, 32, 0.04);
   --superficie-modal: #ffffff;
+  /* Cristal (lavado de cara, 2026-11-11): superficies translúcidas sobre el fondo con manchas de color */
+  --cristal: color-mix(in srgb, var(--superficie) 72%, transparent);
+  --cristal-borde: rgba(255, 255, 255, 0.7);
+  --sombra-cristal: 0 8px 32px -8px rgba(40, 30, 20, 0.12);
+  --sombra-flotante: 0 10px 30px -6px rgba(40, 30, 20, 0.22);
   /* Forma y espacio */
   --radio-sm: 0.25rem;
   --radio: 0.5rem;
-  --radio-md: 0.75rem;
-  --radio-lg: 1rem;
+  --radio-md: 1rem;
+  --radio-lg: 1.5rem;
   --margen: 1rem;
   --alto-nav: 64px;
   color-scheme: light;
 }
 
-/* Modo oscuro: colores de design/mi_dieta_hoy_modo_oscuro. */
+/* Modo oscuro: colores de design/mi_dieta_hoy_modo_oscuro. Sigue al móvil salvo que en Ajustes › Apariencia
+   se elija Claro u Oscuro (atributo data-tema de <html>, lo pone index.html antes de pintar). */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="claro"]) {
     --fondo: #181716;
     --superficie: #201f1e;
     --superficie-baja: #232120;
@@ -107,8 +113,62 @@
     --sombra-1: none;
     --sombra-2: none;
     --superficie-modal: #2c2928;
+    --cristal: color-mix(in srgb, var(--superficie) 62%, transparent);
+    --cristal-borde: rgba(255, 255, 255, 0.08);
+    --sombra-cristal: 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+    --sombra-flotante: 0 10px 30px -6px rgba(0, 0, 0, 0.6);
     color-scheme: dark;
   }
+}
+:root[data-tema="oscuro"] {
+  --fondo: #181716;
+  --superficie: #201f1e;
+  --superficie-baja: #232120;
+  --superficie-media: #2c2928;
+  --superficie-alta: #33302e;
+  --superficie-maxima: #3a3735;
+  --barra: #181716;
+  --borde: rgba(255, 255, 255, 0.06);
+  --borde-suave: rgba(255, 255, 255, 0.06);
+  --borde-variante: rgba(255, 255, 255, 0.16);
+  --contorno: #a39e96;
+  --texto: #f7f4f0;
+  --texto-suave: #a39e96;
+  --primario: #e05a40;
+  --primario-contenedor: #e05a40;
+  --sobre-primario: #ffffff;
+  --primario-fijo: rgba(224, 90, 64, 0.15);
+  --primario-suave: rgba(224, 90, 64, 0.12);
+  --secundario: #6b9b52;
+  --secundario-contenedor: rgba(107, 155, 82, 0.2);
+  --sobre-secundario-contenedor: #8cc070;
+  --secundario-suave: rgba(107, 155, 82, 0.15);
+  --secundario-borde: rgba(107, 155, 82, 0.3);
+  --terciario: #fbbf24;
+  --terciario-suave: rgba(251, 191, 36, 0.12);
+  --error: #ff8a7a;
+  --error-suave: rgba(224, 90, 64, 0.15);
+  --proteina: #60a5fa;
+  --proteina-barra: #60a5fa;
+  --proteina-suave: rgba(96, 165, 250, 0.1);
+  --carbo: #fbbf24;
+  --carbo-barra: #fbbf24;
+  --carbo-suave: rgba(251, 191, 36, 0.1);
+  --grasa: #f472b6;
+  --grasa-barra: #f472b6;
+  --grasa-suave: rgba(244, 114, 182, 0.1);
+  --tesela-desayuno: #3a2620;
+  --tesela-almuerzo: #26301f;
+  --tesela-merienda: #382a17;
+  --tesela-cena: #302826;
+  --sombra-1: none;
+  --sombra-2: none;
+  --superficie-modal: #2c2928;
+  --cristal: color-mix(in srgb, var(--superficie) 62%, transparent);
+  --cristal-borde: rgba(255, 255, 255, 0.08);
+  --sombra-cristal: 0 8px 32px -8px rgba(0, 0, 0, 0.5);
+  --sombra-flotante: 0 10px 30px -6px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -118,12 +178,17 @@ html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0;
   min-height: 100vh;
-  background: var(--fondo);
+  background:
+    radial-gradient(60% 40% at 100% 0%, color-mix(in srgb, var(--primario) 16%, transparent), transparent 70%),
+    radial-gradient(55% 35% at 0% 45%, color-mix(in srgb, var(--secundario) 14%, transparent), transparent 70%),
+    radial-gradient(60% 40% at 100% 100%, color-mix(in srgb, var(--terciario) 12%, transparent), transparent 70%),
+    var(--fondo);
+  background-attachment: fixed;
   color: var(--texto);
   font: 400 14px/20px 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
-  padding-bottom: calc(var(--alto-nav) + 16px + env(safe-area-inset-bottom));
+  padding-bottom: calc(var(--alto-nav) + 40px + env(safe-area-inset-bottom));
 }
 
 h1, h2, h3, p { margin: 0; }
@@ -179,7 +244,9 @@ button:disabled { opacity: 0.55; cursor: progress; }
   margin: 0 auto;
   min-height: 56px;
   padding: env(safe-area-inset-top) var(--margen) 0;
-  background: var(--barra);
+  background: color-mix(in srgb, var(--fondo) 60%, transparent);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 }
 
 .marca { display: flex; flex-direction: column; margin-right: auto; }
@@ -218,24 +285,28 @@ body[data-vista="receta"] .barra-superior { display: none; }
 
 .navegacion {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 12px;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 50;
-  max-width: 28rem;
+  max-width: 27rem;
   margin: 0 auto;
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 8px var(--margen) calc(8px + env(safe-area-inset-bottom));
-  background: var(--barra);
-  border-top: 1px solid var(--borde-suave);
-  box-shadow: 0 -4px 6px -1px rgba(66, 48, 32, 0.04);
+  padding: 6px;
+  border-radius: 999px;
+  background: var(--cristal);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--cristal-borde);
+  box-shadow: var(--sombra-flotante);
 }
 .navegacion a {
   flex: 1;
   min-width: 0;
-  min-height: 48px;
+  min-height: 52px;
+  border-radius: 999px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -252,6 +323,7 @@ body[data-vista="receta"] .barra-superior { display: none; }
 }
 .navegacion a .icono { font-size: 24px; }
 .navegacion a:hover, .navegacion a[aria-current] { color: var(--primario); }
+.navegacion a[aria-current] { background: var(--primario-suave); }
 .navegacion a[aria-current] .icono { font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
 .navegacion a:active { transform: scale(0.95); }
 body[data-vista="receta"] .navegacion { display: none; }
@@ -268,10 +340,12 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 .subtitulo { font-size: 12px; line-height: 16px; color: var(--texto-suave); margin-top: 2px; }
 
 .tarjeta {
-  background: var(--superficie);
-  border: 1px solid var(--borde);
+  background: var(--cristal);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid var(--cristal-borde);
   border-radius: var(--radio-lg);
-  box-shadow: var(--sombra-1);
+  box-shadow: var(--sombra-cristal);
 }
 
 .titulo-seccion { display: flex; align-items: center; justify-content: space-between; padding-top: 4px; }
@@ -357,7 +431,7 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
   min-height: 44px;
   padding: 10px 16px;
   border: 0;
-  border-radius: var(--radio-md);
+  border-radius: 999px;
   font-size: 14px;
   line-height: 18px;
   font-weight: 600;
@@ -368,11 +442,11 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 }
 .boton:active { transform: scale(0.98); }
 .boton .icono { font-size: 18px; }
-.boton-primario { background: var(--primario-contenedor); color: var(--sobre-primario); }
+.boton-primario { background: linear-gradient(135deg, var(--primario-contenedor), var(--primario)); color: var(--sobre-primario); box-shadow: 0 6px 18px -6px color-mix(in srgb, var(--primario) 60%, transparent); }
 .boton-primario:hover { background: var(--primario); }
-.boton-secundario { background: var(--superficie-media); color: var(--texto); }
+.boton-secundario { background: var(--cristal); color: var(--texto); border: 1px solid var(--cristal-borde); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
 .boton-secundario:hover { background: var(--superficie-alta); }
-.boton-contorno { background: var(--superficie-baja); color: var(--texto); border: 1px solid var(--borde-variante); }
+.boton-contorno { background: var(--cristal); color: var(--texto); border: 1px solid var(--borde-variante); }
 .boton-contorno:hover { background: var(--superficie-media); }
 .boton-hecho { background: var(--secundario); color: #ffffff; }
 
@@ -390,7 +464,7 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
   position: fixed;
   left: var(--margen);
   right: var(--margen);
-  bottom: calc(var(--alto-nav) + 12px + env(safe-area-inset-bottom));
+  bottom: calc(var(--alto-nav) + 24px + env(safe-area-inset-bottom));
   z-index: 60;
   max-width: 26rem;
   margin: 0 auto;
@@ -550,6 +624,7 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 /* ---------- Plan ---------- */
 
 .selector { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: var(--radio-md); background: var(--superficie-media); }
+.selector-tres { grid-template-columns: repeat(3, 1fr); }
 .selector-opcion {
   min-height: 40px;
   border: 0;
@@ -667,10 +742,11 @@ main { max-width: 28rem; margin: 0 auto; padding: 0 var(--margen); }
 body[data-vista="receta"] main { padding: 0; }
 body[data-vista="receta"] .vista { padding-top: 0; }
 #vista-receta { gap: 0; }
-#vista-receta.con-barra { padding-bottom: 72px; }
+#vista-receta.con-barra { padding-bottom: 96px; }
 
 .receta-portada {
   height: 180px;
+  border-radius: 0 0 32px 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -775,18 +851,19 @@ body[data-vista="receta"] .vista { padding-top: 0; }
 
 .barra-accion {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 12px;
+  right: 12px;
+  bottom: calc(10px + env(safe-area-inset-bottom));
   z-index: 40;
-  max-width: 28rem;
+  max-width: 27rem;
   margin: 0 auto;
-  padding: var(--margen) var(--margen) calc(var(--margen) + env(safe-area-inset-bottom));
-  background: color-mix(in srgb, var(--superficie) 95%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid var(--borde-suave);
-  box-shadow: var(--sombra-2);
+  padding: 8px;
+  border-radius: 999px;
+  background: var(--cristal);
+  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  backdrop-filter: blur(24px) saturate(1.6);
+  border: 1px solid var(--cristal-borde);
+  box-shadow: var(--sombra-flotante);
 }
 .boton-grande { min-height: 52px; font-weight: 700; }
 .boton-grande .icono { font-size: 22px; }
