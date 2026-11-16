@@ -39,16 +39,21 @@ function textoFijados_(fijados) {
 
 // Ingredientes de una comida guardada, con nombre, crudo/cocinado, grupo, si es escalable, piezas y si sus
 // gramos los ha elegido la persona (`fijado`). Orden: el de la receta, primero los escalables (no el de las
-// claves de `gramos`, que Postgres reordena).
+// claves de `gramos`, que Postgres reordena). Lo que no lleva la receta es pan o fruta de postre (`acompanamiento`).
 function ingredientesDeComida_(gramos, receta, alimentos, fijados) {
   const escalables = {};
   ((receta && receta.ingredientes_escalables) || []).forEach(e => { escalables[e.alimento] = e; });
   const orden = Object.keys(escalables).concat(((receta && receta.ingredientes_fijos) || []).map(f => f.alimento));
-  const posicion = id => (orden.indexOf(id) < 0 ? orden.length : orden.indexOf(id));
+  // El pan y la fruta de postre, después de los escalables y antes de los fijos.
+  const posicion = id => (orden.indexOf(id) < 0 ? Object.keys(escalables).length - 0.5 : orden.indexOf(id));
   return Object.keys(gramos).map(id => {
     const a = alimentos[id] || { nombre: id, estado: '', grupo: '' };
-    const ing = { alimento: id, nombre: a.nombre, estado: a.estado, grupo: a.grupo, gramos: gramos[id], escalable: Boolean(escalables[id]) };
-    if (escalables[id] && escalables[id].unidad && a.gramos_unidad) ing.piezas = Math.round(gramos[id] / a.gramos_unidad);
+    // Lo que no está en la receta es pan o fruta de postre que ha añadido la app (ver ajustarReceta_).
+    const acompanamiento = Boolean(receta) && orden.indexOf(id) < 0;
+    const ing = { alimento: id, nombre: a.nombre, estado: a.estado, grupo: a.grupo, gramos: gramos[id],
+      escalable: Boolean(escalables[id]) || acompanamiento };
+    if (acompanamiento) ing.acompanamiento = true;
+    if ((acompanamiento || (escalables[id] && escalables[id].unidad)) && a.gramos_unidad) ing.piezas = Math.round(gramos[id] / a.gramos_unidad);
     if (a.gramos_unidad) ing.gramos_unidad = a.gramos_unidad; // para la lista de la compra (piezas)
     if (fijados && id in fijados) ing.fijado = true;
     return ing;
@@ -133,12 +138,13 @@ function numeroBloque_(planes, plan) {
 }
 
 // Recalcula gramos y macros de unas filas de `plan_comidas` para otros objetivos, con los mismos platos y los
-// gramos que haya elegido la persona (`fijados`). Cambia las filas.
-function reoptimizarComidas_(filas, objetivos, recetasPorId, alimentos) {
+// gramos que haya elegido la persona (`fijados`). prohibidos: sus alimentos excluidos (para el pan y la fruta de
+// postre, ver ajustarReceta_). Cambia las filas.
+function reoptimizarComidas_(filas, objetivos, recetasPorId, alimentos, prohibidos) {
   filas.forEach(f => {
     const receta = recetasPorId[recetaDeComida_(f)];
     if (!receta || receta.error) throw new Error('No se puede recalcular la receta ' + recetaDeComida_(f) + '.');
-    const ajuste = ajustarReceta_(receta, objetivos[f.comida], alimentos, null, parsearValor_(f.fijados));
+    const ajuste = ajustarReceta_(receta, objetivos[f.comida], alimentos, null, parsearValor_(f.fijados), { prohibidos: prohibidos });
     const m = redondearMacros_(ajuste.macros);
     Object.assign(f, { gramos: ajuste.gramos, kcal: m.kcal, P: m.P, C: m.C, G: m.G, fijados: textoFijados_(ajuste.fijados) });
   });

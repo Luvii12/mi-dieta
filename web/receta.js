@@ -40,7 +40,7 @@ export function cajaMacro(clase, titulo, valor, unidad) {
 export function ingredientePesado(ing) {
   if (ing.gramos == null) return ingredienteConLimites(ing);
   const detalle = [ing.estado === 'crudo' ? 'en crudo' : ing.estado === 'cocinado' ? 'cocinado' : '', ing.piezas ? `${numero(ing.gramos)} g` : '',
-    ing.fijado ? 'elegido por ti' : ''].filter(Boolean).join(' · ');
+    ing.fijado ? 'elegido por ti' : '', ing.acompanamiento ? 'acompañamiento' : ''].filter(Boolean).join(' · ');
   return h('li', { class: 'pesado' },
     h('span', { class: 'pesado-nombre' },
       h('span', { class: 'punto punto-' + (COLOR_GRUPO[ing.grupo] || 'contorno') }),

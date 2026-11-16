@@ -60,6 +60,9 @@ const SISTEMA_RECETAS_IA = [
   '- `ingredientes_escalables`: los 2 a 4 ingredientes que ponen los macros (proteína, hidrato, grasa). El optimizador',
   '  elige sus gramos entre `min_g` y `max_g`, así que pon límites realistas para la ración de referencia del mensaje y',
   '  lo bastante amplios para llegar a ella. El aceite siempre va aquí, medido (por ejemplo 3–15 ml).',
+  '- Raciones normales: la app nunca pone más de 100 g de arroz o pasta en seco, 350 g de patata, 250 g de legumbre',
+  '  cocida, 120 g de pan ni 20 ml de aceite por comida, y en el almuerzo pone al menos 60 g de pasta o arroz. Si a',
+  '  alguien le faltan hidratos, añade sola pan o fruta de postre: no hace falta inflar el plato.',
   '- Todas las cantidades son para la ración de referencia, aunque la receta sea para otra persona: la app escala',
   '  después cada ingrediente a la ración de cada uno.',
   '- `unidad: true` solo para alimentos que se cuentan por piezas y tienen gramos por unidad en la tabla (huevos,',
@@ -164,7 +167,7 @@ function evaluarRecetaIA_(receta, ctx) {
 
   let ajuste;
   try {
-    ajuste = ajustarReceta_(receta, ctx.objetivo, ctx.alimentos, ctx.tolComida);
+    ajuste = ajustarReceta_(receta, ctx.objetivo, ctx.alimentos, ctx.tolComida, null, { acompanamientos: false });
   } catch (err) {
     return descartar(err.message);
   }

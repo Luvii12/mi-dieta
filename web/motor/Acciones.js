@@ -18,6 +18,7 @@ const ACCIONES = {
     const config = leerConfig_();
     const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
     const tolComida = (config.tolerancias || {}).comida;
+    const prohibidos = alimentosProhibidos_(leerTabla_('preferencias'));
     const valoraciones = valoracionesActuales_();
     const suyas = comidasDe_(config);
     return leerTabla_('recetas')
@@ -28,7 +29,8 @@ const ACCIONES = {
         try {
           const objetivo = config['objetivo_' + String(fila.comida).toLowerCase()];
           if (!objetivo) throw new Error('No hay objetivo para «' + fila.comida + '» en config.');
-          resultado.ajuste = ajustarReceta_(filaAReceta_(fila), objetivo, alimentos, tolComida, (config.gramos_receta || {})[fila.id]);
+          resultado.ajuste = ajustarReceta_(filaAReceta_(fila), objetivo, alimentos, tolComida, (config.gramos_receta || {})[fila.id],
+            { prohibidos: prohibidos });
         } catch (err) {
           resultado.error = err.message;
         }
@@ -225,7 +227,8 @@ const ACCIONES = {
       const objetivos = parsearValor_(plan.objetivos) || {};
       if (!objetivos.comidas[peticion.comida]) throw new Error(sinComida_(peticion.comida));
       const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
-      const ajuste = ajustarReceta_(receta, objetivos.comidas[peticion.comida], alimentos, null, (leerConfig_().gramos_receta || {})[receta.id]);
+      const ajuste = ajustarReceta_(receta, objetivos.comidas[peticion.comida], alimentos, null, (leerConfig_().gramos_receta || {})[receta.id],
+        { prohibidos: prohibidos });
       const m = redondearMacros_(ajuste.macros);
       const fila = filas.find(f => f.comida === peticion.comida);
       const cambios = { cambiada_por: receta.id === fila.receta_id ? '' : receta.id, gramos: ajuste.gramos,
@@ -252,7 +255,8 @@ const ACCIONES = {
       const objetivos = parsearValor_(plan.objetivos) || {};
       if (!objetivos.comidas[peticion.comida]) throw new Error(sinComida_(peticion.comida));
       const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
-      const ajuste = ajustarReceta_(receta, objetivos.comidas[peticion.comida], alimentos, null, gramos);
+      const ajuste = ajustarReceta_(receta, objetivos.comidas[peticion.comida], alimentos, null, gramos,
+        { prohibidos: alimentosProhibidos_(leerTabla_('preferencias')) });
       const m = redondearMacros_(ajuste.macros);
       const cambios = { gramos: ajuste.gramos, kcal: m.kcal, P: m.P, C: m.C, G: m.G, fijados: textoFijados_(ajuste.fijados) };
       if (peticion.probar) {
@@ -530,7 +534,7 @@ function adaptarPlan_(plan, comidas, objetivos, desde, datos) {
       }
     });
   }
-  reoptimizarComidas_(delPlan, objetivos, datos.recetasPorId, datos.alimentos);
+  reoptimizarComidas_(delPlan, objetivos, datos.recetasPorId, datos.alimentos, alimentosProhibidos_(datos.preferencias));
   const guardados = parsearValor_(plan.objetivos) || {};
   plan.objetivos = { comidas: objetivos, tolerancias: guardados.tolerancias || datos.config.tolerancias };
   return quedan;
@@ -580,13 +584,14 @@ function guardarGramosReceta_(recetaId, gramos, siempre, peticion) {
   const comidas = leerTabla_('plan_comidas');
   const recetasPorId = leerRecetasPorId_();
   const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
+  const prohibidos = alimentosProhibidos_(leerTabla_('preferencias'));
   leerTabla_('planes').filter(p => ['activo', 'siguiente', 'borrador'].indexOf(p.estado) >= 0).forEach(p => {
     const objetivos = (parsearValor_(p.objetivos) || {}).comidas || {};
     const filas = comidas.filter(f => f.plan_id === p.plan_id && (p.estado !== 'activo' || f.fecha >= hoy) && f.hecha === 'no' &&
       recetaDeComida_(f) === recetaId && objetivos[f.comida] && !esLaComida_(peticion)(f) &&
       (nuevos || mismosFijados_(parsearValor_(f.fijados), antes)));
     filas.forEach(f => { f.fijados = textoFijados_(nuevos); });
-    reoptimizarComidas_(filas, objetivos, recetasPorId, alimentos);
+    reoptimizarComidas_(filas, objetivos, recetasPorId, alimentos, prohibidos);
   });
   reescribirTabla_('plan_comidas', comidas);
   return todos;

@@ -35,6 +35,24 @@ Al darse de alta, y cada vez que alguien cambia de objetivo en Ajustes › Mi ob
 
 **Gramos elegidos por la persona** (`ajustarReceta_` con `fijados`): en una comida del plan cualquiera puede poner los gramos de algún ingrediente (su bollo de pan pesa 50 g) y el optimizador cuadra el resto de escalables dentro de sus límites. Esos gramos se usan tal cual (0 = sin ese ingrediente), se guardan en la comida y se respetan al recalcularla; con «Siempre en esta receta» también en sus demás comidas con ese plato y en los planes nuevos. Si el resto no llega a compensar, la comida queda fuera de margen y la app lo avisa antes de guardar.
 
+**Raciones normales** (`topesRacion_` y `acompanamientos_`, Nutricion.js; decidido por Fran el 2026-11-16 porque con «Mantener», 2.720 kcal, le salían 130 g de pasta, 580 g de patata o 190 g de pan en una comida). Después de escalar, ninguna cantidad pasa de su ración máxima por comida, sacada de la SENC (2004: arroz o pasta 60–80 g, patata 150–200 g, pan 40–60 g, legumbre 60–80 g en seco, carne 100–125 g, pescado 125–150 g, aceite 10 ml, frutos secos 20–30 g) y de las tablas de raciones estándar de la UCM (Aparicio y Perea, 2015: arroz 90 g, pasta 60/80/100 g pequeña/mediana/grande, legumbre en conserva 200 g; ración grande = estándar + 15 %):
+
+| Alimento | Máximo por comida |
+| --- | --- |
+| Arroz, pasta, quinoa, cuscús (en seco) y otros hidratos secos | 100 g (avena 80, cereales 50) |
+| Patata · boniato · ñoquis | 350 · 300 · 250 g |
+| Legumbre cocida | 250 g |
+| Pan | 120 g |
+| Carne, pescado · fruta | 250 g |
+| Queso curado · yogur y quesos frescos | 60 · 350 g |
+| Frutos secos y cremas · aguacate, hummus | 30 · 100 g |
+| Aceite | 20 ml |
+| Verdura | sin tope |
+
+Además, la pasta, el arroz, la quinoa o el cuscús del **almuerzo** (el plato principal) llevan **al menos 60 g** (ración pequeña de la UCM); en la cena son guarnición y no tienen mínimo. Con 1.655 kcal eso sube algo los hidratos de esos almuerzos: el generador lo compensa con las otras comidas.
+
+Si por los topes un plato no llega a sus hidratos (le faltan más del 5 %), la app añade **pan blanco** (20–80 g, solo en el almuerzo y la cena y si el plato no lleva ya pan) y, si aún faltan 10 g o más, **una pieza de fruta de postre** (manzana, plátano o kiwi: cambia según el plato), sin alimentos excluidos, y recalcula el resto. Salen en la receta como «acompañamiento», en la lista de la compra y no se eligen en «Cambiar cantidades». Las recetas nuevas (propias o de IA) se comprueban sin acompañamientos. Simulación con la biblioteca real (159 recetas, 5 planes por perfil): Fran con 2.720 kcal, 0 de 70 días a revisar, pan o fruta en ~150 de 280 comidas; Natalia y una mujer con 1.200 kcal, 0 de 70. Con ~4.000 kcal en 4 comidas (hombre de 90 kg que quiere ganar músculo), 65 de 70 días a revisar: haría falta una quinta comida.
+
 ## Tolerancias
 | Nivel | kcal | Proteína | Carbohidratos | Grasa |
 | --- | --- | --- | --- | --- |
@@ -46,6 +64,7 @@ Al darse de alta, y cada vez que alguien cambia de objetivo en Ajustes › Mi ob
 - Los ingredientes **fijos** se suman como constante.
 - Minimizar el error relativo en P, C, G y kcal (pesos 1/objetivo): mínimos cuadrados acotados (ver `prototipo/semana.py`, `solve`).
 - Ingredientes por unidad (huevo, tortillas, rebanadas, tortitas): optimizar, redondear a piezas enteras, fijarlas y reoptimizar el resto.
+- Raciones normales: antes de optimizar, los límites se recortan a la ración máxima de cada alimento (ver «Raciones normales»); si faltan hidratos, pan o fruta de postre como ingredientes fijos y se vuelve a optimizar.
 - Redondeo final: 5 g; aceite de 1 en 1 ml (desde 2026-10-19; con 5 ml las raciones pequeñas no cuadraban la grasa de la comida: se mide con cuchara medidora o pulverizador); respetar límites. El prototipo en Python sigue con 5 ml: los tests de regresión solo admiten esa diferencia.
 - Implementación en JS: bounded least squares propio (pocas variables, 2–5) o `javascript-lp-solver` (Unlicense). Validar contra los resultados de `data/recetas_semilla.json`.
 
@@ -76,4 +95,4 @@ Implementación (`web/motor/Progreso.js`): ajuste de **120 kcal**, repartido por
 Opcional (configurable): un día flexible puede llevar +15 % kcal, compensado entre los demás días de la semana sin bajar la proteína. Una comida libre semanal se marca como «libre» y no cuenta para adherencia.
 
 ## Fuentes
-ISSN 2017, Jäger et al. (proteína 1,4–2,0 g/kg con ejercicio; 2,3–3,1 con fuerza en déficit; en resistencia, prioridad a los hidratos), Leidy et al. 2015, AJCN (perder peso: 1,2–1,6 g/kg y 25–30 g por comida), Morton et al. 2018, BJSM (con fuerza, más allá de 1,62 g/kg no se gana más masa magra), Helms 2014 y Garthe 2011 (0,5–1 %/semana), Frankenfield 2005 (Mifflin-St Jeor, la más precisa: dentro del 10 % en la mayoría), FAO/OMS/UNU 2004, cap. 5 (factores de actividad), EFSA (proteína de referencia 0,83 g/kg; grasa 20–35 %). Estudio de perfiles y fuentes del 2026-10-20 en `docs/PROGRESO.md`.
+ISSN 2017, Jäger et al. (proteína 1,4–2,0 g/kg con ejercicio; 2,3–3,1 con fuerza en déficit; en resistencia, prioridad a los hidratos), Leidy et al. 2015, AJCN (perder peso: 1,2–1,6 g/kg y 25–30 g por comida), Morton et al. 2018, BJSM (con fuerza, más allá de 1,62 g/kg no se gana más masa magra), Helms 2014 y Garthe 2011 (0,5–1 %/semana), SENC 2004 (raciones recomendadas para la población adulta española, versión de Carbajal, UCM), Aparicio y Perea 2015 (tablas de peso de raciones estándar, *Nutriguía*, UCM), FDA 21 CFR 101.12 (ración de etiqueta: pasta 55 g y arroz 45 g en seco), Frankenfield 2005 (Mifflin-St Jeor, la más precisa: dentro del 10 % en la mayoría), FAO/OMS/UNU 2004, cap. 5 (factores de actividad), EFSA (proteína de referencia 0,83 g/kg; grasa 20–35 %). Estudio de perfiles y fuentes del 2026-10-20 en `docs/PROGRESO.md`.

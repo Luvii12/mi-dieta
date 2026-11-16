@@ -22,6 +22,47 @@ const MACRO_DEL_GRUPO = { proteina: 'P', lacteo: 'P', carbohidrato: 'C', fruta: 
 const ESCALA_MINIMA = 0.4;
 const ESCALA_MAXIMA = 3;
 
+// Ración máxima de un alimento en una comida (g, o ml el aceite), aunque el objetivo pida más: raciones de la
+// SENC (2004) y tablas de raciones estándar de la UCM (Aparicio y Perea, 2015; ración grande = estándar + 15 %).
+// Decidido por Fran (2026-11-16): con 2.720 kcal salían 130 g de pasta o 580 g de patata en un plato. Lo que
+// falte lo ponen el pan y la fruta de postre (acompanamientos_). Los alimentos que no están aquí, según su grupo
+// (racionMaxima_).
+const RACION_MAXIMA = {
+  avena: 80, harina_avena: 80, crema_arroz: 80, corn_flakes: 50, tortita_arroz: 50, harina_trigo: 30,
+  boniato: 300, noquis: 250, fideua_marisco: 300, masa_pizza_fina: 150,
+  garbanzos_cocidos: 250, lentejas_cocidas: 250, alubias_cocidas: 250,
+  fajita_trigo: 160, fajita_pequena: 160, tortillas_maiz: 160,
+  proteina_whey: 40, jamon_serrano: 100, lomo_embuchado: 100, chorizo: 25,
+  mozzarella: 125, parmesano: 30, chocolate_70: 25, sesamo: 10,
+};
+const RACION_MAXIMA_ACEITE = 20; // 2 cucharadas (la ración de la SENC es 10 ml)
+const RACION_MAXIMA_PAN = 120;   // 3 raciones de la SENC (40–60 g)
+// Pasta, arroz, quinoa o cuscús del almuerzo (el plato principal): al menos una ración pequeña (UCM: 60 g).
+const RACION_MINIMA_PRINCIPAL = 60;
+const PRINCIPAL = /^(arroz|pasta|quinoa|cuscus)/;
+const PANES = /^(pan_|bagel|fajita|tortilla|masa_pizza|tortita_arroz)/;
+
+function racionMaxima_(id, a) {
+  if (id in RACION_MAXIMA) return RACION_MAXIMA[id];
+  if (/^aceite/.test(id)) return RACION_MAXIMA_ACEITE;
+  if (/^(pan_|bagel)/.test(id)) return RACION_MAXIMA_PAN;
+  switch (a.grupo) {
+    case 'carbohidrato': return a.kcal >= 300 ? 100 : 350; // en seco (arroz, pasta: UCM 90–100 g) · patata (UCM 250–400 g)
+    case 'fruta': return 250;                               // 1–2 piezas (SENC 120–200 g)
+    case 'proteina': return 250;                            // carne y pescado (SENC 100–150 g; UCM, pescado entero 200–300 g)
+    case 'lacteo': return a.kcal >= 250 ? 60 : 350;         // queso curado (SENC 40–60 g) · yogur y queso fresco
+    case 'grasa': return a.kcal >= 500 ? 30 : 100;          // frutos secos y cremas (SENC 20–30 g) · aguacate, hummus
+    default: return Infinity;                               // verdura y condimentos: sin tope
+  }
+}
+
+// Pan y fruta de postre que se añaden cuando, con los topes, el plato no llega a los hidratos de su comida
+// (decidido por Fran, 2026-11-16). El pan, solo en el almuerzo y la cena y si el plato no lleva ya pan.
+const FALTA_HIDRATOS = 0.05; // se añaden si faltan más del 5 % de los hidratos
+const PAN_ACOMPANAMIENTO = { alimento: 'pan_blanco', minimo: 20, maximo: 80, paso: 10 };
+const FRUTAS_POSTRE = [{ alimento: 'manzana', gramos: 180 }, { alimento: 'platano', gramos: 120 }, { alimento: 'kiwi', gramos: 100 }];
+const HIDRATOS_MINIMOS_FRUTA = 10; // g que tienen que faltar aún para poner una pieza de fruta
+
 // Filas de la pestaña `alimentos` → {id: {kcal, P, C, G, gramos_unidad, estado, grupo, nombre}} (por 100 g).
 function indexarAlimentos_(filas) {
   const indice = {};
@@ -188,11 +229,73 @@ function racionesReceta_(receta, objetivo, alimentos) {
   const escalables = receta.ingredientes_escalables.map(e => {
     const f = factor(e.alimento);
     const u = e.unidad ? alimentos[e.alimento].gramos_unidad : null;
-    if (!u) return Object.assign({}, e, { min_g: e.min_g * f, max_g: e.max_g * f });
+    if (!u) {
+      // Límites redondeados como los gramos (5 g; el aceite, 1 ml): si no, un plato que llega al límite sale
+      // con decimales («61,02 g de langostinos»).
+      const paso = pasoDe_(e.alimento);
+      const min = Math.round(e.min_g * f / paso) * paso;
+      return Object.assign({}, e, { min_g: min, max_g: Math.max(min, Math.round(e.max_g * f / paso) * paso) });
+    }
     const min = e.min_g > 0 ? piezas(e.min_g * f, u) : 0;
     return Object.assign({}, e, { min_g: min, max_g: Math.max(min, piezas(e.max_g * f, u)) });
   });
   return Object.assign({}, receta, { ingredientes_fijos: fijos, ingredientes_escalables: escalables });
+}
+
+// La receta (ya escalada) con las raciones dentro de lo normal: nada por encima de racionMaxima_ (las piezas,
+// en piezas enteras y al menos una) y la pasta o el arroz del almuerzo con al menos RACION_MINIMA_PRINCIPAL.
+// `topada` = algún hidrato se ha quedado en su tope (entonces puede hacer falta pan o fruta). Si no cambia
+// nada, devuelve la misma receta.
+function topesRacion_(receta, alimentos) {
+  let cambia = false;
+  let topada = false;
+  const tope = (id, u) => {
+    const t = racionMaxima_(id, alimento_(id, alimentos));
+    return u && isFinite(t) ? Math.max(1, Math.floor(t / u + 1e-9)) * u : t;
+  };
+  const hidrato = id => alimento_(id, alimentos).grupo === 'carbohidrato';
+  const fijos = receta.ingredientes_fijos.map(f => {
+    const t = tope(f.alimento, alimentos[f.alimento].gramos_unidad);
+    if (f.gramos <= t + 1e-9) return f;
+    cambia = true;
+    if (hidrato(f.alimento)) topada = true;
+    return Object.assign({}, f, { gramos: t });
+  });
+  const escalables = receta.ingredientes_escalables.map(e => {
+    let max = Math.min(e.max_g, tope(e.alimento, e.unidad ? alimentos[e.alimento].gramos_unidad : null));
+    let min = Math.min(e.min_g, max);
+    if (max < e.max_g && hidrato(e.alimento)) topada = true;
+    if (receta.comida === 'Almuerzo' && !e.unidad && PRINCIPAL.test(e.alimento) && hidrato(e.alimento)) {
+      min = Math.max(min, RACION_MINIMA_PRINCIPAL);
+      max = Math.max(max, min);
+    }
+    if (min === e.min_g && max === e.max_g) return e;
+    cambia = true;
+    return Object.assign({}, e, { min_g: min, max_g: max });
+  });
+  if (!cambia) return receta;
+  return Object.assign({}, receta, { ingredientes_fijos: fijos, ingredientes_escalables: escalables, topada: topada });
+}
+
+// {alimento: gramos} de pan y fruta de postre para los `faltan` g de hidratos de un plato de `comida` que lleva
+// `ids`. Sin alimentos prohibidos ni los que no estén en la tabla. Vacío si no hace falta nada. La fruta cambia
+// de un plato a otro (según `recetaId`), siempre la misma con el mismo plato.
+function acompanamientos_(comida, faltan, ids, alimentos, prohibidos, recetaId) {
+  const extra = {};
+  const usable = id => alimentos[id] && !prohibidos.has(id) && ids.indexOf(id) < 0;
+  const pan = PAN_ACOMPANAMIENTO;
+  if ((comida === 'Almuerzo' || comida === 'Cena') && usable(pan.alimento) && !ids.some(id => PANES.test(id))) {
+    const g = Math.min(pan.maximo, Math.round(faltan / (alimentos[pan.alimento].C / 100) / pan.paso) * pan.paso);
+    if (g >= pan.minimo) {
+      extra[pan.alimento] = g;
+      faltan -= g * alimentos[pan.alimento].C / 100;
+    }
+  }
+  const frutas = FRUTAS_POSTRE.filter(f => usable(f.alimento));
+  const n = String(recetaId || '').split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  const fruta = frutas[n % (frutas.length || 1)];
+  if (fruta && faltan >= HIDRATOS_MINIMOS_FRUTA) extra[fruta.alimento] = fruta.gramos;
+  return extra;
 }
 
 // Ajusta una receta a un objetivo: escala sus raciones, optimiza, redondea piezas y las fija, reoptimiza el resto,
@@ -201,11 +304,30 @@ function racionesReceta_(receta, objetivo, alimentos) {
 // fijados: {alimento: gramos} que ha elegido la persona (p. ej. su bollo de pan pesa 50 g). Se usan tal cual,
 // fuera de límites y sin redondear (0 = sin ese ingrediente), y el optimizador cuadra el resto. Los que no
 // están en la receta se ignoran. El resultado lleva `fijados`: los que se han usado.
-function ajustarReceta_(original, objetivo, alimentos, tolComida, fijados) {
-  const receta = racionesReceta_(original, objetivo, alimentos);
+// Las raciones nunca pasan de los topes (topesRacion_). Si por eso el plato no llega a sus hidratos, se añaden
+// pan o fruta de postre (ingredientes con `acompanamiento`), salvo con opciones.acompanamientos === false (al
+// comprobar una receta nueva: tiene que cuadrar sola). opciones.prohibidos: alimentos excluidos (Set o lista).
+function ajustarReceta_(original, objetivo, alimentos, tolComida, fijados, opciones) {
+  opciones = opciones || {};
+  const receta = topesRacion_(racionesReceta_(original, objetivo, alimentos), alimentos);
   const propios = fijadosDeReceta_(receta, fijados);
+  let ajuste = ajustarGramos_(receta, objetivo, alimentos, propios, {});
+  const faltan = objetivo.C - ajuste.macros.C;
+  if (receta.topada && opciones.acompanamientos !== false && faltan > objetivo.C * FALTA_HIDRATOS) {
+    const ids = receta.ingredientes_fijos.concat(receta.ingredientes_escalables).map(i => i.alimento);
+    const extra = acompanamientos_(receta.comida, faltan, ids, alimentos, new Set(opciones.prohibidos || []), receta.id);
+    if (Object.keys(extra).length) ajuste = ajustarGramos_(receta, objetivo, alimentos, propios, extra);
+  }
+  ajuste.evaluacion = tolComida ? evaluarComida_(ajuste.macros, objetivo, tolComida) : null;
+  return ajuste;
+}
+
+// ajustarReceta_ con la receta ya escalada y topada, los gramos elegidos por la persona (`propios`) y los
+// acompañamientos (`extra`, {alimento: gramos}), que cuentan como ingredientes fijos.
+function ajustarGramos_(receta, objetivo, alimentos, propios, extra) {
   const fijos = {};
   receta.ingredientes_fijos.forEach(f => { fijos[f.alimento] = f.alimento in propios ? propios[f.alimento] : f.gramos; });
+  Object.keys(extra).forEach(id => { fijos[id] = extra[id]; });
   const escalables = receta.ingredientes_escalables;
   const elegidos = {};
   escalables.forEach(e => { if (e.alimento in propios) elegidos[e.alimento] = propios[e.alimento]; });
@@ -222,6 +344,11 @@ function ajustarReceta_(original, objetivo, alimentos, tolComida, fijados) {
     if (g <= 0) return;
     const ingrediente = { alimento: e.alimento, gramos: g, escalable: true };
     if (e.unidad) ingrediente.piezas = Math.round(g / alimentos[e.alimento].gramos_unidad);
+    ingredientes.push(ingrediente);
+  });
+  Object.keys(extra).forEach(id => {
+    const ingrediente = { alimento: id, gramos: extra[id], escalable: true, acompanamiento: true };
+    if (alimentos[id].gramos_unidad) ingrediente.piezas = Math.round(extra[id] / alimentos[id].gramos_unidad);
     ingredientes.push(ingrediente);
   });
   ingredientes.forEach(i => {
@@ -241,7 +368,6 @@ function ajustarReceta_(original, objetivo, alimentos, tolComida, fijados) {
     ingredientes: ingredientes,
     macros: macros,
     objetivo: objetivo,
-    evaluacion: tolComida ? evaluarComida_(macros, objetivo, tolComida) : null,
     fijados: propios,
   };
 }
@@ -261,5 +387,6 @@ if (typeof module !== 'undefined') {
   module.exports = {
     NUTRIENTES, REFERENCIA_COMIDAS, indexarAlimentos_, calcularMacros_, redondearMacros_, sumarMacros_, minimosCuadradosAcotados_, optimizarGramos_,
     redondearGramos_, evaluarComida_, evaluarDia_, excesoProteinaDia_, factorRacion_, racionesReceta_, ajustarReceta_, fijadosDeReceta_,
+    racionMaxima_, topesRacion_, acompanamientos_, RACION_MINIMA_PRINCIPAL,
   };
 }

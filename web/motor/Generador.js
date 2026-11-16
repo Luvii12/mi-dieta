@@ -86,7 +86,7 @@ function prepararCandidatas_(recetas, datos) {
     if (valor === 'no_repetir') return descartadas.push({ id: r.id, motivo: 'valorada «No lo repetiría»' });
     let ajuste;
     try {
-      ajuste = ajustarReceta_(r, datos.objetivos[r.comida], datos.alimentos, null, (datos.gramosReceta || {})[r.id]);
+      ajuste = ajustarReceta_(r, datos.objetivos[r.comida], datos.alimentos, null, (datos.gramosReceta || {})[r.id], { prohibidos: prohibidos });
     } catch (err) {
       return descartadas.push({ id: r.id, motivo: err.message });
     }

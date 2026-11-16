@@ -167,8 +167,16 @@ function gramosPrototipo(r, a) {
   return esperados;
 }
 
+// Las recetas que cambian con las raciones normales (2026-11-16: pasta y arroz del almuerzo ≥ 60 g, legumbre
+// cocida ≤ 250 g, ver topesRacion_) ya no pueden dar lo mismo que el prototipo; se prueban aparte.
+const comoElPrototipo = r => N.topesRacion_(r, alimentos) === r;
+
+test('regresión: las raciones normales solo cambian A1, A2, A3 (60 g de arroz o pasta), A5 (garbanzos) y C7 (pulpo)', () => {
+  assert.deepEqual(recetasJson.recetas.filter(r => !comoElPrototipo(r)).map(r => r.id), ['A1', 'A2', 'A3', 'A5', 'C7']);
+});
+
 test('regresión: las 22 recetas semilla dan las kcal del prototipo (≤ 2 %)', () => {
-  recetasJson.recetas.forEach(r => {
+  recetasJson.recetas.filter(comoElPrototipo).forEach(r => {
     const a = N.ajustarReceta_(r, recetasJson.objetivo_por_comida[r.comida], alimentos);
     const aceite = {};
     Object.keys(a.gramos).filter(esAceite).forEach(id => { aceite[id] = a.gramos[id] - (r.gramos_resueltos_prueba[id] || 0); });
@@ -181,7 +189,7 @@ test('regresión: las 22 recetas semilla dan las kcal del prototipo (≤ 2 %)', 
 });
 
 test('regresión: mismos gramos que el prototipo (salvo el redondeo del aceite)', () => {
-  recetasJson.recetas.forEach(r => {
+  recetasJson.recetas.filter(comoElPrototipo).forEach(r => {
     const a = N.ajustarReceta_(r, recetasJson.objetivo_por_comida[r.comida], alimentos);
     assert.deepEqual(a.gramos, gramosPrototipo(r, a), r.id);
   });
@@ -202,7 +210,9 @@ test('recetas ajustadas: límites, piezas enteras y múltiplos de 5 (el aceite, 
   });
 });
 
-test('regresión: la semana de prueba del prototipo cumple ±3 % kcal y ±4 % proteína', () => {
+// Con 60 g de pasta o arroz en el almuerzo (2026-11-16) los días de A2 y A3 llevan un 10–12 % más de hidratos que
+// el objetivo: esta semana fija ya no cumple siempre la tolerancia del día (el generador elige otras combinaciones).
+test('regresión: la semana de prueba del prototipo cumple ±5 % kcal, ±4 % proteína y como mucho +12 % de hidratos', () => {
   const semana = [['D1', 'A1', 'M1', 'C1'], ['D2', 'A2', 'M2', 'C2'], ['D3', 'A3', 'M3', 'C3'], ['D4', 'A4', 'M4', 'C4'],
     ['D1', 'A5', 'M2', 'C5'], ['D2', 'A6', 'M1', 'C6'], ['D3', 'A7', 'M3', 'C7']];
   const porId = Object.fromEntries(recetasJson.recetas.map(r => [r.id, r]));
@@ -212,8 +222,81 @@ test('regresión: la semana de prueba del prototipo cumple ±3 % kcal y ±4 % pr
       const r = porId[id];
       return N.ajustarReceta_(r, recetasJson.objetivo_por_comida[r.comida], alimentos).macros;
     }));
-    assert.ok(Math.abs(macros.kcal / objDia.kcal - 1) <= 0.03, dia.join(' '));
+    assert.ok(Math.abs(macros.kcal / objDia.kcal - 1) <= 0.05, dia.join(' '));
     assert.ok(Math.abs(macros.P / objDia.P - 1) <= 0.04, dia.join(' '));
-    assert.equal(N.evaluarDia_(macros, objDia, TOL_DIA).ok, true, dia.join(' '));
+    assert.ok(macros.C / objDia.C - 1 <= 0.12, dia.join(' '));
   });
+});
+
+// ---------- Raciones normales (2026-11-16) ----------
+
+// Objetivos de Fran con «Mantener» (2.720 kcal y 375 g de hidratos): con ellos salían 130 g de pasta.
+const MANTENER = { Desayuno: { kcal: 708, P: 25.3, C: 113.8, G: 16.8 }, Almuerzo: { kcal: 880, P: 41.8, C: 113.1, G: 28.9 },
+  Merienda: { kcal: 557, P: 31.4, C: 79.6, G: 12.6 }, Cena: { kcal: 576, P: 35.5, C: 68.5, G: 17.8 } };
+
+test('raciones normales: topes según SENC y UCM', () => {
+  const tope = id => N.racionMaxima_(id, alimentos[id]);
+  assert.deepEqual(['arroz', 'pasta', 'patata', 'pan_blanco', 'aceite_ml', 'garbanzos_cocidos', 'pechuga_pollo', 'platano'].map(tope),
+    [100, 100, 350, 120, 20, 250, 250, 250]);
+  assert.equal(tope('tomate'), Infinity); // la verdura, sin tope
+});
+
+test('raciones normales: con muchas calorías ningún alimento pasa de su tope y faltan hidratos → pan o fruta', () => {
+  recetasJson.recetas.forEach(r => {
+    const a = N.ajustarReceta_(r, MANTENER[r.comida], alimentos);
+    Object.keys(a.gramos).forEach(id => assert.ok(a.gramos[id] <= N.racionMaxima_(id, alimentos[id]), `${r.id} ${id} ${a.gramos[id]}`));
+  });
+  const a2 = N.ajustarReceta_(recetasJson.recetas.find(r => r.id === 'A2'), MANTENER.Almuerzo, alimentos);
+  assert.equal(a2.gramos.pasta, 100);
+  assert.ok(a2.gramos.pan_blanco >= 20 && a2.gramos.pan_blanco <= 80);
+  const pan = a2.ingredientes.find(i => i.alimento === 'pan_blanco');
+  assert.equal(pan.acompanamiento, true);
+  assert.ok(a2.macros.C > 0.85 * MANTENER.Almuerzo.C, String(a2.macros.C));
+});
+
+test('raciones normales: el pan y la fruta respetan los excluidos y no se añaden al comprobar una receta', () => {
+  const a2 = recetasJson.recetas.find(r => r.id === 'A2');
+  const sinPan = N.ajustarReceta_(a2, MANTENER.Almuerzo, alimentos, null, null, { prohibidos: ['pan_blanco'] });
+  assert.equal(sinPan.gramos.pan_blanco, undefined);
+  assert.ok(sinPan.gramos.manzana === 180 || sinPan.gramos.platano === 120, JSON.stringify(sinPan.gramos)); // una pieza de fruta
+  const sola = N.ajustarReceta_(a2, MANTENER.Almuerzo, alimentos, null, null, { acompanamientos: false });
+  assert.ok(sola.ingredientes.every(i => !i.acompanamiento));
+  // El pan solo en el almuerzo y la cena; en el desayuno, fruta.
+  assert.deepEqual(N.acompanamientos_('Desayuno', 40, ['avena'], alimentos, new Set(), ''), { manzana: 180 });
+  // La fruta cambia según el plato y nunca es una excluida.
+  const frutas = ['A1', 'A2', 'A3', 'C1', 'C2'].map(id => Object.keys(N.acompanamientos_('Desayuno', 40, [], alimentos, new Set(), id))[0]);
+  assert.ok(new Set(frutas).size > 1, frutas.join());
+  assert.deepEqual(N.acompanamientos_('Desayuno', 40, [], alimentos, new Set(['manzana', 'kiwi']), 'A2'), { platano: 120 });
+  assert.deepEqual(N.acompanamientos_('Cena', 2, ['arroz'], alimentos, new Set()), {});
+  // Si el plato ya lleva pan, no se pone más.
+  assert.equal(N.acompanamientos_('Almuerzo', 40, ['pan_masa_madre'], alimentos, new Set()).pan_blanco, undefined);
+});
+
+test('raciones normales: con los objetivos de Fran (déficit) no hace falta pan ni fruta', () => {
+  recetasJson.recetas.forEach(r => {
+    const a = N.ajustarReceta_(r, recetasJson.objetivo_por_comida[r.comida], alimentos);
+    assert.ok(a.ingredientes.every(i => !i.acompanamiento || r.id === 'A5'), r.id);
+  });
+});
+
+test('raciones normales: pasta y arroz del almuerzo, al menos 60 g; en la cena (guarnición), no', () => {
+  ['A1', 'A2', 'A3'].forEach(id => {
+    const r = recetasJson.recetas.find(x => x.id === id);
+    const g = N.ajustarReceta_(r, recetasJson.objetivo_por_comida.Almuerzo, alimentos).gramos;
+    assert.equal(g.arroz_basmati || g.pasta || g.arroz, N.RACION_MINIMA_PRINCIPAL, id);
+  });
+  const cena = { id: 'X', comida: 'Cena', ingredientes_fijos: [], ingredientes_escalables: [{ alimento: 'arroz', min_g: 20, max_g: 60, unidad: false }] };
+  assert.equal(N.topesRacion_(cena, alimentos), cena);
+});
+
+test('raciones escaladas: los gramos calculados siguen siendo múltiplos de 5 (aceite, ml enteros; piezas enteras)', () => {
+  const natalia = { Desayuno: { kcal: 336, P: 22.9, C: 42.2, G: 8.4 }, Almuerzo: { kcal: 448, P: 37.7, C: 41.9, G: 14.4 },
+    Merienda: { kcal: 288, P: 28.4, C: 29.5, G: 6.3 }, Cena: { kcal: 310, P: 32, C: 25.4, G: 8.9 } };
+  [MANTENER, natalia].forEach(objetivos => recetasJson.recetas.forEach(r => {
+    const a = N.ajustarReceta_(r, objetivos[r.comida], alimentos);
+    a.ingredientes.filter(i => i.escalable).forEach(i => {
+      const paso = i.piezas ? alimentos[i.alimento].gramos_unidad : esAceite(i.alimento) ? 1 : 5;
+      assert.equal(i.gramos % paso, 0, `${r.id} ${i.alimento} ${i.gramos}`);
+    });
+  }));
 });

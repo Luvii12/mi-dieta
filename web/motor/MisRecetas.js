@@ -104,7 +104,7 @@ function guardarRecetaManual_(peticion) {
 
   const id = editada ? editada.id : siguienteIdManual_(filas);
   receta.id = id;
-  const ajuste = ajustarReceta_(receta, objetivo, alimentos, (config.tolerancias || {}).comida);
+  const ajuste = ajustarReceta_(receta, objetivo, alimentos, (config.tolerancias || {}).comida, null, { acompanamientos: false });
   const resultado = { id: id, nombre: receta.nombre, comida: receta.comida, ajuste: ajuste,
     aviso: ajuste.evaluacion && !ajuste.evaluacion.ok ? consejoReceta_(ajuste, alimentos) : null };
   if (peticion.probar) return resultado;
@@ -153,7 +153,7 @@ function recalcularPlanesConReceta_(recetaId) {
     const filas = comidas.filter(f => f.plan_id === p.plan_id && f.fecha >= hoy && f.hecha === 'no' &&
       recetaDeComida_(f) === recetaId && objetivos[f.comida]);
     if (!filas.length) return;
-    reoptimizarComidas_(filas, objetivos, recetasPorId, alimentos);
+    reoptimizarComidas_(filas, objetivos, recetasPorId, alimentos, alimentosProhibidos_(leerTabla_('preferencias')));
     cambia = true;
   });
   if (cambia) reescribirTabla_('plan_comidas', comidas);

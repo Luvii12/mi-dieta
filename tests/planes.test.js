@@ -63,6 +63,15 @@ test('ingredientes: piezas para los alimentos por unidad', () => {
   assert.equal(ing.find(i => i.alimento === 'tomate').escalable, false);
 });
 
+test('ingredientes: el pan y la fruta de postre que añade la app van como acompañamiento, tras los escalables', () => {
+  const receta = recetasPorId.A2; // pasta, ternera y aceite escalables; tomate, pimiento y parmesano fijos
+  const ing = P.ingredientesDeComida_({ tomate_triturado: 150, pasta: 100, manzana: 180, ternera_picada_5: 120, pan_blanco: 40 }, receta, alimentos);
+  assert.deepEqual(ing.map(i => i.alimento), ['pasta', 'ternera_picada_5', 'manzana', 'pan_blanco', 'tomate_triturado']);
+  assert.deepEqual(ing.filter(i => i.acompanamiento).map(i => i.alimento), ['manzana', 'pan_blanco']);
+  assert.equal(ing.find(i => i.alimento === 'manzana').piezas, 1);
+  assert.equal(ing.find(i => i.alimento === 'pasta').acompanamiento, undefined);
+});
+
 test('plan de referencia: el activo; si no, el último archivado', () => {
   const planes = [
     { plan_id: 'A', estado: 'archivado', inicio: '2026-09-07' },

@@ -4,6 +4,7 @@
 Los macros los ponen pocos ingredientes (proteína, carbohidrato, grasa principal); el sabor lo ponen especias, hierbas, ácidos, aromáticos, salsas ligeras y técnica (horno, plancha fuerte, freidora de aire). Por eso cada receta separa:
 
 - **Ingredientes escalables**: los que el optimizador ajusta, con límites realistas (`min_g`, `max_g`). Ej.: pollo 120–200 g, arroz 50–90 g, aceite 3–15 ml.
+- **Raciones normales** (2026-11-16): aunque `max_g` sea mayor o la ración de la persona lo pida, la app nunca pasa de las raciones máximas por comida de `docs/NUTRICION.md` (arroz o pasta 100 g en seco, patata 350 g, legumbre cocida 250 g, pan 120 g, aceite 20 ml…) y pone al menos 60 g de pasta o arroz en el almuerzo. Si así falta hidrato, añade pan o fruta de postre como acompañamiento.
 - **Ingredientes fijos**: dan sabor y textura; cuentan en los macros pero no se escalan. Ej.: 60 g yogur para el curry, 150 g tomate triturado.
 - Especias, hierbas, ajo, limón, vinagre, café: se citan en la preparación y no se cuentan.
 

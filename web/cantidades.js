@@ -125,7 +125,9 @@ export function abrirCantidades(planId, fecha, comida) {
   const gramosReceta = (leerLocal('dieta.config') || {}).gramos_receta || {};
   estado = { planId, fecha, comida: comida.comida, siempre: false, elegidos: new Set(Object.keys(comida.fijados || {})), filas: {} };
   ponerSiempre(Boolean(gramosReceta[comida.receta_id]));
-  comida.ingredientes.forEach(ing => {
+  // El pan y la fruta de postre que añade la app no se eligen aquí: salen solos si al plato le faltan hidratos.
+  const ingredientes = comida.ingredientes.filter(ing => !ing.acompanamiento);
+  ingredientes.forEach(ing => {
     const input = h('input', { type: 'text', inputmode: 'decimal', autocomplete: 'off', value: aTexto(ing.gramos),
       'aria-label': `${unidad(ing) === 'ml' ? 'Mililitros' : 'Gramos'} de ${ing.nombre}`,
       oninput: () => {
@@ -138,7 +140,7 @@ export function abrirCantidades(planId, fecha, comida) {
       } });
     estado.filas[ing.alimento] = { ing, input };
   });
-  $('cantidades-lista').replaceChildren(...comida.ingredientes.map(ing => pintarFila(ing.alimento)));
+  $('cantidades-lista').replaceChildren(...ingredientes.map(ing => pintarFila(ing.alimento)));
   $('cantidades-estado').textContent = '';
   pintarResumen(comida.macros, null);
   $('panel-cantidades').showModal();
