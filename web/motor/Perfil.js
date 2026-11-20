@@ -56,7 +56,22 @@ const GRASA_PCT_MINIMA = 20;
 const HIDRATOS_MINIMOS_G = 100;
 const IMC_REFERENCIA = 25;   // con IMC > 30, la proteína se calcula sobre el peso que daría un IMC de 25
 
+// Corrección del gasto (kcal/día, positiva o negativa): una fórmula general falla entre un 10 y un 15 % de una
+// persona a otra. Se suma al gasto que sale de la fórmula, se guarda en `config.ajuste_gasto_kcal` y sobrevive a
+// los recálculos del perfil (a diferencia de editar a mano los objetivos por comida).
+const AJUSTE_GASTO_MAXIMO = 600;
+
 const redondearPerfil_ = (n, decimales) => Math.round(n * Math.pow(10, decimales)) / Math.pow(10, decimales);
+
+// Número entero de kcal entre −600 y +600; vacío, 0. Lanza un Error si no es válido.
+function validarAjusteGasto_(valor) {
+  if (valor === undefined || valor === null || String(valor).trim() === '') return 0;
+  const n = Number(String(valor).trim().replace(',', '.').replace('−', '-'));
+  if (!isFinite(n) || Math.abs(n) > AJUSTE_GASTO_MAXIMO) {
+    throw new Error('La corrección de gasto tiene que estar entre −' + AJUSTE_GASTO_MAXIMO + ' y +' + AJUSTE_GASTO_MAXIMO + ' kcal.');
+  }
+  return Math.round(n) || 0;
+}
 
 // Años cumplidos en `hoyIso` de alguien nacido en `nacimientoIso` (AAAA-MM-DD).
 function edad_(nacimientoIso, hoyIso) {
@@ -121,13 +136,16 @@ function comidasValidas_(lista) {
 }
 
 // Objetivos de una persona a partir de su perfil (ya validado). `kcalMinimas`: su mínimo si ya tiene uno
-// (si no, el de su sexo). Devuelve {edad, tmb, gasto, kcal, kcal_minimas, proteina_g_kg, peso_referencia,
-// dia: {kcal, P, C, G}, comidas: {Desayuno: {kcal, P, C, G}, ...}, aviso (texto o null)}.
-function calcularObjetivos_(perfil, hoyIso, kcalMinimas) {
+// (si no, el de su sexo). `ajusteGasto`: corrección en kcal/día sobre el gasto de la fórmula (sin él, 0).
+// Devuelve {edad, tmb, gasto (con la corrección), gasto_formula, ajuste_gasto, kcal, kcal_minimas, proteina_g_kg,
+// peso_referencia, dia: {kcal, P, C, G}, comidas: {Desayuno: {kcal, P, C, G}, ...}, aviso (texto o null)}.
+function calcularObjetivos_(perfil, hoyIso, kcalMinimas, ajusteGasto) {
   const edad = edad_(perfil.nacimiento, hoyIso);
   // Mifflin-St Jeor: gasto en reposo.
   const tmb = 10 * perfil.peso_kg + 6.25 * perfil.altura_cm - 5 * edad + (perfil.sexo === 'hombre' ? 5 : -161);
-  const gasto = tmb * (TRABAJOS[perfil.trabajo].factor + ENTRENOS[perfil.entreno].factor + (perfil.andar ? FACTOR_ANDAR : 0));
+  const gastoFormula = tmb * (TRABAJOS[perfil.trabajo].factor + ENTRENOS[perfil.entreno].factor + (perfil.andar ? FACTOR_ANDAR : 0));
+  const ajuste = validarAjusteGasto_(ajusteGasto);
+  const gasto = gastoFormula + ajuste;
   const meta = METAS[perfil.meta];
   const cambio = Math.sign(meta.pct) * Math.min(Math.abs(gasto * meta.pct / 100), meta.tope);
   const minimas = Number(kcalMinimas) || KCAL_MINIMAS_SEXO[perfil.sexo];
@@ -156,7 +174,8 @@ function calcularObjetivos_(perfil, hoyIso, kcalMinimas) {
   } else if (perfil.meta === 'perder' && gasto + cambio < minimas) {
     aviso = `Tu déficit queda limitado por el mínimo de ${String(minimas).replace(/\B(?=(\d{3})+(?!\d))/g, '.')} kcal al día: perderás algo más despacio.`;
   }
-  return { edad: edad, tmb: Math.round(tmb), gasto: Math.round(gasto), kcal: kcal, kcal_minimas: minimas,
+  return { edad: edad, tmb: Math.round(tmb), gasto: Math.round(gasto), gasto_formula: Math.round(gastoFormula), ajuste_gasto: ajuste,
+    kcal: kcal, kcal_minimas: minimas,
     proteina_g_kg: redondearPerfil_(proteinaKg, 1), peso_referencia: pesoRef, dia: { kcal: kcal, P: P, C: C, G: G },
     comidas: comidas, aviso: aviso };
 }
@@ -172,7 +191,7 @@ function proteinaMinimaGKg_(perfil) {
 if (typeof module !== 'undefined') {
   module.exports = {
     TOLERANCIAS_INICIALES, TRABAJOS, ENTRENOS, EJERCICIOS, FACTOR_ANDAR, METAS, PROTEINA_G_KG, KCAL_MINIMAS_SEXO,
-    COMIDAS_OPCIONALES, edad_, pesoReferencia_, validarPerfil_, tipoEjercicio_, proteinaGKg_, comidasValidas_,
-    calcularObjetivos_, proteinaMinimaGKg_,
+    COMIDAS_OPCIONALES, AJUSTE_GASTO_MAXIMO, edad_, pesoReferencia_, validarPerfil_, validarAjusteGasto_, tipoEjercicio_, proteinaGKg_,
+    comidasValidas_, calcularObjetivos_, proteinaMinimaGKg_,
   };
 }

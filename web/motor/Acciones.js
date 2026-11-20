@@ -143,16 +143,21 @@ const ACCIONES = {
   // recalcula al activarlo), salvo si cambian las comidas que hace: entonces, desde mañana, sus planes
   // quitan o añaden esas comidas y recalculan los gramos con los objetivos nuevos.
   // A quien se da de alta se le pone también la configuración inicial (tolerancias…).
-  // Devuelve {perfil, calculo, config, comidas_cambiadas}.
+  // `ajuste_gasto_kcal` (opcional, de −600 a +600): corrección sobre el gasto de la fórmula (Perfil.js); sin él se
+  // mantiene la que ya tenía la persona (`config.ajuste_gasto_kcal`, 0 si nunca la puso).
+  // Devuelve {perfil, calculo, config, comidas_cambiadas, ajuste_gasto_kcal}.
   guardarPerfil: function (peticion) {
     const hoy = fechaIso_(new Date());
     const perfil = validarPerfil_(peticion.perfil, hoy);
     const config = leerConfig_();
-    const calculo = calcularObjetivos_(perfil, hoy, config.kcal_minimas);
+    const anterior = Number(config.ajuste_gasto_kcal) || 0;
+    const ajuste = peticion.ajuste_gasto_kcal === undefined ? anterior : validarAjusteGasto_(peticion.ajuste_gasto_kcal);
+    const calculo = calcularObjetivos_(perfil, hoy, config.kcal_minimas, ajuste);
     const cambian = comidasDe_(config).join() !== perfil.comidas.join() && COMIDAS.some(c => config['objetivo_' + c.toLowerCase()]);
-    if (peticion.probar) return { perfil: perfil, calculo: calculo, config: config, comidas_cambiadas: cambian };
+    if (peticion.probar) return { perfil: perfil, calculo: calculo, config: config, comidas_cambiadas: cambian, ajuste_gasto_kcal: ajuste };
     conBloqueo_(() => {
       escribirConfig_('perfil', perfil);
+      if (ajuste !== anterior) escribirConfig_('ajuste_gasto_kcal', ajuste);
       COMIDAS.forEach(c => {
         if (calculo.comidas[c]) escribirConfig_('objetivo_' + c.toLowerCase(), calculo.comidas[c]);
         else borrarConfig_('objetivo_' + c.toLowerCase());
@@ -163,7 +168,7 @@ const ACCIONES = {
       if (!actualizarFilas_('pesos', f => f.fecha === hoy, { peso_kg: perfil.peso_kg })) anadirFilas_('pesos', [{ fecha: hoy, peso_kg: perfil.peso_kg }]);
       if (cambian) adaptarPlanes_(calculo.comidas, sumarDias_(hoy, 1));
     });
-    return { perfil: perfil, calculo: calculo, config: leerConfig_(), comidas_cambiadas: cambian };
+    return { perfil: perfil, calculo: calculo, config: leerConfig_(), comidas_cambiadas: cambian, ajuste_gasto_kcal: ajuste };
   },
 
   // Activa el borrador indicado (ver activarBorrador_). Petición: {plan_id, ajuste_kcal?}.
@@ -479,7 +484,23 @@ function balanceBloque_(planes, comidas, config, hoy) {
     meta: perfil.meta, proteinaMinima: proteinaMinimaGKg_(config.perfil),
   });
   return { plan_id: ref.plan_id, bloque: numeroBloque_(planes, ref), inicio: ref.inicio, fin: ref.fin,
-    pesajes: pesajes, ritmo: ritmo, adherencia: adherencia, propuesta: propuesta };
+    pesajes: pesajes, ritmo: ritmo, adherencia: adherencia, propuesta: propuesta,
+    gasto: gastoDelBloque_(config, pesos, comidas, hoy) };
+}
+
+// Gasto según la fórmula del perfil y según los datos de la persona (estimarGasto_), con la corrección que
+// sugiere frente a la que ya tiene. {formula, ajuste_actual, estimado, sugerida}; null si el perfil no está
+// completo (cuentas de antes de M4).
+function gastoDelBloque_(config, pesos, comidas, hoy) {
+  let formula;
+  try {
+    formula = calcularObjetivos_(validarPerfil_(config.perfil, hoy), hoy, config.kcal_minimas, 0).gasto;
+  } catch (e) {
+    return null;
+  }
+  const estimado = estimarGasto_(pesos, comidas, hoy);
+  return { formula: formula, ajuste_actual: Number(config.ajuste_gasto_kcal) || 0, estimado: estimado,
+    sugerida: sugerirCorreccionGasto_(formula, estimado) };
 }
 
 const ESTADOS_COMIDA = ['si', 'no', 'libre', 'saltada'];

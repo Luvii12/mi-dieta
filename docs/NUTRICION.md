@@ -16,7 +16,7 @@ Conversión: proteína y carbohidratos 4 kcal/g, grasa 9 kcal/g. Las kcal se cal
 ## Objetivos según el perfil (M4, `web/motor/Perfil.js`)
 Al darse de alta, y cada vez que alguien cambia de objetivo en Ajustes › Mi objetivo, la app calcula sus objetivos (sin perfil, como Fran hasta que lo rellene, se quedan los de arriba):
 1. **Gasto en reposo** (Mifflin-St Jeor): 10·peso + 6,25·altura − 5·edad + 5 (hombre) / − 161 (mujer).
-2. **Gasto del día** = reposo × factor de actividad (PAL de la FAO/OMS/UNU 2004: una vida sedentaria es 1,40–1,69; una hora diaria de ejercicio moderado o intenso suma ~0,2). Trabajo: sentado 1,4 · de pie 1,55 · físico 1,7. Ejercicio (días/semana, fuerza o cardio): no +0 · 1–2 +0,05 · 3–4 +0,1 · 5 o más +0,15. Andar a diario (≈ 1 hora o 10.000 pasos): +0,1. De 1,4 a 1,95. (Hasta el 2026-10-20 el trabajo sentado era 1,2 y el entrenamiento sumaba 0,15/0,3/0,45: con 3–4 días daba lo mismo, 1,5, pero sin ejercicio subestimaba el gasto.)
+2. **Gasto del día** = reposo × factor de actividad (PAL de la FAO/OMS/UNU 2004: una vida sedentaria es 1,40–1,69; una hora diaria de ejercicio moderado o intenso suma ~0,2). Trabajo: sentado 1,4 · de pie 1,55 · físico 1,7. Ejercicio (días/semana, fuerza o cardio): no +0 · 1–2 +0,05 · 3–4 +0,1 · 5 o más +0,15. Andar a diario (≈ 1 hora o 10.000 pasos): +0,1. De 1,4 a 1,95. Después se suma la corrección de gasto (ver más abajo). (Hasta el 2026-10-20 el trabajo sentado era 1,2 y el entrenamiento sumaba 0,15/0,3/0,45: con 3–4 días daba lo mismo, 1,5, pero sin ejercicio subestimaba el gasto.)
 3. **Objetivo**: perder grasa −20 % (como mucho −500 kcal) · mantener · ganar músculo +10 % (como mucho +300). Redondeo a 10 kcal y nunca por debajo del mínimo: **1.200 kcal mujeres / 1.500 hombres** (o el `kcal_minimas` que ya tenga la persona: Fran, 1.400).
 4. **Proteína** (g/kg), según el objetivo y si hace fuerza (pesas, máquinas, calistenia; quien hace de todo, fuerza):
 
@@ -52,6 +52,15 @@ Al darse de alta, y cada vez que alguien cambia de objetivo en Ajustes › Mi ob
 Además, la pasta, el arroz, la quinoa o el cuscús del **almuerzo** (el plato principal) llevan **al menos 60 g** (ración pequeña de la UCM); en la cena son guarnición y no tienen mínimo. Con 1.655 kcal eso sube algo los hidratos de esos almuerzos: el generador lo compensa con las otras comidas.
 
 Si por los topes un plato no llega a sus hidratos (le faltan más del 5 %), la app añade **pan blanco** (20–80 g, solo en el almuerzo y la cena y si el plato no lleva ya pan) y, si aún faltan 10 g o más, **una pieza de fruta de postre** (manzana, plátano o kiwi: cambia según el plato), sin alimentos excluidos, y recalcula el resto. Salen en la receta como «acompañamiento», en la lista de la compra y no se eligen en «Cambiar cantidades». Las recetas nuevas (propias o de IA) se comprueban sin acompañamientos. Simulación con la biblioteca real (159 recetas, 5 planes por perfil): Fran con 2.720 kcal, 0 de 70 días a revisar, pan o fruta en ~150 de 280 comidas; Natalia y una mujer con 1.200 kcal, 0 de 70. Con ~4.000 kcal en 4 comidas (hombre de 90 kg que quiere ganar músculo), 65 de 70 días a revisar: haría falta una quinta comida.
+
+## Corrección de gasto y gasto estimado
+
+La fórmula (Mifflin-St Jeor × PAL) es una media de población: puede errar ±10 %. Dos piezas la afinan con tus datos:
+
+- **Corrección de gasto** (`config.ajuste_gasto_kcal`, de −600 a +600 kcal, 0 por defecto): se suma al gasto de la fórmula antes de aplicar la meta (perder −20 %, ganar +10 %…). Se edita en *Mi objetivo*, persiste al cambiar de meta y no necesita cambios en la base de datos (es una clave de `config`). `calcularObjetivos_` devuelve `gasto_formula`, `ajuste_gasto` y `gasto` (= suma).
+- **Gasto estimado** (`estimarGasto_`, `web/motor/Progreso.js`): kcal medias de los días con **todas** las comidas en «hecha» menos la variación de la media semanal de peso × 7.700 kcal/kg, entre el inicio y el fin de los últimos 28 días. Exige ≥ 3 pesajes en cada semana extrema, ≥ 10 días completos y ≥ 70 % de cobertura. `sugerirCorreccionGasto_` da la diferencia con la fórmula pesada por la confianza (días/28 × cobertura), con tope ±400 y de 10 en 10. Se muestra en *Nuevo plan* como sugerencia; nunca se aplica sola.
+
+Limitación: las comidas libres, saltadas o sin marcar no cuentan, así que comer de más sin registrarlo sesga la estimación a la baja.
 
 ## Tolerancias
 | Nivel | kcal | Proteína | Carbohidratos | Grasa |

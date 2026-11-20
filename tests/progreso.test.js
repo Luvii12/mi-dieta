@@ -150,3 +150,62 @@ test('promoverPlanes: el siguiente pasa a activo el día que empieza', () => {
   assert.deepEqual(despues.map(p => p.estado), ['archivado', 'activo']);
   assert.equal(numeroBloque_(despues, despues[1]), 2);
 });
+
+// ---------- Gasto estimado y corrección sugerida ----------
+
+// Pesos (normalizados) de 2026-10-04 a 2026-10-31, uno al día, con `porDia` kg de cambio diario desde 75.
+const pesosGasto = porDia => Array.from({ length: 28 }, (_, i) => ({ fecha: sumarDias_('2026-10-04', i), peso: 75 + porDia * i }));
+// 4 comidas de 500 kcal cada día entre `desde` y `hasta` (incluidos), con la marca `hecha`.
+function comidasGasto(desde, hasta, hecha) {
+  const r = [];
+  for (let f = desde; f <= hasta; f = sumarDias_(f, 1)) ['Desayuno', 'Comida', 'Merienda', 'Cena'].forEach(c => r.push({ fecha: f, comida: c, kcal: 500, hecha: hecha || 'si' }));
+  return r;
+}
+
+test('estimarGasto: peso estable → gasto = lo que comes', () => {
+  const e = P.estimarGasto_(pesosGasto(0), comidasGasto('2026-10-04', '2026-10-31'), HOY);
+  assert.equal(e.disponible, true);
+  assert.equal(e.gasto, 2000);
+  assert.equal(e.kcal_media, 2000);
+  assert.equal(e.cambio_kg, 0);
+  assert.equal(e.cobertura, 100);
+  assert.equal(e.dias_contados, e.dias);
+});
+
+test('estimarGasto: si bajas de peso, el gasto es mayor que lo que comes', () => {
+  const e = P.estimarGasto_(pesosGasto(-0.05), comidasGasto('2026-10-04', '2026-10-31'), HOY);
+  assert.equal(e.disponible, true);
+  assert.ok(e.cambio_kg < 0);
+  assert.ok(e.gasto > 2300 && e.gasto < 2500, 'gasto ' + e.gasto);
+});
+
+test('estimarGasto: los días con una comida libre o sin marcar no cuentan', () => {
+  const comidas = comidasGasto('2026-10-04', '2026-10-31');
+  comidas.filter(c => c.fecha >= '2026-10-20' && c.fecha <= '2026-10-23' && c.comida === 'Cena').forEach(c => { c.hecha = 'libre'; });
+  const e = P.estimarGasto_(pesosGasto(0), comidas, HOY);
+  assert.equal(e.disponible, true);
+  assert.equal(e.gasto, 2000);
+  assert.ok(e.dias_contados < e.dias);
+
+  const mal = comidasGasto('2026-10-04', '2026-10-31');
+  mal.forEach(c => { if (c.fecha > '2026-10-12') c.hecha = ''; });
+  const r = P.estimarGasto_(pesosGasto(0), mal, HOY);
+  assert.deepEqual(JSON.parse(JSON.stringify(r)), { disponible: false, motivo: 'cobertura' });
+});
+
+test('estimarGasto: sin pesajes suficientes no hay estimación', () => {
+  assert.equal(P.estimarGasto_([], [], HOY).motivo, 'pesajes');
+  const pocos = pesosGasto(0).filter(p => p.fecha <= '2026-10-05' || p.fecha >= '2026-10-31');
+  assert.equal(P.estimarGasto_(pocos, comidasGasto('2026-10-04', '2026-10-31'), HOY).motivo, 'pesajes');
+});
+
+test('sugerirCorreccionGasto: diferencia con la fórmula pesada por la confianza, de 10 en 10 y con tope', () => {
+  const est = (gasto, dias, cobertura) => ({ disponible: true, gasto, dias, cobertura });
+  // (2330 − 2550) · (21/28 · 0,9) = −148,5 → −150
+  assert.equal(P.sugerirCorreccionGasto_(2550, est(2330, 21, 90)), -150);
+  assert.equal(P.sugerirCorreccionGasto_(2550, est(1500, 27, 100)), -400, 'tope');
+  assert.equal(P.sugerirCorreccionGasto_(2000, est(3500, 27, 100)), 400, 'tope');
+  assert.ok(Object.is(P.sugerirCorreccionGasto_(2550, est(2550, 21, 90)), 0));
+  assert.equal(P.sugerirCorreccionGasto_(2550, { disponible: false, motivo: 'pesajes' }), null);
+  assert.equal(P.sugerirCorreccionGasto_(2550, null), null);
+});

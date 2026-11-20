@@ -122,7 +122,10 @@ export function pintarPerfil(contenedor, alta, terminar) {
   const nacimiento = h('input', { type: 'date', name: 'nacimiento', autocomplete: 'bday', value: perfil.nacimiento || '', max: new Date().toISOString().slice(0, 10) });
   const altura = h('input', { type: 'text', inputmode: 'numeric', name: 'altura', autocomplete: 'off', value: perfil.altura_cm || '' });
   const peso = h('input', { type: 'text', inputmode: 'decimal', name: 'peso', autocomplete: 'off', value: conComa(pesoConocido(perfil)) });
-  [nombre, nacimiento, altura, peso].forEach(i => i.addEventListener('input', olvidar));
+  // Corrección del gasto sobre la fórmula (kcal/día, con signo); solo en «Mi objetivo», no en el alta.
+  const ajusteGasto = h('input', { type: 'text', inputmode: 'numeric', name: 'ajuste_gasto', autocomplete: 'off',
+    value: config.ajuste_gasto_kcal ? String(config.ajuste_gasto_kcal) : '' });
+  [nombre, nacimiento, altura, peso, ajusteGasto].forEach(i => i.addEventListener('input', olvidar));
 
   const notaTrabajo = h('p', { class: 'texto-ayuda' }, TRABAJOS[datos.trabajo].nota);
   // El tipo de ejercicio solo se pregunta si hace ejercicio.
@@ -169,7 +172,7 @@ export function pintarPerfil(contenedor, alta, terminar) {
       calcular.disabled = true;
       textoCalcular.textContent = 'Calculando…';
       try {
-        const r = await llamar('guardarPerfil', { perfil: p, probar: true });
+        const r = await llamar('guardarPerfil', alta ? { perfil: p, probar: true } : { perfil: p, probar: true, ajuste_gasto_kcal: ajusteGasto.value });
         pintarResultado(resultado, r, alta, terminar);
         resultado.querySelector('h2').focus();
       } catch (err) {
@@ -205,6 +208,12 @@ export function pintarPerfil(contenedor, alta, terminar) {
       h('div', { class: 'campo' }, h('span', { class: 'campo-etiqueta' }, 'Sexo'), selector('sexo', SEXOS, 'Sexo', olvidar)),
       campo('Fecha de nacimiento', nacimiento),
       h('div', { class: 'formulario-campos' }, campo('Altura', altura, 'cm'), campo('Peso de hoy', peso, 'kg')))),
+  alta ? null : seccion('perfil-titulo-gasto', 'tune', 'Corrección de gasto',
+    h('div', { class: 'tarjeta tarjeta-ajuste' },
+      campo('Corrección', ajusteGasto, 'kcal/día'),
+      h('p', { class: 'texto-ayuda' },
+        'Suma o resta calorías al gasto que calcula la fórmula. Ponla si tu peso no se mueve como esperas con tu objetivo ' +
+        '(por ejemplo −200 si te sobran calorías; hasta ±600). En «Nuevo plan» la app te sugiere un valor con tus datos.'))),
   estado,
   calcular);
 
@@ -240,7 +249,7 @@ function pintarResultado(contenedor, r, alta, terminar) {
     estado.textContent = '';
     texto.textContent = 'Guardando…';
     try {
-      const guardado = await llamar('guardarPerfil', { perfil: r.perfil });
+      const guardado = await llamar('guardarPerfil', { perfil: r.perfil, ajuste_gasto_kcal: r.ajuste_gasto_kcal });
       guardarLocal(CACHE_CONFIG, guardado.config);
       document.getElementById('marca-sub-kcal').textContent = `${numero(kcal)} kcal/día`;
       if (guardado.comidas_cambiadas) {
@@ -285,7 +294,9 @@ function pintarResultado(contenedor, r, alta, terminar) {
     })),
     h('div', { class: 'tarjeta tarjeta-ajuste' },
       h('p', { class: 'texto-ayuda' },
-        `Gastas unas ${numero(c.gasto)} kcal al día (${numero(c.tmb)} en reposo). Para ${meta.nombre.toLowerCase()}: ` +
+        `Gastas unas ${numero(c.gasto)} kcal al día (${numero(c.tmb)} en reposo` +
+        (c.ajuste_gasto ? `; la fórmula da ${numero(c.gasto_formula)} y tu corrección es ${c.ajuste_gasto > 0 ? '+' : '−'}${numero(Math.abs(c.ajuste_gasto))}` : '') +
+        `). Para ${meta.nombre.toLowerCase()}: ` +
         `${numero(kcal)} kcal, con ${numero(c.dia.P)} g de proteína (${numero(c.proteina_g_kg, 1)} g por kg), ` +
         `${numero(c.dia.C)} g de hidratos y ${numero(c.dia.G)} g de grasa.`),
       c.aviso ? nota('error', 'texto-terciario', c.aviso) : null,

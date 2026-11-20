@@ -352,3 +352,88 @@ test('activarPlan: un borrador de 4 comidas se adapta al activarlo si la persona
   assert.equal(r.ok, true, r.error);
   assert.ok(m.contexto.leerTabla_('plan_comidas').every(f => f.comida !== 'Merienda'));
 });
+
+// ---------- Corrección de gasto ----------
+
+test('validarAjusteGasto: vacío es 0; acepta signo y coma; de −600 a +600', () => {
+  assert.equal(P.validarAjusteGasto_(undefined), 0);
+  assert.equal(P.validarAjusteGasto_(''), 0);
+  assert.equal(P.validarAjusteGasto_('  '), 0);
+  assert.equal(P.validarAjusteGasto_('−200'), -200, 'con el signo menos tipográfico');
+  assert.equal(P.validarAjusteGasto_('-150,4'), -150);
+  assert.equal(P.validarAjusteGasto_('+100'), 100);
+  assert.equal(P.validarAjusteGasto_(600), 600);
+  assert.ok(Object.is(P.validarAjusteGasto_('-0,2'), 0), 'nunca −0');
+  assert.throws(() => P.validarAjusteGasto_('601'), /corrección de gasto/);
+  assert.throws(() => P.validarAjusteGasto_(-700), /entre −600 y \+600/);
+  assert.throws(() => P.validarAjusteGasto_('abc'), /corrección de gasto/);
+});
+
+test('objetivos: la corrección de gasto se suma al de la fórmula y mueve las kcal', () => {
+  // Gasto de la fórmula 2.492 (sentado, sin ejercicio, 80 kg, 180 cm, 30 años); mantener = gasto.
+  const sin = P.calcularObjetivos_(perfil({ meta: 'mantener' }), HOY);
+  assert.equal(sin.ajuste_gasto, 0);
+  assert.equal(sin.gasto_formula, sin.gasto, 'sin corrección, nada cambia');
+  assert.equal(sin.kcal, 2490);
+
+  const con = P.calcularObjetivos_(perfil({ meta: 'mantener' }), HOY, undefined, -200);
+  assert.equal(con.gasto_formula, 2492);
+  assert.equal(con.ajuste_gasto, -200);
+  assert.equal(con.gasto, 2292);
+  assert.equal(con.kcal, 2290);
+  assert.equal(con.proteina_g_kg, sin.proteina_g_kg, 'la proteína no depende de la corrección');
+
+  // El porcentaje de perder grasa se calcula sobre el gasto corregido: (2.292 · 0,8 → −458) → 1.834 → 1.830.
+  assert.equal(P.calcularObjetivos_(perfil({ meta: 'perder' }), HOY, undefined, -200).kcal, 1830);
+  // Nunca por debajo del mínimo.
+  assert.equal(P.calcularObjetivos_(perfil({ meta: 'perder', sexo: 'mujer', peso_kg: 45, altura_cm: 150 }), HOY, undefined, -600).kcal, 1200);
+  assert.throws(() => P.calcularObjetivos_(perfil(), HOY, undefined, 900), /corrección de gasto/);
+});
+
+test('guardarPerfil: la corrección de gasto se guarda, sobrevive a cambiar de objetivo y se puede quitar', () => {
+  const m = cargarMotor('2026-10-21T10:00:00+02:00', COMUNES());
+  const alta = m.llamar('guardarPerfil', { perfil: DATOS_ALTA });
+  assert.equal(alta.ok, true, alta.error);
+  assert.equal(alta.datos.ajuste_gasto_kcal, 0);
+  assert.equal(alta.datos.config.ajuste_gasto_kcal, undefined, 'sin corrección no se escribe nada en config');
+
+  const probar = m.llamar('guardarPerfil', { perfil: alta.datos.perfil, ajuste_gasto_kcal: '−200', probar: true });
+  assert.equal(probar.ok, true, probar.error);
+  assert.equal(probar.datos.calculo.gasto, alta.datos.calculo.gasto - 200);
+  assert.equal(probar.datos.ajuste_gasto_kcal, -200);
+  assert.equal(m.llamar('config').datos.ajuste_gasto_kcal, undefined, 'probar no guarda nada');
+
+  const con = m.llamar('guardarPerfil', { perfil: alta.datos.perfil, ajuste_gasto_kcal: '-200' });
+  assert.equal(con.ok, true, con.error);
+  assert.equal(con.datos.config.ajuste_gasto_kcal, -200);
+  assert.equal(con.datos.calculo.gasto_formula, alta.datos.calculo.gasto);
+  assert.ok(con.datos.calculo.kcal < alta.datos.calculo.kcal);
+
+  // Cambiar de objetivo sin decir nada de la corrección la mantiene (y los objetivos por comida la reflejan).
+  const ganar = m.llamar('guardarPerfil', { perfil: Object.assign({}, con.datos.perfil, { meta: 'ganar' }) });
+  assert.equal(ganar.ok, true, ganar.error);
+  assert.equal(ganar.datos.ajuste_gasto_kcal, -200);
+  assert.equal(ganar.datos.config.ajuste_gasto_kcal, -200);
+  assert.equal(ganar.datos.calculo.gasto, ganar.datos.calculo.gasto_formula - 200);
+  assert.deepEqual(ganar.datos.config.objetivo_cena, ganar.datos.calculo.comidas.Cena);
+
+  // Un valor no válido se rechaza sin cambiar nada; vacío la quita.
+  assert.match(m.llamar('guardarPerfil', { perfil: con.datos.perfil, ajuste_gasto_kcal: '999' }).error, /corrección de gasto/);
+  assert.equal(m.llamar('config').datos.ajuste_gasto_kcal, -200);
+  const quitada = m.llamar('guardarPerfil', { perfil: con.datos.perfil, ajuste_gasto_kcal: '' });
+  assert.equal(quitada.datos.config.ajuste_gasto_kcal, 0);
+  assert.equal(quitada.datos.calculo.gasto, quitada.datos.calculo.gasto_formula);
+});
+
+test('gastoDelBloque: fórmula, corrección actual y estimación; null si el perfil no está completo', () => {
+  const m = cargarMotor('2026-10-21T10:00:00+02:00', COMUNES());
+  const p = perfil({ meta: 'mantener' });
+  const config = { perfil: p, kcal_minimas: 1400, ajuste_gasto_kcal: -100 };
+  const g = m.contexto.gastoDelBloque_(config, [], [], HOY);
+  assert.equal(g.formula, 2492);
+  assert.equal(g.ajuste_actual, -100);
+  assert.deepEqual(JSON.parse(JSON.stringify(g.estimado)), { disponible: false, motivo: 'pesajes' });
+  assert.equal(g.sugerida, null);
+  assert.equal(m.contexto.gastoDelBloque_({ kcal_minimas: 1400 }, [], [], HOY), null, 'sin perfil');
+  assert.equal(m.contexto.gastoDelBloque_({ perfil: { nombre: 'Antiguo' } }, [], [], HOY), null, 'perfil incompleto');
+});

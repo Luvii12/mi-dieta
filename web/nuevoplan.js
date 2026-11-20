@@ -116,6 +116,27 @@ function tarjetaPropuesta(plan, repintar) {
     h('a', { class: 'enlace-suave', href: '#ajustes' }, icono('tune'), 'Personalizar macronutrientes manualmente'));
 }
 
+const MOTIVOS_GASTO = {
+  pesajes: 'Aún no hay pesajes suficientes en las últimas 4 semanas para estimar tu gasto: pésate cada mañana (al menos 3 veces en la primera y en la última semana).',
+  cobertura: 'Para estimar tu gasto hace falta marcar como hechas casi todas las comidas de las últimas 4 semanas. Las comidas libres, saltadas o sin marcar no cuentan.',
+};
+
+const conSigno = n => (n > 0 ? '+' : n < 0 ? '−' : '') + numero(Math.abs(n));
+
+// Gasto estimado con los pesajes y las comidas hechas, frente al de la fórmula (balance.gasto, motor/Progreso.js).
+// Solo sugiere: la corrección se aplica a mano en «Mi objetivo».
+function tarjetaGasto(g) {
+  const e = g.estimado;
+  const cambia = e.disponible && g.sugerida !== null && Math.abs(g.sugerida - g.ajuste_actual) >= 50;
+  return h('section', { class: 'tarjeta tarjeta-ajuste', 'aria-labelledby': 'gasto-titulo' },
+    h('div', { class: 'seccion-titulo' }, icono('speed', 'texto-primario'), h('h2', { id: 'gasto-titulo' }, 'Tu gasto con tus datos')),
+    h('p', { class: 'texto-ayuda' }, e.disponible
+      ? `Con lo que has comido y cómo ha cambiado tu peso, gastas unas ${numero(e.gasto)} kcal al día (la fórmula da ${numero(g.formula)}). ` +
+        (cambia ? `Corrección sugerida: ${conSigno(g.sugerida)} kcal (ahora tienes ${conSigno(g.ajuste_actual)}).` : 'Tu corrección actual ya está cerca de eso.')
+      : MOTIVOS_GASTO[e.motivo] || ''),
+    cambia ? h('a', { class: 'enlace-suave', href: '#perfil' }, icono('tune'), 'Aplicarla en Mi objetivo') : null);
+}
+
 // Partes de la vista. acciones: {activar(ajusteKcal), regenerar(), repintar()}.
 export function vistaNuevoPlan(plan, acciones) {
   const balance = plan.balance;
@@ -131,6 +152,7 @@ export function vistaNuevoPlan(plan, acciones) {
     balance ? banner(balance) : null,
     balance ? tarjetaBalance(balance) : null,
     balance ? tarjetaPropuesta(plan, acciones.repintar) : null,
+    balance && balance.gasto ? tarjetaGasto(balance.gasto) : null,
     h('div', { class: 'acciones-plan' },
       h('button', { type: 'button', class: 'boton boton-primario boton-grande', onclick: () => acciones.activar(balance ? eleccion[plan.plan_id] : 0) },
         icono('event_available'), 'Activar plan', icono('arrow_forward')),

@@ -226,12 +226,65 @@ function proponerAjuste_(datos) {
     opciones: [recomendada, alternativa] };
 }
 
+// ---------- Gasto estimado con los datos de la persona ----------
+// La fórmula del perfil (Perfil.js) falla entre un 10 y un 15 % de una persona a otra. Con los pesajes y lo que
+// se ha comido de verdad se puede estimar el gasto real: kcal medias − (cambio de peso × 7.700 / días).
+const KCAL_POR_KG = 7700;
+const GASTO_VENTANA_DIAS = 28;        // se mira desde hace 28 días hasta ayer
+const GASTO_PESAJES_MINIMOS = 3;      // pesajes en cada semana de referencia (la primera y la última de la ventana)
+const GASTO_DIAS_CONTADOS_MINIMOS = 10;
+const GASTO_COBERTURA_MINIMA = 0.7;   // parte de los días del tramo con todas sus comidas hechas
+const GASTO_CORRECCION_MAXIMA = 400;  // kcal: tope de lo que la sugerencia se aparta de la fórmula
+
+// pesos: de normalizarPesos_. comidas: filas de `plan_comidas` ({fecha, comida, hecha, kcal}); solo cuentan los
+// días en que TODAS sus comidas están hechas ('si'): una comida libre, saltada o sin marcar no dice qué se comió.
+// Compara la media de peso de la primera semana de la ventana con la de la última (hasta ayer) y las kcal medias
+// de los días completos entre una y otra. Devuelve {disponible: true, gasto, kcal_media, cambio_kg, dias,
+// dias_contados, cobertura (%)} o {disponible: false, motivo: 'pesajes' | 'cobertura'}.
+function estimarGasto_(pesos, comidas, hoy) {
+  const fin = sumarDias_(hoy, -1);
+  const inicio = sumarDias_(hoy, -GASTO_VENTANA_DIAS);
+  const antes = mediaVentana_(pesos, inicio, sumarDias_(inicio, 6));
+  const ahora = mediaVentana_(pesos, sumarDias_(fin, -6), fin);
+  if (!antes || !ahora || antes.n < GASTO_PESAJES_MINIMOS || ahora.n < GASTO_PESAJES_MINIMOS) return { disponible: false, motivo: 'pesajes' };
+  // Tramo (desde, hasta]: entre las fechas centrales de las dos semanas de pesajes.
+  const desde = sumarDias_(antes.desde, Math.round(antes.centro));
+  const hasta = sumarDias_(ahora.desde, Math.round(ahora.centro));
+  const dias = diasEntre_(desde, hasta); // entre 15 y 27 días, según qué días de cada semana tengan pesaje
+
+  const filas = {};
+  comidas.forEach(c => {
+    if (c.fecha > desde && c.fecha <= hasta) filas[c.fecha + '|' + c.comida] = c; // una por día y comida (la última gana)
+  });
+  const porDia = {};
+  Object.keys(filas).forEach(k => { (porDia[filas[k].fecha] = porDia[filas[k].fecha] || []).push(filas[k]); });
+  const completos = Object.keys(porDia).filter(f => porDia[f].every(c => c.hecha === 'si'));
+  const cobertura = completos.length / dias;
+  if (completos.length < GASTO_DIAS_CONTADOS_MINIMOS || cobertura < GASTO_COBERTURA_MINIMA) return { disponible: false, motivo: 'cobertura' };
+
+  const kcalMedia = completos.reduce((s, f) => s + porDia[f].reduce((t, c) => t + (Number(c.kcal) || 0), 0), 0) / completos.length;
+  const cambio = ahora.media - antes.media;
+  return { disponible: true, gasto: Math.round(kcalMedia - cambio * KCAL_POR_KG / dias), kcal_media: Math.round(kcalMedia),
+    cambio_kg: redondear_(cambio, 2), dias: dias, dias_contados: completos.length, cobertura: Math.round(cobertura * 100) };
+}
+
+// Corrección de gasto (kcal sobre la fórmula, de 10 en 10) que sugiere la estimación: la diferencia con la
+// fórmula, pesada por la confianza (más días y más comidas hechas, más peso) y con tope de ±400. null si la
+// estimación no está disponible.
+function sugerirCorreccionGasto_(gastoFormula, estimado) {
+  if (!estimado || !estimado.disponible) return null;
+  const confianza = Math.min(1, estimado.dias / GASTO_VENTANA_DIAS) * (estimado.cobertura / 100);
+  const bruta = (estimado.gasto - gastoFormula) * confianza;
+  const acotada = Math.max(-GASTO_CORRECCION_MAXIMA, Math.min(GASTO_CORRECCION_MAXIMA, bruta));
+  return Math.round(acotada / 10) * 10 || 0;
+}
+
 const fmt_ = n => String(redondear_(n, 2)).replace('.', ',');
 const fmtEntero_ = n => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 
 if (typeof module !== 'undefined') {
   module.exports = {
     AJUSTE_KCAL, diasEntre_, normalizarPesos_, mediaVentana_, mediaMovil_, ritmoSemanal_, cambioSemana_,
-    adherencia_, racha_, ajustarObjetivos_, proponerAjuste_,
+    adherencia_, racha_, ajustarObjetivos_, proponerAjuste_, estimarGasto_, sugerirCorreccionGasto_,
   };
 }
