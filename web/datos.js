@@ -157,7 +157,19 @@ export async function valorar(recetaId, valor) {
 
 export const alternativas = (planId, fecha, comida) => llamar('alternativas', { plan_id: planId, fecha, comida });
 
+// Con «cocinar para varios días» un cambio llega también a otros días (`tambien`): se vuelve a pedir el plan.
+async function recargarSiHayMas(tambien) {
+  if (!tambien || !tambien.length) return;
+  try {
+    guardarPlan(await llamar('plan'));
+    avisarCambio();
+  } catch (err) {
+    // Se actualizará al abrir Plan.
+  }
+}
+
 // Cambia el plato en el servidor y sustituye el día guardado por el que devuelve (gramos y macros nuevos).
+// Devuelve las fechas de los otros días que han cambiado con él (cocinar para varios días).
 export async function cambiarPlato(planId, fecha, comida, recetaId) {
   const nuevo = await llamar('cambiarPlato', { plan_id: planId, fecha, comida, receta_id: recetaId });
   modificarDias((id, dia) => {
@@ -167,6 +179,34 @@ export async function cambiarPlato(planId, fecha, comida, recetaId) {
     dia.evaluacion = nuevo.evaluacion;
     dia.revisar = nuevo.revisar;
   });
+  await recargarSiHayMas(nuevo.tambien);
+  return nuevo.tambien || [];
+}
+
+// Rehace desde mañana los planes que quedan (rotación y «cocinar para varios días») y guarda el plan nuevo.
+export async function rehacerPlanes() {
+  const r = await llamar('rehacerPlanes');
+  guardarPlan(await llamar('plan'));
+  avisarCambio();
+  return r;
+}
+
+// Días seguidos del plan guardado con el mismo plato en esa comida, antes y después de `fecha`
+// ({antes: [fechas], despues: [fechas]}): con «cocinar para varios días», se cocina una vez para todos.
+export function diasConElMismoPlato(planId, fecha, comida, recetaId) {
+  const plan = leerPlan() || {};
+  const p = [plan.activo, plan.siguiente, plan.borrador].find(x => x && x.plan_id === planId);
+  const receta = f => {
+    const dia = p && p.dias.find(d => d.fecha === f);
+    const c = dia && dia.comidas.find(x => x.comida === comida);
+    return c && c.receta_id;
+  };
+  const sumar = (iso, n) => new Date(Date.parse(iso + 'T00:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+  const antes = [];
+  const despues = [];
+  while (receta(sumar(fecha, -(antes.length + 1))) === recetaId) antes.unshift(sumar(fecha, -(antes.length + 1)));
+  while (receta(sumar(fecha, despues.length + 1)) === recetaId) despues.push(sumar(fecha, despues.length + 1));
+  return { antes, despues };
 }
 
 // Gramos elegidos de una comida ({alimento: g}; vacío = lo que calcula la app). Con `probar` solo dice cómo
@@ -183,6 +223,7 @@ export async function ajustarGramos(planId, fecha, comida, gramos, { siempre = f
     dia.evaluacion = r.dia.evaluacion;
     dia.revisar = r.dia.revisar;
   });
+  await recargarSiHayMas(r.tambien);
   const config = leerLocal(CACHE_CONFIG) || {};
   if (JSON.stringify(config.gramos_receta || {}) !== JSON.stringify(r.gramos_receta)) {
     guardarLocal(CACHE_CONFIG, Object.assign(config, { gramos_receta: r.gramos_receta }));
@@ -195,6 +236,19 @@ export async function ajustarGramos(planId, fecha, comida, gramos, { siempre = f
     }
   }
   return r;
+}
+
+// ---------- Mi rotación (config.rotacion) ----------
+
+export const enRotacion = id => ((leerLocal(CACHE_CONFIG) || {}).rotacion || []).includes(id);
+
+// Pone o quita una receta de la rotación y guarda la configuración que devuelve el servidor.
+export async function alternarRotacion(id) {
+  const config = await llamar('config');
+  const actual = config.rotacion || [];
+  const rotacion = actual.includes(id) ? actual.filter(x => x !== id) : actual.concat([id]);
+  guardarLocal(CACHE_CONFIG, await llamar('config', { cambios: { rotacion } }));
+  return rotacion.includes(id);
 }
 
 // ---------- Recetas propuestas por la IA ----------

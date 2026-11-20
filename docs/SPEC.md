@@ -16,7 +16,9 @@ Generar cada 14 días un plan con 4 comidas diarias (desayuno, almuerzo, meriend
 1. Leer objetivos por comida, preferencias, exclusiones, valoraciones y los platos de los 2 últimos planes.
 2. Para cada día y comida, elegir una receta de la biblioteca:
    - Desayunos y meriendas pueden rotar (máximo 4 veces cada receta en 14 días).
-   - Almuerzos y cenas: sin repetir en el bloque si hay recetas suficientes; si no, máximo 2 veces y nunca en días consecutivos.
+   - Almuerzos y cenas: sin repetir en el bloque si hay recetas suficientes; si no, máximo 2 veces y nunca en días consecutivos (con una sola receta, todos los días).
+   - **Mi rotación** (2026-11-20, `config.rotacion`): en las comidas en que la persona ha marcado recetas («Añadir a mi rotación» en la receta; filtro en Recetas), solo se usan esas, aunque se repitan; en las demás, toda la biblioteca. «Cambiar plato» ofrece siempre toda la biblioteca.
+   - **Cocinar para varios días** (2026-11-20, interruptor en Ajustes, `config.cocinar_menos`): un menú para lunes y martes, otro para miércoles y jueves y otro de viernes a domingo, el mismo todas las semanas (mismos gramos). Los 3 menús no repiten almuerzo ni cena si hay recetas. «Cambiar plato» y «Cambiar cantidades» cambian también los días siguientes del plan que comparten menú y plato. La receta dice «Cocina para N días» o «Es la misma cena del lunes». «Rehacer mi plan desde mañana» (Ajustes) vuelve a generar lo que queda con la rotación y el modo de ahora.
    - Peso de selección: «Me encanta» ×3, «Normal» ×1, «No lo repetiría» excluida. Penalizar recetas usadas en el plan anterior.
    - Nunca usar recetas con alimentos excluidos o alérgenos (filtro duro en código).
 3. Ajustar los gramos de los ingredientes escalables con el optimizador para cuadrar los macros de esa comida.

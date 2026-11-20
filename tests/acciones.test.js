@@ -558,3 +558,80 @@ test('activarPlan manteniendo: no cambia objetivos, pero aplica los editados en 
   assert.deepEqual(siguiente.dias[0].comidas[3].objetivo, { kcal: 400, P: 36, C: 33, G: 13 });
   assert.equal(filas(gas, 'ajustes_historial')[0].aceptada, 'si');
 });
+
+// ---------- Cocinar para varios días ----------
+
+// Plan activo (del lunes 19 al domingo 1) visto el miércoles 21, con «cocinar para varios días» y rehecho.
+function planAgrupadoEnMiercoles() {
+  const { gas, plan } = planActivoEnMiercoles();
+  gas.llamar('config', { cambios: { cocinar_menos: true } });
+  const antes = filas(gas, 'plan_comidas');
+  const r = gas.llamar('rehacerPlanes');
+  assert.equal(r.ok, true, r.error);
+  return { gas, plan, antes, rehacer: r.datos };
+}
+
+const recetaEn = (gas, planId, fecha, comida) => {
+  const f = filas(gas, 'plan_comidas').find(x => x.plan_id === planId && x.fecha === fecha && x.comida === comida);
+  return f.cambiada_por || f.receta_id;
+};
+
+test('rehacerPlanes: desde mañana, por grupos de días; hoy y antes no cambian', () => {
+  const { gas, plan, antes, rehacer } = planAgrupadoEnMiercoles();
+  assert.deepEqual(rehacer.planes.map(p => [p.plan_id, p.estado, p.desde, p.fin]), [[plan.plan_id, 'activo', '2026-10-22', '2026-11-01']]);
+  const ahora = filas(gas, 'plan_comidas');
+  assert.equal(ahora.length, 56);
+  const clave = f => f.fecha + f.comida;
+  const hastaHoy = l => JSON.stringify(l.filter(f => f.fecha <= '2026-10-21').sort((a, b) => clave(a).localeCompare(clave(b))));
+  assert.equal(hastaHoy(ahora), hastaHoy(antes), 'los días hasta hoy, intactos');
+  // Jueves 22 (grupo miércoles-jueves) = miércoles 28 y jueves 29; viernes 23 = sábado 24 = domingo 1.
+  ['Almuerzo', 'Cena'].forEach(c => {
+    assert.equal(recetaEn(gas, plan.plan_id, '2026-10-22', c), recetaEn(gas, plan.plan_id, '2026-10-28', c));
+    assert.equal(recetaEn(gas, plan.plan_id, '2026-10-22', c), recetaEn(gas, plan.plan_id, '2026-10-29', c));
+    assert.equal(recetaEn(gas, plan.plan_id, '2026-10-23', c), recetaEn(gas, plan.plan_id, '2026-11-01', c));
+    assert.equal(recetaEn(gas, plan.plan_id, '2026-10-26', c), recetaEn(gas, plan.plan_id, '2026-10-27', c));
+  });
+  // Sin nada que rehacer (el plan ya ha acabado), no hace nada.
+  const despues = enFecha(gas, '2026-11-01T20:00:00+01:00').llamar('rehacerPlanes');
+  assert.deepEqual(despues.datos.planes, []);
+});
+
+test('cocinar para varios días: cambiar plato o cantidades cambia los días que comparten menú, de ese día en adelante', () => {
+  const { gas, plan } = planAgrupadoEnMiercoles();
+  const base = { plan_id: plan.plan_id, fecha: '2026-10-22', comida: 'Cena' };
+  const original = recetaEn(gas, plan.plan_id, '2026-10-22', 'Cena');
+  const miercoles = recetaEn(gas, plan.plan_id, '2026-10-21', 'Cena');
+  const alternativa = gas.llamar('alternativas', base).datos[0].receta_id;
+  const r = gas.llamar('cambiarPlato', { ...base, receta_id: alternativa });
+  assert.equal(r.ok, true, r.error);
+  assert.deepEqual(r.datos.tambien, ['2026-10-28', '2026-10-29']);
+  ['2026-10-22', '2026-10-28', '2026-10-29'].forEach(f => assert.equal(recetaEn(gas, plan.plan_id, f, 'Cena'), alternativa, f));
+  assert.equal(recetaEn(gas, plan.plan_id, '2026-10-21', 'Cena'), miercoles, 'el miércoles 21 (antes del día cambiado) no cambia');
+
+  // Cambiar el jueves 29 solo: ya no hay días después en su grupo.
+  const otra = gas.llamar('alternativas', { ...base, fecha: '2026-10-29' }).datos[0].receta_id;
+  assert.deepEqual(gas.llamar('cambiarPlato', { ...base, fecha: '2026-10-29', receta_id: otra }).datos.tambien, []);
+
+  // Cantidades: el jueves 22 y el miércoles 28 tienen aún el mismo plato y cambian juntos.
+  const ingrediente = r.datos.comidas.find(c => c.comida === 'Cena').ingredientes.find(i => i.escalable && !i.acompanamiento);
+  const g = gas.llamar('ajustarGramos', { ...base, gramos: { [ingrediente.alimento]: ingrediente.gramos + 20 } });
+  assert.equal(g.ok, true, g.error);
+  assert.deepEqual(g.datos.tambien, ['2026-10-28']);
+  const gramos = f => JSON.parse(JSON.stringify(filas(gas, 'plan_comidas').find(x => x.plan_id === plan.plan_id && x.fecha === f && x.comida === 'Cena').gramos));
+  assert.deepEqual(gramos('2026-10-28'), gramos('2026-10-22'));
+
+  // Sin el modo, solo ese día.
+  gas.llamar('config', { cambios: { cocinar_menos: false } });
+  assert.deepEqual(gas.llamar('cambiarPlato', { ...base, receta_id: original }).datos.tambien, []);
+  assert.equal(recetaEn(gas, plan.plan_id, '2026-10-28', 'Cena'), alternativa);
+});
+
+test('generarPlan: usa la rotación y el modo «cocinar para varios días» de config', () => {
+  const gas = preparar();
+  gas.llamar('config', { cambios: { cocinar_menos: true, rotacion: ['A1', 'A2', 'A3', 'C1', 'C2', 'C3'] } });
+  const p = gas.llamar('generarPlan').datos;
+  const usadas = c => [...new Set(p.dias.map(d => d.comidas.find(x => x.comida === c).receta_id))].sort();
+  assert.deepEqual(usadas('Almuerzo'), ['A1', 'A2', 'A3']);
+  assert.deepEqual(usadas('Cena'), ['C1', 'C2', 'C3']);
+  assert.ok(usadas('Desayuno').length <= 3, 'desayuno de la biblioteca, uno por grupo');
+});

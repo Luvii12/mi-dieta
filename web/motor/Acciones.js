@@ -107,6 +107,8 @@ const ACCIONES = {
         preferencias: leerTabla_('preferencias'),
         recetasPlanAnterior: referencia ? comidas.filter(f => f.plan_id === referencia.plan_id).map(recetaDeComida_) : [],
         gramosReceta: config.gramos_receta,
+        rotacion: config.rotacion,
+        agrupar: config.cocinar_menos === true,
       });
 
       const ahora = fechaHora_(new Date(), "yyyy-MM-dd'T'HH:mm");
@@ -120,6 +122,45 @@ const ACCIONES = {
       const vista = vistaPlan_(filas.plan, filas.comidas, recetasPorId, indexarAlimentos_(leerTabla_('alimentos')));
       vista.descartadas = generado.descartadas;
       return vista;
+    });
+  },
+
+  // Vuelve a generar, desde mañana, los días que quedan del plan activo y enteros el siguiente y el borrador,
+  // con la rotación y el modo «cocinar para varios días» de ahora (config.rotacion, config.cocinar_menos) y los
+  // mismos objetivos que tenía cada plan. Los días de hoy y anteriores no cambian.
+  // Devuelve {planes: [{plan_id, estado, desde, fin, revisar}]} (vacío si no queda nada por rehacer).
+  rehacerPlanes: function () {
+    return conBloqueo_(() => {
+      const config = leerConfig_();
+      const desde = sumarDias_(fechaIso_(new Date()), 1);
+      const planes = planesAlDia_();
+      let comidas = leerTabla_('plan_comidas');
+      const recetasPorId = leerRecetasPorId_();
+      const alimentos = indexarAlimentos_(leerTabla_('alimentos'));
+      const rehechos = [];
+      planes.filter(p => ['activo', 'siguiente', 'borrador'].indexOf(p.estado) >= 0 && p.fin >= desde).forEach(p => {
+        const inicio = desde > p.inicio ? desde : p.inicio;
+        const objetivos = parsearValor_(p.objetivos) || {};
+        const generado = generarPlan_({
+          inicio: inicio,
+          dias: diasEntre_(inicio, p.fin) + 1,
+          recetas: recetasActivas_(recetasPorId),
+          alimentos: alimentos,
+          objetivos: objetivos.comidas,
+          tolerancias: objetivos.tolerancias || config.tolerancias,
+          config: config,
+          valoraciones: leerTabla_('valoraciones'),
+          preferencias: leerTabla_('preferencias'),
+          gramosReceta: config.gramos_receta,
+          rotacion: config.rotacion,
+          agrupar: config.cocinar_menos === true,
+        });
+        const filas = filasDesdePlan_(generado, p.plan_id, objetivos.comidas, objetivos.tolerancias, '').comidas;
+        comidas = comidas.filter(f => f.plan_id !== p.plan_id || f.fecha < inicio).concat(filas);
+        rehechos.push({ plan_id: p.plan_id, estado: p.estado, desde: inicio, fin: p.fin, revisar: generado.dias.filter(d => d.revisar).length });
+      });
+      if (rehechos.length) reescribirTabla_('plan_comidas', comidas);
+      return { planes: rehechos };
     });
   },
 
@@ -216,8 +257,8 @@ const ACCIONES = {
 
   // Cambia el plato de una comida (ver diaCambiable_) por otra receta de la misma comida, con los gramos
   // recalculados para su objetivo (y los que la persona quiere siempre en esa receta). La comida vuelve a
-  // «pendiente». Devuelve el día actualizado.
-  // Petición: {plan_id, fecha, comida, receta_id}.
+  // «pendiente». Con «cocinar para varios días», también los días siguientes que comparten menú (mismoMenu_).
+  // Devuelve el día actualizado, con `tambien`: las fechas de esos otros días. Petición: {plan_id, fecha, comida, receta_id}.
   cambiarPlato: function (peticion) {
     return conBloqueo_(() => {
       const { plan, filas } = diaCambiable_(peticion);
@@ -236,11 +277,19 @@ const ACCIONES = {
         { prohibidos: prohibidos });
       const m = redondearMacros_(ajuste.macros);
       const fila = filas.find(f => f.comida === peticion.comida);
-      const cambios = { cambiada_por: receta.id === fila.receta_id ? '' : receta.id, gramos: ajuste.gramos,
-        kcal: m.kcal, P: m.P, C: m.C, G: m.G, hecha: 'no', fijados: textoFijados_(ajuste.fijados) };
+      const tambien = mismoMenu_(plan, fila, peticion);
+      const cambiosDe = f => ({ cambiada_por: receta.id === f.receta_id ? '' : receta.id, gramos: ajuste.gramos,
+        kcal: m.kcal, P: m.P, C: m.C, G: m.G, hecha: 'no', fijados: textoFijados_(ajuste.fijados) });
+      const cambios = cambiosDe(fila);
       actualizarFilas_('plan_comidas', esLaComida_(peticion), cambios);
+      tambien.forEach(fecha => {
+        const esa = esLaComida_(Object.assign({}, peticion, { fecha: fecha }));
+        actualizarFilas_('plan_comidas', esa, cambiosDe(leerTabla_('plan_comidas').find(esa)));
+      });
       Object.assign(fila, cambios);
-      return vistaPlan_(plan, filas, recetasPorId, alimentos, valoracionesActuales_()).dias[0];
+      const dia = vistaPlan_(plan, filas, recetasPorId, alimentos, valoracionesActuales_()).dias[0];
+      dia.tambien = tambien;
+      return dia;
     });
   },
 
@@ -248,7 +297,8 @@ const ACCIONES = {
   // el optimizador cuadra el resto. Petición: {plan_id, fecha, comida, gramos: {alimento: g} (todos los elegidos;
   // vacío = volver a lo calculado), siempre (también en las demás comidas con esa receta, de hoy en adelante, y
   // en los planes nuevos: config.gramos_receta), probar}. Con `probar` no guarda nada y devuelve cómo quedaría:
-  // {comida, dia: {macros, evaluacion}, objetivoDia}. Si no, el día actualizado y `gramos_receta`.
+  // {comida, dia: {macros, evaluacion}, objetivoDia}. Si no, el día actualizado, `gramos_receta` y `tambien` (como en
+  // cambiarPlato).
   ajustarGramos: function (peticion) {
     return conBloqueo_(() => {
       const { plan, filas } = diaCambiable_(peticion);
@@ -270,10 +320,13 @@ const ACCIONES = {
         return { comida: dia.comidas.find(c => c.comida === peticion.comida), dia: { macros: dia.macros, evaluacion: dia.evaluacion },
           objetivoDia: vista.objetivoDia };
       }
-      actualizarFilas_('plan_comidas', esLaComida_(peticion), cambios);
+      const tambien = mismoMenu_(plan, fila, peticion);
+      [peticion.fecha].concat(tambien).forEach(fecha =>
+        actualizarFilas_('plan_comidas', esLaComida_(Object.assign({}, peticion, { fecha: fecha })), cambios));
       const gramosReceta = guardarGramosReceta_(receta.id, gramos, peticion.siempre === true, peticion);
       const actuales = leerTabla_('plan_comidas').filter(f => f.plan_id === plan.plan_id && f.fecha === peticion.fecha);
-      return { dia: vistaPlan_(plan, actuales, recetasPorId, alimentos, valoracionesActuales_()).dias[0], gramos_receta: gramosReceta };
+      return { dia: vistaPlan_(plan, actuales, recetasPorId, alimentos, valoracionesActuales_()).dias[0], gramos_receta: gramosReceta,
+        tambien: tambien };
     });
   },
 
@@ -539,7 +592,7 @@ function adaptarPlan_(plan, comidas, objetivos, desde, datos) {
   const delPlan = quedan.filter(tocar);
   const faltan = Object.keys(objetivos).filter(c => !delPlan.some(f => f.comida === c));
   if (faltan.length) {
-    const { porComida } = prepararCandidatas_(recetasActivas_(datos.recetasPorId), { objetivos: objetivos, alimentos: datos.alimentos,
+    const { porComida } = prepararCandidatas_(filtrarRotacion_(recetasActivas_(datos.recetasPorId), datos.config.rotacion).recetas, { objetivos: objetivos, alimentos: datos.alimentos,
       valoraciones: datos.valoraciones, preferencias: datos.preferencias, gramosReceta: datos.gramosReceta });
     faltan.forEach(c => {
       if (!porComida[c].length) throw new Error('No hay recetas de ' + c.toLowerCase() + ' que se puedan usar.');
@@ -559,6 +612,16 @@ function adaptarPlan_(plan, comidas, objetivos, desde, datos) {
   const guardados = parsearValor_(plan.objetivos) || {};
   plan.objetivos = { comidas: objetivos, tolerancias: guardados.tolerancias || datos.config.tolerancias };
   return quedan;
+}
+
+// Con «cocinar para varios días» (config.cocinar_menos), cambiar un plato o sus cantidades cambia también los
+// días siguientes del plan que comparten menú (mismo grupo de días, grupoDia_) y aún tienen ese plato en esa
+// comida, para seguir cocinando una vez. Devuelve sus fechas (sin la pedida).
+function mismoMenu_(plan, fila, peticion) {
+  if (leerConfig_().cocinar_menos !== true) return [];
+  const grupo = grupoDia_(peticion.fecha);
+  return leerTabla_('plan_comidas').filter(f => f.plan_id === plan.plan_id && f.comida === peticion.comida && f.fecha > peticion.fecha &&
+    grupoDia_(f.fecha) === grupo && recetaDeComida_(f) === recetaDeComida_(fila)).map(f => f.fecha).sort();
 }
 
 const sinComida_ = comida => 'Ya no tienes ' + String(comida).toLowerCase() + ' en tus comidas.';

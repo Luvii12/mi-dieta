@@ -3,12 +3,13 @@
 // plato» en el plan activo de hoy en adelante y en el siguiente y el borrador (design/mi_dieta_receta_pollo_al_curry).
 // Rutas: #receta/<plan_id>/<fecha>/<comida> (comida de un plan) y #receta/<id> (biblioteca de recetas, con
 // «Hacer mi versión» y, en las propias, «Editar» y «Borrar»; o propuesta de la IA: en lugar de valorar,
-// «Añadir a la biblioteca» o «Descartar»).
+// «Añadir a la biblioteca» o «Descartar»). En las dos, «Mi rotación» (los planes solo usan esas recetas) y, en
+// un almuerzo o una cena que se repite en días seguidos, cuántos días cocinar de una vez.
 
 import { llamar } from './api.js';
 import { h, icono, numero, fechaTitulo, hoyIso, ICONO_COMIDA, avisar, abrirFormulario } from './comun.js';
 import { buscarComida, buscarReceta, guardarPlan, guardarRecetas, guardarPropuestas, marcarComida, valorar,
-  aceptarPropuesta, descartarPropuesta, esPropia, actualizarPropias } from './datos.js';
+  aceptarPropuesta, descartarPropuesta, esPropia, actualizarPropias, diasConElMismoPlato, enRotacion, alternarRotacion } from './datos.js';
 import { vacio } from './hoy.js';
 import { abrirAlimentoNuevo, estadoPropuesta } from './recetas.js';
 import { abrirCambiarPlato } from './cambiar.js';
@@ -24,6 +25,45 @@ const VALORACIONES = [
 const COLOR_GRUPO = { proteina: 'primario', carbohidrato: 'carbo', grasa: 'secundario', lacteo: 'proteina', fruta: 'grasa' };
 
 const esMl = ing => ing.alimento.endsWith('_ml');
+
+const nombreDia = iso => new Date(iso + 'T12:00:00').toLocaleDateString('es-ES', { weekday: 'long' });
+const listaDias = fechas => fechas.map(nombreDia).map((d, i, todos) => (i && i === todos.length - 1 ? ' y el ' : i ? ', el ' : '') + d).join('');
+
+// Almuerzo o cena del plan que también se come en los días de al lado (cocinar para varios días).
+function notaCocinar(planId, fecha, c) {
+  if (c.comida !== 'Almuerzo' && c.comida !== 'Cena') return null;
+  const { antes, despues } = diasConElMismoPlato(planId, fecha, c.comida, c.receta_id);
+  const comida = c.comida.toLowerCase();
+  const texto = antes.length
+    ? (c.comida === 'Cena' ? `Es la misma cena del ${nombreDia(antes[0])}: ya la tienes cocinada.`
+      : `Es el mismo almuerzo del ${nombreDia(antes[0])}: ya lo tienes cocinado.`)
+    : despues.length ? `Cocina para ${despues.length + 1} días: también es tu ${comida} del ${listaDias(despues)}.` : '';
+  return texto ? h('div', { class: 'nota-balance' }, icono('skillet', 'texto-primario'), h('p', null, texto)) : null;
+}
+
+// Botón «Mi rotación»: los planes solo usan las recetas marcadas (en las comidas en que haya alguna).
+function botonRotacion(c) {
+  const boton = h('button', { type: 'button', class: 'boton boton-secundario', 'data-foco': 'rotacion' });
+  const pintar = dentro => {
+    boton.setAttribute('aria-pressed', String(dentro));
+    boton.replaceChildren(icono(dentro ? 'check' : 'add'), dentro ? 'En mi rotación' : 'Añadir a mi rotación');
+  };
+  pintar(enRotacion(c.receta_id));
+  boton.addEventListener('click', async () => {
+    boton.disabled = true;
+    try {
+      const dentro = await alternarRotacion(c.receta_id);
+      pintar(dentro);
+      avisar(dentro ? 'Añadida a tu rotación: tus próximos planes la usarán.' : 'Quitada de tu rotación.');
+    } catch (err) {
+      avisar(err.message);
+    } finally {
+      boton.disabled = false;
+    }
+  });
+  return h('section', { class: 'acciones-receta', 'aria-label': 'Mi rotación' }, boton,
+    h('p', { class: 'texto-ayuda' }, 'Tus planes usan solo las recetas de tu rotación en las comidas en que tengas alguna marcada.'));
+}
 
 // «Revuelve…; sirve…» → ['Revuelve…', 'Sirve…'] (también un paso por línea, como se escriben en la app)
 function pasos(texto) {
@@ -100,7 +140,8 @@ function pintar(contenedor, encontrada) {
           cajaMacro('proteina', 'Proteína', numero(m.P), 'g'),
           cajaMacro('carbo', 'Carbos', numero(m.C), 'g'),
           cajaMacro('grasa', 'Grasas', numero(m.G), 'g'))
-          : h('p', { class: 'texto-ayuda' }, 'Los gramos y los macros se calculan cuando añadas el alimento que falta.')),
+          : h('p', { class: 'texto-ayuda' }, 'Los gramos y los macros se calculan cuando añadas el alimento que falta.'),
+        biblioteca ? null : notaCocinar(plan.plan_id, dia.fecha, c)),
 
       propuesta ? avisoPropuesta(propuesta) : null,
 
@@ -134,6 +175,7 @@ function pintar(contenedor, encontrada) {
             'data-foco': 'valorar-' + v.valor, onclick: valorarCon(v.valor) },
           h('span', { class: 'valoracion-emoji', 'aria-hidden': 'true' }, v.emoji), h('span', null, v.texto))))),
 
+      propuesta ? null : botonRotacion(c),
       biblioteca && !propuesta ? accionesReceta(c) : null,
       cambiable ? h('section', { class: 'acciones-receta', 'aria-label': 'Cambiar el plato' },
         h('button', { type: 'button', class: 'boton boton-secundario', 'data-foco': 'cambiar-cantidades',

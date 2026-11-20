@@ -195,3 +195,57 @@ test('alternativasComida_: suma el día con la nueva receta y ordena las que cua
   }
   assert.throws(() => G.alternativasComida_({ comidas: [] }, 'Cena', SEMILLA.recetas, { objetivos: SEMILLA.objetivos, alimentos }, p.objetivoDia, tol), /no tiene cena/);
 });
+
+// ---------- Cocinar para varios días y Mi rotación ----------
+
+const menuDe = d => JSON.stringify(d.comidas.map(c => [c.comida, c.receta_id, c.gramos]));
+
+test('grupoDia: lunes-martes, miércoles-jueves y de viernes a domingo', () => {
+  assert.deepEqual(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22', '2026-10-23', '2026-10-24', '2026-10-25'].map(G.grupoDia_),
+    ['A', 'A', 'B', 'B', 'C', 'C', 'C']);
+});
+
+test('agrupar: 3 menús que se repiten cada semana, con los mismos gramos y sin repetir almuerzo ni cena', () => {
+  const p = plan(5, { agrupar: true });
+  assert.equal(p.dias.length, 14);
+  const porGrupo = {};
+  p.dias.forEach(d => { (porGrupo[G.grupoDia_(d.fecha)] = porGrupo[G.grupoDia_(d.fecha)] || new Set()).add(menuDe(d)); });
+  assert.deepEqual(Object.keys(porGrupo).sort(), ['A', 'B', 'C']);
+  Object.values(porGrupo).forEach(menus => assert.equal(menus.size, 1, 'cada grupo, siempre el mismo menú'));
+  p.dias.slice(0, 7).forEach((d, i) => assert.equal(menuDe(d), menuDe(p.dias[i + 7]), 'la 2.ª semana repite la 1.ª'));
+  ['Almuerzo', 'Cena'].forEach(c => assert.equal(Object.keys(usosDe(p, c)).length, 3, c));
+  assert.ok(p.dias.filter(d => d.revisar).length <= 2, 'casi todos los días cuadran');
+});
+
+test('agrupar: desde cualquier día y con menos días (al rehacer lo que queda de un plan)', () => {
+  const p = plan(2, { agrupar: true, inicio: '2026-10-24', dias: 9 }); // sábado
+  assert.equal(p.fin, '2026-11-01');
+  assert.equal(p.dias.length, 9);
+  assert.equal(menuDe(p.dias[0]), menuDe(p.dias[6]), 'el sábado y el viernes siguiente, mismo menú');
+  assert.equal(menuDe(p.dias[1]), menuDe(p.dias[8]), 'domingo y domingo');
+});
+
+test('rotación: en las comidas con recetas marcadas solo salen esas; en las demás, toda la biblioteca', () => {
+  const cenas = SEMILLA.recetas.filter(r => r.comida === 'Cena').slice(0, 2).map(r => r.id);
+  const desayuno = SEMILLA.recetas.find(r => r.comida === 'Desayuno').id;
+  const f = G.filtrarRotacion_(SEMILLA.recetas, cenas.concat([desayuno]));
+  assert.deepEqual([...f.comidas].sort(), ['Cena', 'Desayuno']);
+  assert.equal(f.recetas.filter(r => r.comida === 'Cena').length, 2);
+  assert.equal(f.recetas.filter(r => r.comida === 'Almuerzo').length, SEMILLA.recetas.filter(r => r.comida === 'Almuerzo').length);
+  assert.equal(G.filtrarRotacion_(SEMILLA.recetas, []).recetas.length, SEMILLA.recetas.length);
+
+  // Un solo desayuno en la rotación vale (todos los días el mismo); 2 cenas se alternan.
+  const p = plan(3, { rotacion: cenas.concat([desayuno]) });
+  assert.deepEqual(Object.keys(usosDe(p, 'Desayuno')), [desayuno]);
+  assert.deepEqual(Object.keys(usosDe(p, 'Cena')).sort(), cenas.slice().sort());
+  p.dias.slice(1).forEach((d, i) => assert.notEqual(d.comidas[3].receta_id, p.dias[i].comidas[3].receta_id, 'cenas sin días seguidos'));
+  assert.deepEqual(G.reglasRepeticion_('Almuerzo', 1, {}), { max: 14, consecutivos: true });
+
+  // Con agrupar y 2 cenas para 3 grupos, una se repite.
+  const a = plan(3, { rotacion: cenas, agrupar: true });
+  assert.deepEqual(Object.keys(usosDe(a, 'Cena')).sort(), cenas.slice().sort());
+
+  // Si ninguna receta de la rotación se puede usar, lo dice.
+  const excluido = SEMILLA.recetas.find(r => r.id === desayuno).ingredientes_escalables[0].alimento;
+  assert.throws(() => plan(1, { rotacion: [desayuno], preferencias: [{ tipo: 'excluido', alimento_id: excluido }] }), /desayuno de tu rotación/);
+});

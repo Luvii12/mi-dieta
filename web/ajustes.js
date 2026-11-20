@@ -1,10 +1,11 @@
 // Pantalla «Ajustes»: mi objetivo (perfil.js), objetivos por comida, alimentos que no como, comida libre
-// semanal, peso objetivo, nombres de alimentos (solo Fran, que creó la biblioteca), apariencia (tema) y cuenta (design/mi_dieta_ajustes).
+// semanal, cocinar para varios días y rehacer el plan, peso objetivo, nombres de alimentos (solo Fran, que creó la biblioteca), apariencia (tema) y cuenta (design/mi_dieta_ajustes).
 
 import { llamar, leerLocal, guardarLocal, leerSesion, cerrarSesion, cambiarContrasena, puedoEditarAlimentos } from './api.js';
 import { $, h, icono, numero, avisar, abrirFormulario, COMIDAS, ICONO_COMIDA } from './comun.js';
 import { METAS, ENTRENOS, EJERCICIOS } from './perfil.js';
 import { abrirAlimentoNuevo } from './recetas.js';
+import { rehacerPlanes } from './datos.js';
 
 const CACHE_CONFIG = 'dieta.config';
 const CACHE_ALIMENTOS = 'dieta.alimentos';
@@ -55,6 +56,7 @@ function pintarObjetivos() {
 
   const libre = config.comida_libre_semanal !== false;
   $('interruptor-libre').setAttribute('aria-checked', String(libre));
+  $('interruptor-cocinar').setAttribute('aria-checked', String(config.cocinar_menos === true));
   $('meta-cifra').textContent = config.peso_objetivo ? numero(config.peso_objetivo, 1) : '—';
 }
 
@@ -111,19 +113,38 @@ function editarMeta() {
   });
 }
 
-async function alternarLibre() {
-  const boton = $('interruptor-libre');
+// Interruptor de una clave de config que vale true o false.
+const alternar = (id, clave) => async () => {
+  const boton = $(id);
   const nuevo = boton.getAttribute('aria-checked') !== 'true';
   boton.setAttribute('aria-checked', String(nuevo));
   boton.disabled = true;
   try {
-    await guardarConfig({ comida_libre_semanal: nuevo });
+    await guardarConfig({ [clave]: nuevo });
   } catch (err) {
     boton.setAttribute('aria-checked', String(!nuevo));
     avisar(err.message);
   } finally {
     boton.disabled = false;
   }
+};
+
+function rehacer() {
+  abrirFormulario({
+    titulo: '¿Rehacer tu plan desde mañana?',
+    nota: (config.cocinar_menos ? 'Con «Cocinar para varios días»' : 'Con platos distintos cada día') +
+      ((config.rotacion || []).length ? ' y solo con las recetas de tu rotación' : ' y con toda la biblioteca (no tienes rotación)') +
+      '. Cambian los platos de mañana en adelante (también los que hayas cambiado a mano); hoy y los días pasados se quedan como están.',
+    campos: [],
+    textoGuardar: 'Rehacer plan',
+    foco: 'fila-rehacer',
+    guardar: async () => {
+      const r = await rehacerPlanes();
+      const revisar = r.planes.reduce((s, p) => s + p.revisar, 0);
+      avisar(!r.planes.length ? 'No queda nada por rehacer: tu plan acaba hoy.'
+        : 'Plan rehecho desde mañana.' + (revisar ? ` ${revisar} ${revisar === 1 ? 'día no cuadra' : 'días no cuadran'} del todo con tu objetivo.` : ''));
+    },
+  });
 }
 
 // ---------- Alimentos que no como ----------
@@ -377,7 +398,9 @@ export function prepararAjustes() {
   document.querySelectorAll('#selector-tema button').forEach(b => b.addEventListener('click', () => elegirTema(b.dataset.tema)));
   $('boton-contrasena').addEventListener('click', editarContrasena);
   $('boton-salir').addEventListener('click', salirDeLaCuenta);
-  $('interruptor-libre').addEventListener('click', conConfig(alternarLibre));
+  $('interruptor-libre').addEventListener('click', conConfig(alternar('interruptor-libre', 'comida_libre_semanal')));
+  $('interruptor-cocinar').addEventListener('click', conConfig(alternar('interruptor-cocinar', 'cocinar_menos')));
+  $('fila-rehacer').addEventListener('click', conConfig(rehacer));
   $('fila-meta').addEventListener('click', conConfig(editarMeta));
   $('boton-anadir-excluido').addEventListener('click', conConfig(() => abrirAlimentos('excluir')));
   $('boton-nombres').addEventListener('click', conConfig(() => abrirAlimentos('nombres')));

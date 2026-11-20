@@ -2,7 +2,7 @@
 // «Comida libre».
 
 import { leerLocal } from './api.js';
-import { $, h, icono, numero, tesela, pastillasMacros } from './comun.js';
+import { $, h, icono, numero, tesela, pastillasMacros, avisar, textoTambien } from './comun.js';
 import { alternativas, cambiarPlato, marcarComida } from './datos.js';
 
 function opcion(contenido, accion) {
@@ -15,8 +15,9 @@ async function aplicar(accion) {
   panel.querySelectorAll('button.alternativa').forEach(b => { b.disabled = true; });
   $('panel-estado').textContent = 'Guardando…';
   try {
-    await accion();
+    const tambien = await accion();
     panel.close();
+    if (Array.isArray(tambien) && tambien.length) avisar('Plato cambiado.' + textoTambien(tambien));
   } catch (err) {
     $('panel-estado').textContent = err.message;
     panel.querySelectorAll('button.alternativa').forEach(b => { b.disabled = false; });

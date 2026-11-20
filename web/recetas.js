@@ -4,10 +4,11 @@
 // Arriba, «Crear receta» (#nueva, editor.js), «Pedir a la IA» (#pedir, pedir.js) y las recetas propuestas por
 // la IA pendientes de revisar (llegan de pedir.js o de scripts/recetas_ia.js; aquí se añaden o se descartan).
 // El buscador filtra al escribir por nombre o ingrediente (sin tildes ni mayúsculas; todas las palabras).
+// «Mi rotación» enseña solo las recetas que la persona ha marcado (receta.js): las que usan sus planes.
 
 import { llamar } from './api.js';
 import { h, icono, numero, tesela, avisar, abrirFormulario, normalizar, COMIDAS } from './comun.js';
-import { leerRecetas, guardarRecetas, leerPropuestas, guardarPropuestas, anadirAlimento, actualizarPropias } from './datos.js';
+import { leerRecetas, guardarRecetas, leerPropuestas, guardarPropuestas, anadirAlimento, actualizarPropias, enRotacion } from './datos.js';
 import { vacio } from './hoy.js';
 
 const EMOJI_VALORACION = { me_encanta: ['😍', 'Me encanta'], no_repetir: ['🤔', 'No repetiría'] };
@@ -75,6 +76,7 @@ function seccionPropuestas(propuestas) {
 }
 
 let busqueda = '';
+let soloRotacion = false;
 
 // ¿Tiene la receta todas las palabras buscadas en su nombre, su comida o sus ingredientes?
 function coincide(r, palabras) {
@@ -98,14 +100,22 @@ function gruposRecetas(recetas) {
 function pintar(contenedor, recetas, propuestas) {
   const resultados = h('div', { class: 'resultados-recetas' });
   const estado = h('p', { class: 'subtitulo buscador-estado', role: 'status' });
+  const rotacion = recetas.filter(r => enRotacion(r.id));
   const rellenar = () => {
     const palabras = normalizar(busqueda).split(/\s+/).filter(Boolean);
-    if (!palabras.length) {
+    const base = soloRotacion ? rotacion : recetas;
+    if (soloRotacion && !rotacion.length) {
       estado.textContent = '';
-      resultados.replaceChildren(seccionPropuestas(propuestas || []), ...gruposRecetas(recetas));
+      resultados.replaceChildren(h('p', { class: 'texto-ayuda' },
+        'Aún no tienes recetas en tu rotación. Abre las que de verdad cocinas y toca «Añadir a mi rotación»: tus planes usarán solo esas.'));
       return;
     }
-    const halladas = recetas.filter(r => coincide(r, palabras));
+    if (!palabras.length) {
+      estado.textContent = '';
+      resultados.replaceChildren(soloRotacion ? '' : seccionPropuestas(propuestas || []), ...gruposRecetas(base));
+      return;
+    }
+    const halladas = base.filter(r => coincide(r, palabras));
     estado.textContent = halladas.length
       ? `${halladas.length === 1 ? '1 receta' : `${halladas.length} recetas`} con «${busqueda.trim()}»`
       : `Ninguna receta con «${busqueda.trim()}». Prueba con otra palabra o un ingrediente.`;
@@ -123,6 +133,11 @@ function pintar(contenedor, recetas, propuestas) {
     h('div', { class: 'acciones-recetas' },
       h('a', { class: 'boton boton-discontinuo', href: '#nueva' }, icono('add'), 'Crear receta'),
       h('a', { class: 'boton boton-discontinuo', href: '#pedir' }, icono('auto_awesome'), 'Pedir a la IA')),
+    h('div', { class: 'selector', role: 'group', 'aria-label': 'Recetas que se muestran' },
+      [[false, 'Todas'], [true, `Mi rotación (${rotacion.length})`]].map(([valor, texto]) => h('button', {
+        type: 'button', class: 'selector-opcion', 'aria-pressed': String(soloRotacion === valor), 'data-foco': 'filtro-' + valor,
+        onclick: () => { soloRotacion = valor; pintar(contenedor, recetas, propuestas); contenedor.querySelector(`[data-foco="filtro-${valor}"]`).focus(); },
+      }, texto))),
     h('div', { class: 'campo buscador-recetas' },
       h('span', { class: 'campo-caja' }, h('span', { class: 'icono campo-icono', 'aria-hidden': 'true' }, 'search'), campo)),
     estado,

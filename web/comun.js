@@ -136,6 +136,10 @@ export function abrirFormulario({ titulo, nota, campos, guardar, foco, textoGuar
 // ---------- Aviso flotante ----------
 
 let temporizador = null;
+// «También en 2 días más con el mismo menú.» para las fechas que ha cambiado a la vez un plato o sus cantidades.
+export const textoTambien = fechas => (fechas && fechas.length
+  ? ` También ${fechas.length === 1 ? 'en otro día' : `en ${fechas.length} días más`} con el mismo menú.` : '');
+
 export function avisar(texto) {
   const aviso = $('aviso');
   aviso.textContent = texto;

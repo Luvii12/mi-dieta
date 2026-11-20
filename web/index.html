@@ -132,6 +132,22 @@
             <button id="interruptor-libre" type="button" class="interruptor" role="switch" aria-checked="true"
                     aria-labelledby="titulo-libre" aria-describedby="descripcion-libre"><span class="interruptor-bola"></span></button>
           </div>
+          <div class="preferencia">
+            <div class="preferencia-texto">
+              <span class="preferencia-titulo"><span id="titulo-cocinar">Cocinar para varios días</span></span>
+              <span id="descripcion-cocinar" class="texto-ayuda">Mismo menú el lunes y el martes, el miércoles y el jueves, y de viernes a domingo, todas las semanas: cocinas una vez y guardas táper. Vale para los planes nuevos y al rehacer el plan.</span>
+            </div>
+            <button id="interruptor-cocinar" type="button" class="interruptor" role="switch" aria-checked="false"
+                    aria-labelledby="titulo-cocinar" aria-describedby="descripcion-cocinar"><span class="interruptor-bola"></span></button>
+          </div>
+          <button id="fila-rehacer" type="button" class="objetivo objetivo-boton">
+            <span class="objetivo-icono texto-secundario" aria-hidden="true"><span class="icono">calendar_month</span></span>
+            <span class="objetivo-texto">
+              <span class="objetivo-nombre">Rehacer mi plan desde mañana</span>
+              <span class="objetivo-macros">Con tu rotación de recetas y el modo de arriba</span>
+            </span>
+            <span class="icono objetivo-flecha" aria-hidden="true">chevron_right</span>
+          </button>
           <button id="fila-meta" type="button" class="objetivo objetivo-boton">
             <span class="objetivo-icono texto-secundario" aria-hidden="true"><span class="icono">monitor_weight</span></span>
             <span class="objetivo-texto">

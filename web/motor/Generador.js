@@ -5,6 +5,7 @@ const DIAS_PLAN = 14;
 const INTENTOS_POR_DIA = 20;
 const REINICIOS_PLAN = 500;
 const PLANES_CANDIDATOS = 50;
+const INTENTOS_POR_GRUPO = 60;
 const PESO_VALORACION = { me_encanta: 3, normal: 1 };
 const PENALIZACION_PLAN_ANTERIOR = 0.4;
 
@@ -97,15 +98,32 @@ function prepararCandidatas_(recetas, datos) {
   return { porComida: porComida, descartadas: descartadas };
 }
 
-// Máximo de veces que puede salir cada receta de una comida en el plan, y si se permiten días seguidos.
-function reglasRepeticion_(comida, numRecetas, config) {
-  const minimo = Math.ceil(DIAS_PLAN / numRecetas);
+// «Mi rotación» (config.rotacion: ids de receta): si la persona ha marcado recetas de una comida, en esa
+// comida solo se usan esas (aunque se repitan); en las comidas sin ninguna marcada, toda la biblioteca.
+// Devuelve {recetas, comidas: comidas que salen de la rotación}.
+function filtrarRotacion_(recetas, rotacion) {
+  const ids = new Set(rotacion || []);
+  const comidas = new Set(recetas.filter(r => ids.has(r.id)).map(r => r.comida));
+  return { recetas: recetas.filter(r => !comidas.has(r.comida) || ids.has(r.id)), comidas: comidas };
+}
+
+// «Cocinar para varios días» (config.cocinar_menos): lunes y martes comen lo mismo, miércoles y jueves también,
+// y de viernes a domingo, también; todas las semanas del plan, igual.
+const GRUPO_DIA = ['A', 'A', 'B', 'B', 'C', 'C', 'C'];
+const grupoDia_ = iso => GRUPO_DIA[diaSemana_(iso)];
+
+// Máximo de veces que puede salir cada receta de una comida en el plan, y si se permiten días seguidos
+// (con una sola receta, a la fuerza). `dias`: días del plan (14 salvo al rehacer lo que queda de uno).
+function reglasRepeticion_(comida, numRecetas, config, dias) {
+  const totalDias = dias || DIAS_PLAN;
+  const minimo = Math.ceil(totalDias / numRecetas);
   if (comida === 'Desayuno' || comida === 'Merienda') {
     const max = Number(config['max_rep_' + comida.toLowerCase()]) || 4;
     return { max: Math.max(max, minimo), consecutivos: true };
   }
   // Almuerzo y cena: sin repetir si hay recetas suficientes; si no, el mínimo posible y nunca en días seguidos.
-  return { max: numRecetas >= DIAS_PLAN ? 1 : Math.max(2, minimo), consecutivos: false };
+  if (numRecetas < 2) return { max: totalDias, consecutivos: true };
+  return { max: numRecetas >= totalDias ? 1 : Math.max(2, minimo), consecutivos: false };
 }
 
 // Suma de desvíos relativos frente a la tolerancia del día: 0 = perfecto; < 1 en todo = dentro.
@@ -120,22 +138,29 @@ function puntuacionDia_(evaluacion, tolDia) {
 // ---------- Generación ----------
 
 // datos: {inicio, recetas, alimentos, objetivos: {Desayuno: {...}}, tolerancias: {dia, comida}, config,
-//         valoraciones, preferencias, recetasPlanAnterior: [ids], gramosReceta, azar}. Las comidas del plan son las
-//         que tienen objetivo (quien no desayuna no tiene objetivo de desayuno). `gramosReceta`: los gramos que la
-//         persona quiere siempre en una receta ({receta_id: {alimento: g}}, config.gramos_receta).
+//         valoraciones, preferencias, recetasPlanAnterior: [ids], gramosReceta, rotacion: [ids], agrupar, dias, azar}.
+//         Las comidas del plan son las que tienen objetivo (quien no desayuna no tiene objetivo de desayuno).
+//         `gramosReceta`: los gramos que la persona quiere siempre en una receta ({receta_id: {alimento: g}},
+//         config.gramos_receta). `rotacion`: ver filtrarRotacion_. `agrupar`: cocinar para varios días (grupoDia_).
+//         `dias`: cuántos días (14 si no se dice).
 // Devuelve {inicio, fin, objetivoDia, dias: [{fecha, comidas, macros, evaluacion, revisar}], descartadas}.
 function generarPlan_(datos) {
   const azar = datos.azar || Math.random;
-  const { porComida, descartadas } = prepararCandidatas_(datos.recetas, datos);
+  const numDias = datos.dias || DIAS_PLAN;
+  const rotacion = filtrarRotacion_(datos.recetas, datos.rotacion);
+  const { porComida, descartadas } = prepararCandidatas_(rotacion.recetas, datos);
   const comidas = Object.keys(porComida);
   comidas.forEach(c => {
-    if (porComida[c].length < 2) {
+    if (rotacion.comidas.has(c) && !porComida[c].length) {
+      throw new Error('Ninguna receta de ' + c.toLowerCase() + ' de tu rotación se puede usar. Revisa exclusiones y valoraciones.');
+    }
+    if (!rotacion.comidas.has(c) && porComida[c].length < 2) {
       throw new Error('Hay muy pocas recetas de ' + c.toLowerCase() + ' que se puedan usar (' + porComida[c].length +
         '). Revisa exclusiones y valoraciones.');
     }
   });
   const reglas = {};
-  comidas.forEach(c => { reglas[c] = reglasRepeticion_(c, porComida[c].length, datos.config || {}); });
+  comidas.forEach(c => { reglas[c] = reglasRepeticion_(c, porComida[c].length, datos.config || {}, numDias); });
   const objetivoDia = sumarMacros_(comidas.map(c => datos.objetivos[c]));
   const tolDia = datos.tolerancias.dia;
 
@@ -144,7 +169,8 @@ function generarPlan_(datos) {
   let mejor = null;
   let completos = 0;
   for (let reinicio = 0; reinicio < REINICIOS_PLAN && completos < PLANES_CANDIDATOS; reinicio++) {
-    const dias = intentarPlan_(datos.inicio, comidas, porComida, reglas, objetivoDia, tolDia, azar);
+    const dias = datos.agrupar ? intentarPlanAgrupado_(datos.inicio, numDias, comidas, porComida, objetivoDia, tolDia, azar)
+      : intentarPlan_(datos.inicio, numDias, comidas, porComida, reglas, objetivoDia, tolDia, azar);
     if (!dias) continue;
     completos++;
     const aRevisar = dias.filter(d => d.revisar).length;
@@ -155,17 +181,17 @@ function generarPlan_(datos) {
     if (aRevisar === 0) break;
   }
   if (!mejor) throw new Error('No se ha podido repartir las recetas en 14 días con las reglas de repetición.');
-  return { inicio: datos.inicio, fin: sumarDias_(datos.inicio, DIAS_PLAN - 1), objetivoDia: objetivoDia,
+  return { inicio: datos.inicio, fin: sumarDias_(datos.inicio, numDias - 1), objetivoDia: objetivoDia,
     dias: mejor.dias, descartadas: descartadas };
 }
 
 // Un intento de plan completo. Devuelve null si se queda sin recetas posibles algún día (se reinicia).
-function intentarPlan_(inicio, comidas, porComida, reglas, objetivoDia, tolDia, azar) {
+function intentarPlan_(inicio, numDias, comidas, porComida, reglas, objetivoDia, tolDia, azar) {
   const usos = {};
   const dias = [];
   let ayer = {};
-  for (let d = 0; d < DIAS_PLAN; d++) {
-    const restantes = DIAS_PLAN - d;
+  for (let d = 0; d < numDias; d++) {
+    const restantes = numDias - d;
     const posibles = {};
     for (const c of comidas) {
       posibles[c] = porComida[c].filter(r => (usos[r.id] || 0) < reglas[c].max && (reglas[c].consecutivos || ayer[c] !== r.id));
@@ -178,40 +204,68 @@ function intentarPlan_(inicio, comidas, porComida, reglas, objetivoDia, tolDia, 
       if (!posibles[c].length) return null;
     }
 
-    let mejor = null;
-    for (let intento = 0; intento < INTENTOS_POR_DIA; intento++) {
-      const eleccion = {};
-      comidas.forEach(c => { eleccion[c] = elegirPonderado_(posibles[c], azar); });
-      const macros = sumarMacros_(comidas.map(c => eleccion[c].macros));
-      const evaluacion = evaluarDia_(macros, objetivoDia, tolDia);
-      const puntuacion = puntuacionDia_(evaluacion, tolDia);
-      if (!mejor || (evaluacion.ok && !mejor.evaluacion.ok) ||
-          (evaluacion.ok === mejor.evaluacion.ok && puntuacion < mejor.puntuacion)) {
-        mejor = { eleccion: eleccion, macros: macros, evaluacion: evaluacion, puntuacion: puntuacion };
-      }
-      if (evaluacion.ok) break;
-    }
-
-    const fecha = sumarDias_(inicio, d);
-    dias.push({
-      fecha: fecha,
-      comidas: comidas.map(c => ({
-        comida: c,
-        receta_id: mejor.eleccion[c].id,
-        nombre: mejor.eleccion[c].nombre,
-        gramos: mejor.eleccion[c].ajuste.gramos,
-        fijados: mejor.eleccion[c].ajuste.fijados,
-        macros: mejor.eleccion[c].macros,
-      })),
-      macros: mejor.macros,
-      evaluacion: mejor.evaluacion,
-      revisar: !mejor.evaluacion.ok,
-    });
+    const mejor = elegirDia_(comidas, posibles, objetivoDia, tolDia, azar, INTENTOS_POR_DIA);
+    dias.push(diaDesdeEleccion_(sumarDias_(inicio, d), comidas, mejor));
     comidas.forEach(c => { usos[mejor.eleccion[c].id] = (usos[mejor.eleccion[c].id] || 0) + 1; });
     ayer = {};
     comidas.forEach(c => { ayer[c] = mejor.eleccion[c].id; });
   }
   return dias;
+}
+
+// Con «cocinar para varios días»: un menú por grupo de días (grupoDia_), elegido entre las recetas menos usadas
+// por los otros grupos (si hay bastantes, ninguna se repite), y cada día del plan con el de su grupo.
+function intentarPlanAgrupado_(inicio, numDias, comidas, porComida, objetivoDia, tolDia, azar) {
+  const fechas = [];
+  for (let d = 0; d < numDias; d++) fechas.push(sumarDias_(inicio, d));
+  const usos = {};
+  const menus = {};
+  fechas.map(grupoDia_).filter((g, i, todos) => todos.indexOf(g) === i).forEach(g => {
+    const posibles = {};
+    comidas.forEach(c => {
+      const menosUsos = Math.min(...porComida[c].map(r => usos[r.id] || 0));
+      posibles[c] = porComida[c].filter(r => (usos[r.id] || 0) === menosUsos);
+    });
+    menus[g] = elegirDia_(comidas, posibles, objetivoDia, tolDia, azar, INTENTOS_POR_GRUPO);
+    comidas.forEach(c => { usos[menus[g].eleccion[c].id] = (usos[menus[g].eleccion[c].id] || 0) + 1; });
+  });
+  return fechas.map(f => diaDesdeEleccion_(f, comidas, menus[grupoDia_(f)]));
+}
+
+// La mejor de `intentos` combinaciones al azar de las recetas posibles de cada comida: la primera que cumple la
+// tolerancia del día o, si ninguna, la que menos se aparta. {eleccion: {comida: candidata}, macros, evaluacion, puntuacion}.
+function elegirDia_(comidas, posibles, objetivoDia, tolDia, azar, intentos) {
+  let mejor = null;
+  for (let intento = 0; intento < intentos; intento++) {
+    const eleccion = {};
+    comidas.forEach(c => { eleccion[c] = elegirPonderado_(posibles[c], azar); });
+    const macros = sumarMacros_(comidas.map(c => eleccion[c].macros));
+    const evaluacion = evaluarDia_(macros, objetivoDia, tolDia);
+    const puntuacion = puntuacionDia_(evaluacion, tolDia);
+    if (!mejor || (evaluacion.ok && !mejor.evaluacion.ok) ||
+        (evaluacion.ok === mejor.evaluacion.ok && puntuacion < mejor.puntuacion)) {
+      mejor = { eleccion: eleccion, macros: macros, evaluacion: evaluacion, puntuacion: puntuacion };
+    }
+    if (evaluacion.ok) break;
+  }
+  return mejor;
+}
+
+function diaDesdeEleccion_(fecha, comidas, mejor) {
+  return {
+    fecha: fecha,
+    comidas: comidas.map(c => ({
+      comida: c,
+      receta_id: mejor.eleccion[c].id,
+      nombre: mejor.eleccion[c].nombre,
+      gramos: mejor.eleccion[c].ajuste.gramos,
+      fijados: mejor.eleccion[c].ajuste.fijados,
+      macros: mejor.eleccion[c].macros,
+    })),
+    macros: mejor.macros,
+    evaluacion: mejor.evaluacion,
+    revisar: !mejor.evaluacion.ok,
+  };
 }
 
 // ---------- Cambiar plato ----------
@@ -239,6 +293,7 @@ function alternativasComida_(dia, comida, recetas, datos, objetivoDia, tolDia) {
 if (typeof module !== 'undefined') {
   module.exports = {
     COMIDAS, DIAS_PLAN, sumarDias_, diaSemana_, fechaInicioPlan_, azarConSemilla_, ultimasValoraciones_,
-    prepararCandidatas_, reglasRepeticion_, generarPlan_, alimentosProhibidos_, alternativasComida_,
+    prepararCandidatas_, reglasRepeticion_, generarPlan_, alimentosProhibidos_, alternativasComida_, filtrarRotacion_,
+    grupoDia_,
   };
 }

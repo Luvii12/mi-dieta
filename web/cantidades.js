@@ -4,7 +4,7 @@
 // con ese plato y para los planes nuevos.
 
 import { leerLocal } from './api.js';
-import { $, h, icono, numero, avisar, pastillasMacros } from './comun.js';
+import { $, h, icono, numero, avisar, pastillasMacros, textoTambien } from './comun.js';
 import { ajustarGramos } from './datos.js';
 
 const ESPERA_MS = 400; // tras dejar de escribir, se calcula cómo quedaría
@@ -110,9 +110,9 @@ async function guardar(gramos, siempre, mensaje) {
   botones.forEach(b => { b.disabled = true; });
   $('cantidades-estado').textContent = '';
   try {
-    await ajustarGramos(estado.planId, estado.fecha, estado.comida, gramos, { siempre });
+    const r = await ajustarGramos(estado.planId, estado.fecha, estado.comida, gramos, { siempre });
     $('panel-cantidades').close();
-    avisar(mensaje);
+    avisar(mensaje + textoTambien(r.tambien));
   } catch (err) {
     $('cantidades-estado').textContent = err.message;
   } finally {
